@@ -159,7 +159,7 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
                     child: Row(
                       children: [
                         Text(
-                          '${filteredReports.length} ${filteredReports.length == 1 ? "resultado" : "resultados"}',
+                          '${filteredReports.length} ${filteredReports.length == 1 ? ref.watchTr(AppStrings.searchResultCount) : ref.watchTr(AppStrings.searchResultsCount)}',
                           style: TxtStyle.bodyMedium(
                             color: AppColors.subtitleTextColor,
                             fontSize: 13.sp,
@@ -183,7 +183,11 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
                   ),
                 Expanded(
                   child: filteredReports.isEmpty
-                      ? _emptySearchState(ref, isQueryActive)
+                      ? _emptySearchState(
+                          ref,
+                          isQueryActive,
+                          state.reports.isNotEmpty,
+                        )
                       : ListView.builder(
                           physics: const BouncingScrollPhysics(),
                           padding:
@@ -253,7 +257,55 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
     );
   }
 
-  Widget _emptySearchState(WidgetRef ref, bool isQueryActive) {
+  Widget _emptySearchState(
+    WidgetRef ref,
+    bool isQueryActive, [
+    bool hasAnyReports = true,
+  ]) {
+    if (!hasAnyReports) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 32.w),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 64.w,
+                height: 64.w,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryDark.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.assignment_outlined,
+                  color: AppColors.primaryDark,
+                  size: 30.sp,
+                ),
+              ),
+              SizedBox(height: 16.h),
+              Text(
+                ref.watchTr(AppStrings.noCompletedClassReports),
+                textAlign: TextAlign.center,
+                style: TxtStyle.titleLarge(
+                  fontSize: 17.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                ref.watchTr(AppStrings.noCompletedClassReportsDesc),
+                textAlign: TextAlign.center,
+                style: TxtStyle.bodyMedium(
+                  color: AppColors.subtitleTextColor,
+                  fontSize: 13.5.sp,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Center(
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 28.w, vertical: 40.h),

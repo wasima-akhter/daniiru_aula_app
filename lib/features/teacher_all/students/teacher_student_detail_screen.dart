@@ -579,10 +579,7 @@ class _TeacherStudentDetailsScreenState
           Text(
             hwText.isNotEmpty
                 ? hwText
-                : (tr(AppStrings.legalTermsAndConditions).split(' ')[0] ==
-                        'Términos'
-                    ? 'No hay tareas activas asignadas.'
-                    : 'No active homework assigned.'),
+                : tr(AppStrings.noActiveHomeworkAssigned),
             style: TxtStyle.bodyMedium(
               color: hwText.isNotEmpty
                   ? AppColors.text
@@ -748,8 +745,6 @@ class _TeacherStudentDetailsScreenState
   }
 
   Widget _errorView(WidgetRef ref, String error, VoidCallback onRetry) {
-    final isSpanish = ref.watch(languageProvider).valueOrNull?.language ==
-        AppLanguage.spanish;
     return Center(
       child: Padding(
         padding: EdgeInsets.all(24.w),
@@ -763,9 +758,7 @@ class _TeacherStudentDetailsScreenState
             ),
             SizedBox(height: 12.h),
             Text(
-              isSpanish
-                  ? 'Error al cargar detalles del alumno'
-                  : 'Failed to load student details',
+              ref.watchTr(AppStrings.loadStudentsError),
               style: TxtStyle.titleLarge(
                 fontSize: 18.sp,
                 fontWeight: FontWeight.w700,
@@ -773,7 +766,12 @@ class _TeacherStudentDetailsScreenState
             ),
             SizedBox(height: 6.h),
             Text(
-              error,
+              AppErrorResolver.resolve(
+                error,
+                languageCode:
+                    ref.watch(languageProvider).valueOrNull?.languageCode ??
+                    LanguageNotifier.activeLanguageCode,
+              ).displayMessage,
               textAlign: TextAlign.center,
               style: TxtStyle.bodyMedium(
                 fontSize: 14.sp,
@@ -785,7 +783,7 @@ class _TeacherStudentDetailsScreenState
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded, size: 18),
               label: Text(
-                isSpanish ? 'Reintentar' : 'Retry',
+                ref.watchTr(AppStrings.retry),
                 style: TxtStyle.bodyMedium(
                   fontWeight: FontWeight.w600,
                   color: Colors.white,

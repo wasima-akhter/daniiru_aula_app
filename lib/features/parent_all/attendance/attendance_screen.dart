@@ -20,12 +20,28 @@ class AttendanceScreen extends ConsumerStatefulWidget {
 }
 
 class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
+  final ScrollController _scrollController = ScrollController();
+  AulaPagedScrollListener? _pagedListener;
+
   @override
   void initState() {
     super.initState();
+    _pagedListener = AulaPagedScrollListener(
+      controller: _scrollController,
+      onLoadMore: () => ref
+          .read(parentAttendanceControllerProvider.notifier)
+          .loadMore(),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
     });
+  }
+
+  @override
+  void dispose() {
+    _pagedListener?.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -78,6 +94,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             }
           },
           child: SingleChildScrollView(
+            controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),
             ),
@@ -213,6 +230,10 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
   }
 
   Widget _errorPlaceholder(WidgetRef ref, ChildModel child, String error) {
+    final langCode = ref.watch(languageProvider).valueOrNull?.languageCode ??
+        LanguageNotifier.activeLanguageCode;
+    final resolved = AppErrorResolver.resolve(error, languageCode: langCode);
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(20.w),
@@ -226,7 +247,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
           Icon(Icons.error_outline, size: 36.sp, color: AppColors.error),
           SizedBox(height: 10.h),
           Text(
-            error,
+            resolved.displayMessage,
             textAlign: TextAlign.center,
             style: TxtStyle.bodyMedium(
               color: AppColors.error,
@@ -632,7 +653,12 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             Icon(Icons.error_outline, size: 36.sp, color: AppColors.error),
             SizedBox(height: 10.h),
             Text(
-              state.error!,
+              AppErrorResolver.resolve(
+                state.error!,
+                languageCode:
+                    ref.watch(languageProvider).valueOrNull?.languageCode ??
+                    LanguageNotifier.activeLanguageCode,
+              ).displayMessage,
               textAlign: TextAlign.center,
               style: TxtStyle.bodyMedium(
                 color: AppColors.error,
@@ -694,29 +720,40 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
       );
     }
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(9.r),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: [
-          for (int i = 0; i < state.records.length; i++) ...[
-            if (i > 0) _divider(),
-            _attendanceRow(
-              ref: ref,
-              subject: state.records[i].dayName.isNotEmpty
-                  ? state.records[i].dayName
-                  : 'Sesión',
-              date: '${state.records[i].date} • ${state.records[i].checkInTime}',
-              status: state.records[i].status,
-              detail: state.records[i].note,
-            ),
-          ],
-        ],
-      ),
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(9.r),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            children: [
+              for (int i = 0; i < state.records.length; i++) ...[
+                if (i > 0) _divider(),
+                _attendanceRow(
+                  ref: ref,
+                  subject: state.records[i].dayName.isNotEmpty
+                      ? state.records[i].dayName
+                      : 'Sesión',
+                  date: '${state.records[i].date} • ${state.records[i].checkInTime}',
+                  status: state.records[i].status,
+                  detail: state.records[i].note,
+                ),
+              ],
+            ],
+          ),
+        ),
+        AulaPagedFooter(
+          isLoadingMore: state.isLoadingMore,
+          loadMoreError: state.loadMoreError,
+          onRetry: () => ref
+              .read(parentAttendanceControllerProvider.notifier)
+              .loadMore(),
+        ),
+      ],
     );
   }
 

@@ -1,3 +1,7 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/services.dart';
+import '../../../core/services/notification/push_notification_service.dart';
+import '../../auth/presentation/providers/auth_providers.dart';
 import '../../chat/presentation/controllers/chat_controller.dart';
 import '../../parent_all/helper/parent_widgets.dart';
 import '../../share/component/logout_btn.dart';
@@ -16,13 +20,56 @@ class TeacherProfileScreen extends ConsumerWidget {
     final state = ref.watch(teacherProfileControllerProvider);
     final profile = state.profile;
 
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7FC),
       appBar: simpleAppBar(
         context,
         ref.watchTr(AppStrings.childProfile),
         showBackButton: false,
+      ),
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'Test Push & FCM Diagnostics',
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        child: const Icon(Icons.notifications_active),
+        onPressed: () async {
+          final pushService = ref.read(pushNotificationServiceProvider);
+          final hasPerm = await pushService.isPermissionGranted();
+          final token = await pushService.getCachedOrFetchToken();
+
+          String syncStatus = 'Pending...';
+          String profileStatus = 'Pending...';
+
+          try {
+            if (token != null && token.isNotEmpty) {
+              await ref.read(checkSessionUseCaseProvider).call(fcmToken: token);
+              syncStatus = 'Token synced with backend session (POST /api/v1/auth/check)';
+            } else {
+              syncStatus = 'Token is null or empty';
+            }
+          } catch (e) {
+            syncStatus = 'Sync error: $e';
+          }
+
+          try {
+            await ref
+                .read(teacherProfileControllerProvider.notifier)
+                .loadProfile(force: true);
+            profileStatus = 'Profile loaded (GET /api/v1/profile/teacher)';
+          } catch (e) {
+            profileStatus = 'Profile error: $e';
+          }
+
+          if (!context.mounted) return;
+          _showPushDiagnosticsSheet(
+            context,
+            ref,
+            hasPermission: hasPerm,
+            token: token ?? '',
+            syncStatus: syncStatus,
+            profileStatus: profileStatus,
+          );
+        },
       ),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -193,6 +240,7 @@ class TeacherProfileScreen extends ConsumerWidget {
   }
 
   Widget _contactRow(IconData icon, String value) {
+    if (value.trim().isEmpty) return const SizedBox.shrink();
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
@@ -330,12 +378,20 @@ class TeacherProfileScreen extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _bottomAction(
-                  Icons.mail_outline,
-                  ref.watchTr(AppStrings.academyMessagesTitle),
-                  ref.watchTr(AppStrings.academyMessagesSubtitle),
-                  () {
+                  Icons.chat_bubble_outline,
+                  ref.watchTr(AppStrings.chatWithAdmin),
+                  ref.watchTr(AppStrings.communicationSubtitle),
+                  () async {
                     Navigator.pop(bottomSheetContext);
-                    context.push(RoutePath.chatList);
+                    final conv = await ref
+                        .read(chatControllerProvider.notifier)
+                        .startAdminConversation();
+                    if (context.mounted) {
+                      final activeConv =
+                          conv ??
+                          ref.read(chatControllerProvider).selectedConversation;
+                      context.push(RoutePath.chatInbox, extra: activeConv);
+                    }
                   },
                 ),
                 _bottomAction(
@@ -345,35 +401,6 @@ class TeacherProfileScreen extends ConsumerWidget {
                   () {
                     Navigator.pop(bottomSheetContext);
                     _showMessage(ref.watchTr(AppStrings.announcementsTitle));
-                  },
-                ),
-                _bottomAction(
-                  Icons.admin_panel_settings_outlined,
-                  ref.watchTr(AppStrings.chatWithAdmin),
-                  ref.watchTr(AppStrings.noConversationsDesc),
-                  () async {
-                    Navigator.pop(bottomSheetContext);
-                    final conv = await ref
-                        .read(chatControllerProvider.notifier)
-                        .startAdminConversation();
-                    if (context.mounted) {
-                      final activeConv = conv ??
-                          ref.read(chatControllerProvider).selectedConversation;
-                      if (activeConv != null) {
-                        context.push(RoutePath.chatInbox, extra: activeConv);
-                      } else {
-                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              ref.readTr(AppStrings.chatTargetAdminNotFound),
-                            ),
-                            backgroundColor: AppColors.primaryDark,
-                            duration: const Duration(seconds: 4),
-                          ),
-                        );
-                      }
-                    }
                   },
                 ),
               ],
@@ -439,6 +466,284 @@ class TeacherProfileScreen extends ConsumerWidget {
           letterSpacing: .4,
         ),
       ),
+    );
+  }
+
+  void _showPushDiagnosticsSheet(
+    BuildContext context,
+    WidgetRef ref, {
+    required bool hasPermission,
+    required String token,
+    required String syncStatus,
+    required String profileStatus,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (modalCtx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 36.h),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 44.w,
+                        height: 5.h,
+                        decoration: BoxDecoration(
+                          color: AppColors.border,
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.notifications_active,
+                          color: AppColors.primary,
+                          size: 24.sp,
+                        ),
+                        SizedBox(width: 10.w),
+                        Expanded(
+                          child: Text(
+                            'FCM Push Test & Diagnostics',
+                            style: TxtStyle.titleLarge(
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16.h),
+                    Divider(height: 1, color: AppColors.backgroundsLinesColor),
+                    SizedBox(height: 14.h),
+
+                    // 1. Permission Status
+                    Row(
+                      children: [
+                        Icon(
+                          hasPermission
+                              ? Icons.check_circle
+                              : Icons.warning_amber_rounded,
+                          color: hasPermission
+                              ? AppColors.emeraldGreenColor
+                              : AppColors.orangeColor,
+                          size: 20.sp,
+                        ),
+                        SizedBox(width: 8.w),
+                        Text(
+                          'Notification Permission:',
+                          style: TxtStyle.titleLarge(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 10.w,
+                            vertical: 4.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: hasPermission
+                                ? const Color(0xFFE5FAF2)
+                                : const Color(0xFFFFF3E0),
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          child: Text(
+                            hasPermission ? 'GRANTED' : 'DENIED / DISABLED',
+                            style: TextStyle(
+                              color: hasPermission
+                                  ? AppColors.emeraldGreenColor
+                                  : AppColors.orangeColor,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12.sp,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (!hasPermission) ...[
+                      SizedBox(height: 8.h),
+                      Text(
+                        'On Android 13+, push notifications are blocked by the OS until permission is granted.',
+                        style: TxtStyle.bodyMedium(
+                          color: AppColors.error,
+                          fontSize: 12.5.sp,
+                        ),
+                      ),
+                      SizedBox(height: 8.h),
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          final push = ref.read(pushNotificationServiceProvider);
+                          final res = await push.requestPermissions();
+                          final granted =
+                              res?.authorizationStatus ==
+                              AuthorizationStatus.authorized;
+                          setModalState(() {
+                            hasPermission = granted;
+                          });
+                        },
+                        icon: const Icon(Icons.security, size: 16),
+                        label: const Text('Request OS Permission Now'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          minimumSize: Size(double.infinity, 38.h),
+                        ),
+                      ),
+                    ],
+
+                    SizedBox(height: 16.h),
+                    Divider(height: 1, color: AppColors.backgroundsLinesColor),
+                    SizedBox(height: 14.h),
+
+                    // 2. FCM Device Token
+                    Text(
+                      'Device FCM Token:',
+                      style: TxtStyle.titleLarge(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 6.h),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(10.w),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF4F3F8),
+                        borderRadius: BorderRadius.circular(8.r),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: SelectableText(
+                        token.isNotEmpty ? token : 'No token acquired',
+                        style: TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 11.5.sp,
+                          color: AppColors.text,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    OutlinedButton.icon(
+                      onPressed: token.isNotEmpty
+                          ? () {
+                              Clipboard.setData(ClipboardData(text: token));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('FCM Token copied to clipboard!'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          : null,
+                      icon: const Icon(Icons.copy, size: 16),
+                      label: const Text('Copy Token to Clipboard'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: Size(double.infinity, 38.h),
+                      ),
+                    ),
+
+                    SizedBox(height: 16.h),
+                    Divider(height: 1, color: AppColors.backgroundsLinesColor),
+                    SizedBox(height: 14.h),
+
+                    // 3. Backend Sync & Trigger Status
+                    Text(
+                      'Backend Status:',
+                      style: TxtStyle.titleLarge(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 6.h),
+                    _statusRow(Icons.sync, 'Token Session Sync:', syncStatus),
+                    SizedBox(height: 6.h),
+                    _statusRow(Icons.person, 'Profile Trigger:', profileStatus),
+
+                    SizedBox(height: 16.h),
+                    Container(
+                      padding: EdgeInsets.all(12.w),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEBF3FF),
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.info_outline, color: AppColors.primary, size: 18.sp),
+                              SizedBox(width: 6.w),
+                              Text(
+                                'How to Test Real Push:',
+                                style: TxtStyle.titleLarge(
+                                  color: AppColors.primaryDark,
+                                  fontSize: 13.5.sp,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 6.h),
+                          Text(
+                            '1. Copy the FCM token above.\n'
+                            '2. Minimize the app (press Home button).\n'
+                            '3. Have your backend send the push to this token, or test directly in Firebase Console > Messaging > Send Test Message.',
+                            style: TxtStyle.bodyMedium(
+                              fontSize: 12.5.sp,
+                              color: AppColors.text,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _statusRow(IconData icon, String label, String value) {
+    final isOk = !value.toLowerCase().contains('error') &&
+        !value.toLowerCase().contains('null');
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          isOk ? Icons.check_circle_outline : Icons.error_outline,
+          color: isOk ? AppColors.emeraldGreenColor : AppColors.error,
+          size: 16.sp,
+        ),
+        SizedBox(width: 6.w),
+        Text(
+          '$label ',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.sp),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 12.5.sp,
+              color: isOk ? AppColors.text : AppColors.error,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

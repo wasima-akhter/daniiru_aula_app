@@ -6,8 +6,10 @@ import '../../share/export/screen_export.dart';
 import '../../share/widgets/button/app_logo.dart';
 import '../helper/parent_home_helper.dart';
 import '../presentation/controllers/parent_attendance_controller.dart';
+import '../presentation/controllers/parent_children_controller.dart';
 import '../presentation/controllers/parent_home_controller.dart';
 import '../presentation/controllers/parent_notifications_controller.dart';
+import '../presentation/controllers/parent_schedule_controller.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -27,6 +29,320 @@ class HomeScreen extends ConsumerWidget {
       return parts[0].substring(0, parts[0].length >= 2 ? 2 : 1).toUpperCase();
     }
     return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+
+  void _selectChild(WidgetRef ref, ChildModel child) {
+    ref.read(parentChildrenControllerProvider.notifier).selectChild(child);
+    ref.read(parentHomeControllerProvider.notifier).selectChild(child);
+    ref
+        .read(parentAttendanceControllerProvider.notifier)
+        .loadAttendance(child.id);
+    final children = ref.read(parentChildrenControllerProvider).children;
+    final index = children.indexWhere((c) => c.id == child.id);
+    if (index != -1) {
+      ref.read(parentScheduleControllerProvider.notifier).selectChild(index);
+    }
+  }
+
+  void _onSwitchChild(BuildContext context, WidgetRef ref) {
+    final homeState = ref.read(parentHomeControllerProvider);
+    final children = homeState.children.isNotEmpty
+        ? homeState.children
+        : ref.read(parentChildrenControllerProvider).children;
+
+    if (children.isEmpty) return;
+
+    if (children.length == 1) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(ref.readTr(AppStrings.noOtherChildrenLinked)),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    if (children.length == 2) {
+      final currentId = homeState.selectedChild?.id;
+      final nextChild = children.firstWhere(
+        (c) => c.id != currentId,
+        orElse: () => children.first,
+      );
+      _selectChild(ref, nextChild);
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(
+                Icons.swap_horiz_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: Text(
+                  '${ref.readTr(AppStrings.switchedToChild)}: ${nextChild.name}',
+                  style: TextStyle(
+                    fontSize: 13.5.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(milliseconds: 1800),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.r),
+          ),
+        ),
+      );
+    } else {
+      _showChildPickerBottomSheet(
+        context,
+        ref,
+        children,
+        homeState.selectedChild,
+      );
+    }
+  }
+
+  void _showChildPickerBottomSheet(
+    BuildContext context,
+    WidgetRef ref,
+    List<ChildModel> children,
+    ChildModel? currentChild,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (modalContext) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+          ),
+          padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 24.h),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40.w,
+                    height: 4.h,
+                    margin: EdgeInsets.only(bottom: 16.h),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2.r),
+                    ),
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          ref.watchTr(AppStrings.switchChildTitle),
+                          style: TxtStyle.titleLarge(
+                            color: AppColors.text,
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        SizedBox(height: 3.h),
+                        Text(
+                          ref.watchTr(AppStrings.switchChildSubtitle),
+                          style: TxtStyle.bodyMedium(
+                            color: AppColors.secondaryText,
+                            fontSize: 13.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(modalContext),
+                      icon: Icon(
+                        Icons.close_rounded,
+                        size: 22.sp,
+                        color: AppColors.subtitleTextColor,
+                      ),
+                      splashRadius: 20,
+                    ),
+                  ],
+                ),
+                SizedBox(height: 14.h),
+                Divider(height: 1, color: AppColors.backgroundsLinesColor),
+                SizedBox(height: 10.h),
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: children.length,
+                    separatorBuilder: (_, _) => SizedBox(height: 8.h),
+                    itemBuilder: (context, index) {
+                      final child = children[index];
+                      final isSelected = child.id == currentChild?.id;
+                      return InkWell(
+                        onTap: () {
+                          Navigator.pop(modalContext);
+                          if (!isSelected) {
+                            _selectChild(ref, child);
+                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.check_circle_outline_rounded,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                    SizedBox(width: 8.w),
+                                    Expanded(
+                                      child: Text(
+                                        '${ref.readTr(AppStrings.switchedToChild)}: ${child.name}',
+                                        style: TextStyle(
+                                          fontSize: 13.5.sp,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                backgroundColor: AppColors.primary,
+                                behavior: SnackBarBehavior.floating,
+                                duration: const Duration(milliseconds: 1800),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10.r),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(12.r),
+                        child: Container(
+                          padding: EdgeInsets.all(12.w),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.blueSoft.withValues(alpha: 0.5)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(12.r),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : AppColors.border,
+                              width: isSelected ? 1.5 : 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              child.imageUrl.isNotEmpty &&
+                                      Uri.tryParse(child.imageUrl)?.hasScheme ==
+                                          true
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(21.r),
+                                      child: Image.network(
+                                        child.imageUrl,
+                                        width: 42.w,
+                                        height: 42.w,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, _, _) => UserAvatar(
+                                          initials: _extractInitials(
+                                            child.name,
+                                          ),
+                                          size: 42,
+                                        ),
+                                      ),
+                                    )
+                                  : UserAvatar(
+                                      initials: _extractInitials(child.name),
+                                      size: 42,
+                                    ),
+                              SizedBox(width: 12.w),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      child.name,
+                                      style: TxtStyle.titleLarge(
+                                        color: AppColors.text,
+                                        fontSize: 16.sp,
+                                        fontWeight: isSelected
+                                            ? FontWeight.w800
+                                            : FontWeight.w700,
+                                      ),
+                                    ),
+                                    SizedBox(height: 2.h),
+                                    Text(
+                                      '${child.grade}${child.room.isNotEmpty ? ' • ${child.room}' : ''}',
+                                      style: TxtStyle.bodyMedium(
+                                        color: AppColors.secondaryText,
+                                        fontSize: 13.sp,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isSelected)
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 9.w,
+                                    vertical: 4.h,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary,
+                                    borderRadius: BorderRadius.circular(12.r),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.check,
+                                        size: 14,
+                                        color: Colors.white,
+                                      ),
+                                      SizedBox(width: 4.w),
+                                      Text(
+                                        ref.watchTr(AppStrings.activeStudent),
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12.sp,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              else
+                                Icon(
+                                  Icons.radio_button_unchecked,
+                                  size: 20.sp,
+                                  color: AppColors.subtitleTextColor,
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                SizedBox(height: 12.h),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -131,9 +447,19 @@ class HomeScreen extends ConsumerWidget {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () async => await ref
-            .read(parentHomeControllerProvider.notifier)
-            .loadDashboardData(),
+        onRefresh: () async {
+          await ref
+              .read(parentHomeControllerProvider.notifier)
+              .loadDashboardData();
+          final activeChild = ref
+              .read(parentHomeControllerProvider)
+              .selectedChild;
+          if (activeChild != null) {
+            await ref
+                .read(parentAttendanceControllerProvider.notifier)
+                .loadAttendance(activeChild.id);
+          }
+        },
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
@@ -238,7 +564,11 @@ class HomeScreen extends ConsumerWidget {
                               ),
                               child: Row(
                                 children: [
-                                  Icon(Icons.add, size: 16.sp, color: Colors.white),
+                                  Icon(
+                                    Icons.add,
+                                    size: 16.sp,
+                                    color: Colors.white,
+                                  ),
                                   SizedBox(width: 4.w),
                                   Text(
                                     ref.watchTr(AppStrings.addChildTitle),
@@ -261,7 +591,9 @@ class HomeScreen extends ConsumerWidget {
                       child: Row(
                         children: [
                           selectedChild.imageUrl.isNotEmpty &&
-                                  Uri.tryParse(selectedChild.imageUrl)?.hasScheme ==
+                                  Uri.tryParse(
+                                        selectedChild.imageUrl,
+                                      )?.hasScheme ==
                                       true
                               ? ClipRRect(
                                   borderRadius: BorderRadius.circular(24.r),
@@ -271,45 +603,108 @@ class HomeScreen extends ConsumerWidget {
                                     height: 48.w,
                                     fit: BoxFit.cover,
                                     errorBuilder: (_, _, _) => UserAvatar(
-                                      initials: _extractInitials(selectedChild.name),
+                                      initials: _extractInitials(
+                                        selectedChild.name,
+                                      ),
                                       size: 48,
                                     ),
                                   ),
                                 )
                               : UserAvatar(
-                                  initials: _extractInitials(selectedChild.name),
+                                  initials: _extractInitials(
+                                    selectedChild.name,
+                                  ),
                                   size: 48,
                                 ),
 
                           SizedBox(width: 12.w),
 
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  selectedChild.name,
-                                  style: TxtStyle.titleLarge(
-                                    color: AppColors.text,
-                                    fontSize: 18.sp,
-                                    fontWeight: FontWeight.w800,
+                            child: GestureDetector(
+                              onTap: () {
+                                final homeState = ref.read(
+                                  parentHomeControllerProvider,
+                                );
+                                final children = homeState.children.isNotEmpty
+                                    ? homeState.children
+                                    : ref
+                                          .read(
+                                            parentChildrenControllerProvider,
+                                          )
+                                          .children;
+                                if (children.length > 1) {
+                                  _showChildPickerBottomSheet(
+                                    context,
+                                    ref,
+                                    children,
+                                    homeState.selectedChild,
+                                  );
+                                }
+                              },
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          selectedChild.name,
+                                          style: TxtStyle.titleLarge(
+                                            color: AppColors.text,
+                                            fontSize: 18.sp,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                      ),
+                                      if (homeState.children.length > 1 ||
+                                          ref
+                                                  .read(
+                                                    parentChildrenControllerProvider,
+                                                  )
+                                                  .children
+                                                  .length >
+                                              1) ...[
+                                        SizedBox(width: 4.w),
+                                        Icon(
+                                          Icons.keyboard_arrow_down_rounded,
+                                          size: 18.sp,
+                                          color: AppColors.subtitleTextColor,
+                                        ),
+                                      ],
+                                    ],
                                   ),
-                                ),
-                                SizedBox(height: 3.h),
-                                Text(
-                                  '${selectedChild.grade}${selectedChild.room.isNotEmpty ? ' • ${selectedChild.room}' : ''}',
-                                  style: TxtStyle.bodyMedium(
-                                    color: AppColors.secondaryText,
-                                    fontSize: 14.sp,
+                                  SizedBox(height: 3.h),
+                                  Text(
+                                    '${selectedChild.grade}${selectedChild.room.isNotEmpty ? ' • ${selectedChild.room}' : ''}',
+                                    style: TxtStyle.bodyMedium(
+                                      color: AppColors.secondaryText,
+                                      fontSize: 14.sp,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
 
                           GestureDetector(
-                            onTap: () {
-                              context.push(RoutePath.children);
+                            onTap: () => _onSwitchChild(context, ref),
+                            onLongPress: () {
+                              final homeState = ref.read(
+                                parentHomeControllerProvider,
+                              );
+                              final children = homeState.children.isNotEmpty
+                                  ? homeState.children
+                                  : ref
+                                        .read(parentChildrenControllerProvider)
+                                        .children;
+                              if (children.length > 1) {
+                                _showChildPickerBottomSheet(
+                                  context,
+                                  ref,
+                                  children,
+                                  homeState.selectedChild,
+                                );
+                              }
                             },
                             child: Container(
                               padding: EdgeInsets.symmetric(
@@ -349,7 +744,7 @@ class HomeScreen extends ConsumerWidget {
                   // ------------------------------------------------
                   // NEXT CLASS
                   // ------------------------------------------------
-                  if (todayClasses.isNotEmpty)
+                  if (!homeState.isLoading && todayClasses.isNotEmpty)
                     GestureDetector(
                       onTap: () => _openDetails(context, todayClasses.first),
                       child: Container(
@@ -482,7 +877,18 @@ class HomeScreen extends ConsumerWidget {
 
                   SizedBox(height: 12.h),
 
-                  if (todayClasses.isNotEmpty)
+                  if (homeState.isLoading)
+                    AulaCard(
+                      padding: EdgeInsets.symmetric(vertical: 24.h),
+                      child: const Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2.5),
+                        ),
+                      ),
+                    )
+                  else if (todayClasses.isNotEmpty)
                     AulaCard(
                       padding: EdgeInsets.zero,
                       child: Column(
@@ -581,7 +987,8 @@ class HomeScreen extends ConsumerWidget {
                         ],
                       ),
                     )
-                  else if (attendanceState.isLoading && attendanceState.records.isEmpty)
+                  else if (attendanceState.isLoading &&
+                      attendanceState.records.isEmpty)
                     AulaCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -589,7 +996,9 @@ class HomeScreen extends ConsumerWidget {
                           Row(
                             children: [
                               Text(
-                                ref.watchTr(AppStrings.attendance).toUpperCase(),
+                                ref
+                                    .watchTr(AppStrings.attendance)
+                                    .toUpperCase(),
                                 style: TxtStyle.titleLarge(
                                   color: AppColors.secondaryText,
                                   fontSize: 13.5.sp,
@@ -601,7 +1010,9 @@ class HomeScreen extends ConsumerWidget {
                               const SizedBox(
                                 width: 14,
                                 height: 14,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                             ],
                           ),
@@ -627,7 +1038,9 @@ class HomeScreen extends ConsumerWidget {
                           Row(
                             children: [
                               Text(
-                                ref.watchTr(AppStrings.attendance).toUpperCase(),
+                                ref
+                                    .watchTr(AppStrings.attendance)
+                                    .toUpperCase(),
                                 style: TxtStyle.titleLarge(
                                   color: AppColors.secondaryText,
                                   fontSize: 13.5.sp,
@@ -664,7 +1077,9 @@ class HomeScreen extends ConsumerWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      ref.watchTr(AppStrings.noAttendanceRecords),
+                                      ref.watchTr(
+                                        AppStrings.noAttendanceRecords,
+                                      ),
                                       style: TxtStyle.titleLarge(
                                         color: AppColors.text,
                                         fontSize: 15.sp,
@@ -673,7 +1088,9 @@ class HomeScreen extends ConsumerWidget {
                                     ),
                                     SizedBox(height: 2.h),
                                     Text(
-                                      ref.watchTr(AppStrings.noAttendanceRecordsDesc),
+                                      ref.watchTr(
+                                        AppStrings.noAttendanceRecordsDesc,
+                                      ),
                                       style: TxtStyle.bodyMedium(
                                         color: AppColors.secondaryText,
                                         fontSize: 12.5.sp,
@@ -717,7 +1134,9 @@ class HomeScreen extends ConsumerWidget {
                           Row(
                             children: [
                               Text(
-                                ref.watchTr(AppStrings.attendance).toUpperCase(),
+                                ref
+                                    .watchTr(AppStrings.attendance)
+                                    .toUpperCase(),
                                 style: TxtStyle.titleLarge(
                                   color: AppColors.secondaryText,
                                   fontSize: 13.5.sp,

@@ -41,8 +41,10 @@ class ScheduleScreen extends ConsumerWidget {
         ref.watch(languageProvider).valueOrNull?.language.code ?? 'en';
     final days = _getCenteredDays(langCode);
     final now = DateTime.now();
-    final selectedIndex =
-        scheduleState.selectedDayIndex.clamp(0, days.length - 1);
+    final selectedIndex = scheduleState.selectedDayIndex.clamp(
+      0,
+      days.length - 1,
+    );
     final selectedDayDate = DateTime.parse(days[selectedIndex]['fullDate']!);
     final isSelectedDayToday =
         selectedDayDate.day == now.day &&
@@ -63,8 +65,8 @@ class ScheduleScreen extends ConsumerWidget {
     final effectiveSessions = selectedDaySessions.isNotEmpty
         ? selectedDaySessions
         : (scheduleState.rawSessions.every((s) => s.sessionDate == null)
-            ? scheduleState.rawSessions
-            : selectedDaySessions);
+              ? scheduleState.rawSessions
+              : selectedDaySessions);
 
     final upcomingClasses = effectiveSessions
         .where((s) => s.status != 'COMPLETED')
@@ -89,202 +91,217 @@ class ScheduleScreen extends ConsumerWidget {
             parent: BouncingScrollPhysics(),
           ),
           slivers: [
-          SliverPadding(
-            padding: EdgeInsets.fromLTRB(16.w, 18.h, 16.w, 30.h),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                // =================================================
-                // STUDENT
-                // =================================================
-                Row(
-                  children: [
-                    Text(
-                      ref.watchTr(AppStrings.studentInfoTitle).toUpperCase(),
-                      style: TxtStyle.titleLarge(
-                        color: AppColors.secondaryText,
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: .4,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      '${children.length} ${ref.watchTr(AppStrings.active)}',
-                      style: TxtStyle.titleLarge(
-                        color: AppColors.primary,
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: 9.h),
-
-                if (children.isEmpty)
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.all(12.w),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12.r),
-                      border: Border.all(color: AppColors.backgroundsLinesColor),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.person_outline, color: AppColors.subtitleTextColor, size: 24.sp),
-                        SizedBox(width: 8.w),
-                        Expanded(
-                          child: Text(
-                            ref.watchTr(AppStrings.noChildrenLinked),
-                            style: TxtStyle.bodyMedium(
-                              color: AppColors.subtitleTextColor,
-                              fontSize: 13.5.sp,
-                            ),
-                          ),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(16.w, 18.h, 16.w, 30.h),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  // =================================================
+                  // STUDENT
+                  // =================================================
+                  Row(
+                    children: [
+                      Text(
+                        ref.watchTr(AppStrings.studentInfoTitle).toUpperCase(),
+                        style: TxtStyle.titleLarge(
+                          color: AppColors.secondaryText,
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: .4,
                         ),
-                      ],
-                    ),
-                  )
-                else
-                  SizedBox(
-                    height: 78.h,
-                    child: Row(
-                      children: [
-                        for (int i = 0; i < children.length && i < 2; i++) ...[
-                          Expanded(
-                            child: _studentCard(
-                              children[i],
-                              scheduleState.selectedChildIndex == i,
-                              () => scheduleController.selectChild(i),
-                            ),
-                          ),
-                          if (i == 0 && children.length > 1) SizedBox(width: 9.w),
-                        ],
-                      ],
-                    ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${children.length} ${ref.watchTr(AppStrings.active)}',
+                        style: TxtStyle.titleLarge(
+                          color: AppColors.primary,
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
 
-                SizedBox(height: 18.h),
+                  SizedBox(height: 9.h),
 
-                // =================================================
-                // DATE SELECTOR
-                // =================================================
-                AulaCard(
-                  padding: EdgeInsets.all(14.w),
-                  child: Column(
-                    children: [
-                      Row(
+                  if (children.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(12.w),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12.r),
+                        border: Border.all(
+                          color: AppColors.backgroundsLinesColor,
+                        ),
+                      ),
+                      child: Row(
                         children: [
-                          Text(
-                            selectedDayTitle,
-                            style: TxtStyle.titleLarge(
-                              color: AppColors.text,
-                              fontSize: 17.sp,
-                              fontWeight: FontWeight.w800,
+                          Icon(
+                            Icons.person_outline,
+                            color: AppColors.subtitleTextColor,
+                            size: 24.sp,
+                          ),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: Text(
+                              ref.watchTr(AppStrings.noChildrenLinked),
+                              style: TxtStyle.bodyMedium(
+                                color: AppColors.subtitleTextColor,
+                                fontSize: 13.5.sp,
+                              ),
                             ),
                           ),
-                          if (isSelectedDayToday) ...[
-                            SizedBox(width: 7.w),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 7.w,
-                                vertical: 3.h,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE6EDFF),
-                                borderRadius: BorderRadius.circular(5.r),
-                              ),
-                              child: Text(
-                                ref.watchTr(AppStrings.today),
-                                style: TxtStyle.titleLarge(
-                                  color: AppColors.primary,
-                                  fontSize: 13.sp,
-                                  fontWeight: FontWeight.w800,
+                        ],
+                      ),
+                    )
+                  else
+                    SizedBox(
+                      height: 78.h,
+                      child: SingleChildScrollView(
+                        physics: AlwaysScrollableScrollPhysics(),
+                        child: Row(
+                          children: [
+                            for (
+                              int i = 0;
+                              i < children.length && i < 2;
+                              i++
+                            ) ...[
+                              Expanded(
+                                child: _studentCard(
+                                  children[i],
+                                  scheduleState.selectedChildIndex == i,
+                                  () => scheduleController.selectChild(i),
                                 ),
+                              ),
+                              if (i == 0 && children.length > 1)
+                                SizedBox(width: 9.w),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  SizedBox(height: 18.h),
+
+                  // =================================================
+                  // DATE SELECTOR
+                  // =================================================
+                  AulaCard(
+                    padding: EdgeInsets.all(14.w),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              selectedDayTitle,
+                              style: TxtStyle.titleLarge(
+                                color: AppColors.text,
+                                fontSize: 17.sp,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            if (isSelectedDayToday) ...[
+                              SizedBox(width: 7.w),
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 7.w,
+                                  vertical: 3.h,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE6EDFF),
+                                  borderRadius: BorderRadius.circular(5.r),
+                                ),
+                                child: Text(
+                                  ref.watchTr(AppStrings.today),
+                                  style: TxtStyle.titleLarge(
+                                    color: AppColors.primary,
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            const Spacer(),
+                            Text(
+                              '${ref.watchTr(AppStrings.weekPrefix)} ${((selectedDayDate.day / 7).ceil()).clamp(1, 12)}',
+                              style: TxtStyle.titleLarge(
+                                color: AppColors.secondaryText,
+                                fontSize: 14.sp,
                               ),
                             ),
                           ],
-                          const Spacer(),
-                          Text(
-                            '${ref.watchTr(AppStrings.weekPrefix)} ${((selectedDayDate.day / 7).ceil()).clamp(1, 12)}',
-                            style: TxtStyle.titleLarge(
-                              color: AppColors.secondaryText,
-                              fontSize: 14.sp,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
 
-                      SizedBox(height: 15.h),
+                        SizedBox(height: 15.h),
 
-                      Row(
-                        children: [
-                          for (int i = 0; i < days.length; i++)
-                            Expanded(
-                              child: _dayItem(
-                                days,
-                                i,
-                                scheduleState.selectedDayIndex == i,
-                                () => scheduleController.selectDay(i),
+                        Row(
+                          children: [
+                            for (int i = 0; i < days.length; i++)
+                              Expanded(
+                                child: _dayItem(
+                                  days,
+                                  i,
+                                  scheduleState.selectedDayIndex == i,
+                                  () => scheduleController.selectDay(i),
+                                ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: 25.h),
+
+                  if (scheduleState.isLoading) ...[
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 24),
+                        child: CircularProgressIndicator(),
                       ),
-                    ],
-                  ),
-                ),
-
-                SizedBox(height: 25.h),
-
-                if (scheduleState.isLoading) ...[
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 24),
-                      child: CircularProgressIndicator(),
                     ),
-                  ),
-                ] else if (scheduleState.error != null) ...[
-                  _errorCard(
-                    ref,
-                    scheduleState.error!,
-                    () => scheduleController.loadSchedule(selectedIndex),
-                  ),
-                ] else if (upcomingClasses.isEmpty && completedClasses.isEmpty) ...[
-                  _emptyScheduleCard(ref),
-                ] else ...[
-                  if (upcomingClasses.isNotEmpty) ...[
-                    SectionHeader(
-                      title: ref.watchTr(AppStrings.upcomingClasses),
-                      actionText: ref.watchTr(AppStrings.remainingToday),
+                  ] else if (scheduleState.error != null) ...[
+                    _errorCard(
+                      ref,
+                      scheduleState.error!,
+                      () => scheduleController.loadSchedule(selectedIndex),
                     ),
-                    SizedBox(height: 12.h),
-                    for (final classData in upcomingClasses) ...[
-                      _scheduleClassCard(context, classData),
+                  ] else if (upcomingClasses.isEmpty &&
+                      completedClasses.isEmpty) ...[
+                    _emptyScheduleCard(ref),
+                  ] else ...[
+                    if (upcomingClasses.isNotEmpty) ...[
+                      SectionHeader(
+                        title: ref.watchTr(AppStrings.upcomingClasses),
+                        actionText: ref.watchTr(AppStrings.remainingToday),
+                      ),
                       SizedBox(height: 12.h),
+                      for (final classData in upcomingClasses) ...[
+                        _scheduleClassCard(context, classData),
+                        SizedBox(height: 12.h),
+                      ],
+                    ],
+
+                    if (completedClasses.isNotEmpty) ...[
+                      SizedBox(height: 6.h),
+                      SectionHeader(
+                        title: ref.watchTr(AppStrings.completedEarlier),
+                        actionText: ref.watchTr(AppStrings.today),
+                      ),
+                      SizedBox(height: 12.h),
+                      for (final classData in completedClasses) ...[
+                        _completedClassCard(ref, classData),
+                        SizedBox(height: 12.h),
+                      ],
                     ],
                   ],
-
-                  if (completedClasses.isNotEmpty) ...[
-                    SizedBox(height: 6.h),
-                    SectionHeader(
-                      title: ref.watchTr(AppStrings.completedEarlier),
-                      actionText: ref.watchTr(AppStrings.today),
-                    ),
-                    SizedBox(height: 12.h),
-                    for (final classData in completedClasses) ...[
-                      _completedClassCard(ref, classData),
-                      SizedBox(height: 12.h),
-                    ],
-                  ],
-                ],
-              ]),
+                ]),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
+    );
   }
 
   Widget _studentCard(ChildModel student, bool selected, VoidCallback onTap) {
@@ -327,15 +344,10 @@ class ScheduleScreen extends ConsumerWidget {
                     ? Image.network(
                         student.imageUrl,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => UserAvatar(
-                          initials: student.initials,
-                          size: 37,
-                        ),
+                        errorBuilder: (_, _, _) =>
+                            UserAvatar(initials: student.initials, size: 37),
                       )
-                    : UserAvatar(
-                        initials: student.initials,
-                        size: 37,
-                      ),
+                    : UserAvatar(initials: student.initials, size: 37),
               ),
             ),
             SizedBox(width: 8.w),
@@ -687,6 +699,10 @@ class ScheduleScreen extends ConsumerWidget {
   }
 
   Widget _errorCard(WidgetRef ref, String error, VoidCallback onRetry) {
+    final langCode = ref.watch(languageProvider).valueOrNull?.languageCode ??
+        LanguageNotifier.activeLanguageCode;
+    final resolved = AppErrorResolver.resolve(error, languageCode: langCode);
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 16.w),
@@ -704,12 +720,9 @@ class ScheduleScreen extends ConsumerWidget {
           ),
           SizedBox(height: 10.h),
           Text(
-            error,
+            resolved.displayMessage,
             textAlign: TextAlign.center,
-            style: TxtStyle.bodyMedium(
-              color: AppColors.text,
-              fontSize: 14.sp,
-            ),
+            style: TxtStyle.bodyMedium(color: AppColors.text, fontSize: 14.sp),
           ),
           SizedBox(height: 12.h),
           ElevatedButton(

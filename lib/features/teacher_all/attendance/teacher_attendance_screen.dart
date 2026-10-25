@@ -9,13 +9,32 @@ import 'presentation/controllers/teacher_attendance_controller.dart';
 /// 3. ATTENDANCE SCREEN
 /// ===============================================================
 
-class TeacherAttendanceScreen extends ConsumerWidget {
+class TeacherAttendanceScreen extends ConsumerStatefulWidget {
   final String? sessionId;
 
   const TeacherAttendanceScreen({super.key, this.sessionId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TeacherAttendanceScreen> createState() =>
+      _TeacherAttendanceScreenState();
+}
+
+class _TeacherAttendanceScreenState
+    extends ConsumerState<TeacherAttendanceScreen> {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.sessionId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref
+            .read(teacherAttendanceControllerProvider.notifier)
+            .loadStudents(widget.sessionId);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(teacherAttendanceControllerProvider);
     final controller = ref.read(teacherAttendanceControllerProvider.notifier);
 
@@ -41,7 +60,7 @@ class TeacherAttendanceScreen extends ConsumerWidget {
                         ),
                         SizedBox(height: 12.h),
                         Text(
-                          'Error al cargar asistencia',
+                          ref.watchTr(AppStrings.loadAttendanceError),
                           style: TxtStyle.titleLarge(
                             fontSize: 18.sp,
                             fontWeight: FontWeight.w700,
@@ -49,7 +68,12 @@ class TeacherAttendanceScreen extends ConsumerWidget {
                         ),
                         SizedBox(height: 8.h),
                         Text(
-                          state.error!,
+                          AppErrorResolver.resolve(
+                            state.error!,
+                            languageCode:
+                                ref.watch(languageProvider).valueOrNull?.languageCode ??
+                                LanguageNotifier.activeLanguageCode,
+                          ).displayMessage,
                           textAlign: TextAlign.center,
                           style: TxtStyle.bodyMedium(
                             color: AppColors.subtitleTextColor,
@@ -58,8 +82,8 @@ class TeacherAttendanceScreen extends ConsumerWidget {
                         ),
                         SizedBox(height: 16.h),
                         AulaPrimaryButton(
-                          text: 'Reintentar',
-                          onTap: () => controller.loadStudents(),
+                          text: ref.watchTr(AppStrings.retry),
+                          onTap: () => controller.loadStudents(widget.sessionId),
                         ),
                       ],
                     ),
@@ -79,7 +103,7 @@ class TeacherAttendanceScreen extends ConsumerWidget {
                             ),
                             SizedBox(height: 12.h),
                             Text(
-                              'No hay alumnos asignados',
+                              ref.watchTr(AppStrings.noStudentsAttendance),
                               style: TxtStyle.titleLarge(
                                 fontSize: 18.sp,
                                 fontWeight: FontWeight.w700,
@@ -87,7 +111,7 @@ class TeacherAttendanceScreen extends ConsumerWidget {
                             ),
                             SizedBox(height: 6.h),
                             Text(
-                              'No se encontraron alumnos para registrar asistencia en esta sesión.',
+                              ref.watchTr(AppStrings.noStudentsAttendanceDesc),
                               textAlign: TextAlign.center,
                               style: TxtStyle.bodyMedium(
                                 color: AppColors.subtitleTextColor,
@@ -386,10 +410,21 @@ class TeacherAttendanceScreen extends ConsumerWidget {
                 Navigator.of(dialogContext).pop();
                 final success = await ref
                     .read(teacherAttendanceControllerProvider.notifier)
-                    .submitAttendance(sessionId: sessionId);
+                    .submitAttendance(sessionId: widget.sessionId);
                 if (context.mounted) {
                   if (success) {
-                    context.push(RoutePath.teacherEndClass, extra: sessionId);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        backgroundColor: AppColors.emeraldGreenColor,
+                        content: Text(
+                          ref.watchTr(AppStrings.attendanceRecordedSuccess),
+                        ),
+                      ),
+                    );
+                    context.push(
+                      RoutePath.teacherEndClass,
+                      extra: widget.sessionId,
+                    );
                   } else {
                     final err = ref
                         .read(teacherAttendanceControllerProvider)
@@ -398,7 +433,7 @@ class TeacherAttendanceScreen extends ConsumerWidget {
                       SnackBar(
                         backgroundColor: AppColors.error,
                         content: Text(
-                          err ?? 'No se pudo guardar la asistencia.',
+                          err ?? ref.watchTr(AppStrings.loadAttendanceError),
                         ),
                       ),
                     );

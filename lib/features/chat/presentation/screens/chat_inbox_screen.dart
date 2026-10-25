@@ -2,6 +2,7 @@ import 'package:aula360/features/parent_all/data/dtos/conversation_dto.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/network/socket_service.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../share/export/screen_export.dart';
 import '../controllers/chat_controller.dart';
 
@@ -63,6 +64,10 @@ class _ChatInboxScreenState extends ConsumerState<ChatInboxScreen> {
 
   bool _isMe(ChatMessageDto msg, ConversationDto? conv) {
     if (msg.senderId == 'me') return true;
+    final currentUserId = ref.read(authControllerProvider).user?.id;
+    if (currentUserId != null && currentUserId.isNotEmpty) {
+      return msg.senderId == currentUserId;
+    }
     final otherId = conv?.participant?.id;
     if (otherId != null && otherId.isNotEmpty && msg.senderId == otherId) {
       return false;

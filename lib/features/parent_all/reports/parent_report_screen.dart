@@ -4,8 +4,33 @@ import '../../share/export/screen_export.dart';
 import '../helper/parent_home_helper.dart';
 import '../presentation/controllers/parent_reports_controller.dart';
 
-class ReportsScreen extends ConsumerWidget {
+class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
+
+  @override
+  ConsumerState<ReportsScreen> createState() => _ReportsScreenState();
+}
+
+class _ReportsScreenState extends ConsumerState<ReportsScreen> {
+  final ScrollController _scrollController = ScrollController();
+  late final AulaPagedScrollListener _pagedListener;
+
+  @override
+  void initState() {
+    super.initState();
+    _pagedListener = AulaPagedScrollListener(
+      controller: _scrollController,
+      onLoadMore: () =>
+          ref.read(parentReportsControllerProvider.notifier).loadMore(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pagedListener.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   List<String> _getCategories(WidgetRef ref) {
     return [
@@ -38,7 +63,7 @@ class ReportsScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final state = ref.watch(parentReportsControllerProvider);
     final controller = ref.read(parentReportsControllerProvider.notifier);
     final categories = _getCategories(ref);
@@ -55,6 +80,7 @@ class ReportsScreen extends ConsumerWidget {
         color: AppColors.primary,
         onRefresh: () => controller.loadReports(),
         child: CustomScrollView(
+          controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(
             parent: BouncingScrollPhysics(),
           ),
@@ -89,7 +115,12 @@ class ReportsScreen extends ConsumerWidget {
                         Icon(Icons.error_outline, color: AppColors.error, size: 40.sp),
                         SizedBox(height: 12.h),
                         Text(
-                          state.error!,
+                          AppErrorResolver.resolve(
+                            state.error!,
+                            languageCode:
+                                ref.watch(languageProvider).valueOrNull?.languageCode ??
+                                LanguageNotifier.activeLanguageCode,
+                          ).displayMessage,
                           textAlign: TextAlign.center,
                           style: TxtStyle.titleLarge(
                             color: AppColors.secondaryText,
@@ -153,7 +184,13 @@ class ReportsScreen extends ConsumerWidget {
               ],
 
               if (filteredReports.isEmpty)
-                SliverFillRemaining(hasScrollBody: false, child: _emptyState(ref)),
+                SliverFillRemaining(hasScrollBody: false, child: _emptyState(ref))
+              else
+                AulaPagedSliverFooter(
+                  isLoadingMore: state.isLoadingMore,
+                  loadMoreError: state.loadMoreError,
+                  onRetry: controller.loadMore,
+                ),
             ],
 
             SliverToBoxAdapter(child: SizedBox(height: 20.h)),

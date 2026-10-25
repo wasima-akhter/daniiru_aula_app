@@ -10,7 +10,11 @@ class ParentReportsState {
   final int selectedStudentIndex;
   final int selectedCategoryIndex;
   final bool isLoading;
+  final bool isLoadingMore;
+  final bool hasMore;
+  final int currentPage;
   final String? error;
+  final String? loadMoreError;
 
   const ParentReportsState({
     this.reports = const [],
@@ -18,7 +22,11 @@ class ParentReportsState {
     this.selectedStudentIndex = 0,
     this.selectedCategoryIndex = 0,
     this.isLoading = false,
+    this.isLoadingMore = false,
+    this.hasMore = true,
+    this.currentPage = 1,
     this.error,
+    this.loadMoreError,
   });
 
   List<ReportModel> getFilteredReports(List<String> categories) {
@@ -49,7 +57,12 @@ class ParentReportsState {
     int? selectedStudentIndex,
     int? selectedCategoryIndex,
     bool? isLoading,
+    bool? isLoadingMore,
+    bool? hasMore,
+    int? currentPage,
     String? error,
+    String? loadMoreError,
+    bool clearLoadMoreError = false,
   }) {
     return ParentReportsState(
       reports: reports ?? this.reports,
@@ -58,17 +71,23 @@ class ParentReportsState {
       selectedCategoryIndex:
           selectedCategoryIndex ?? this.selectedCategoryIndex,
       isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      hasMore: hasMore ?? this.hasMore,
+      currentPage: currentPage ?? this.currentPage,
       error: error,
+      loadMoreError:
+          clearLoadMoreError ? null : (loadMoreError ?? this.loadMoreError),
     );
   }
 }
 
 final parentReportsControllerProvider =
     NotifierProvider<ParentReportsController, ParentReportsState>(
-      ParentReportsController.new,
-    );
+  ParentReportsController.new,
+);
 
 class ParentReportsController extends Notifier<ParentReportsState> {
+  static const int _pageSize = 20;
   ParentRepository get _repository => ref.read(parentRepositoryProvider);
 
   @override
@@ -86,22 +105,73 @@ class ParentReportsController extends Notifier<ParentReportsState> {
     return ParentReportsState(isLoading: true, students: students);
   }
 
+  String? _getActiveChildId() {
+    final children = ref.read(parentChildrenControllerProvider).children;
+    if (state.selectedStudentIndex < children.length) {
+      return children[state.selectedStudentIndex].id;
+    }
+    return ref.read(parentChildrenControllerProvider).selectedChild?.id;
+  }
+
   Future<void> loadReports([String? childId]) async {
     try {
-      state = state.copyWith(isLoading: true, error: null);
-      final children = ref.read(parentChildrenControllerProvider).children;
-      final id = childId ??
-          (state.selectedStudentIndex < children.length
-              ? children[state.selectedStudentIndex].id
-              : ref.read(parentChildrenControllerProvider).selectedChild?.id);
-      final reports = id != null
-          ? await _repository.getChildReports(id)
-          : await _repository.getReports();
-      state = state.copyWith(reports: reports, isLoading: false);
+      state = state.copyWith(
+        isLoading: true,
+        error: null,
+        currentPage: 1,
+        hasMore: true,
+        clearLoadMoreError: true,
+      );
+      final id = childId ?? _getActiveChildId();
+      final res = id != null
+          ? await _repository.getChildReports(id, page: 1, limit: _pageSize)
+          : await _repository.getReports(page: 1, limit: _pageSize);
+      final hasNext = res.meta?.hasNextPage ?? (res.data.length >= _pageSize);
+      state = state.copyWith(
+        reports: res.data,
+        isLoading: false,
+        currentPage: 1,
+        hasMore: hasNext,
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
+
+  /// Paginated load more: strictly checks beforehand if there is more data.
+  Future<void> loadMore() async {
+    if (!state.hasMore || state.isLoadingMore || state.isLoading) {
+      return;
+    }
+
+    state = state.copyWith(isLoadingMore: true, clearLoadMoreError: true);
+    final nextPage = state.currentPage + 1;
+    final id = _getActiveChildId();
+
+    try {
+      final res = id != null
+          ? await _repository.getChildReports(id, page: nextPage, limit: _pageSize)
+          : await _repository.getReports(page: nextPage, limit: _pageSize);
+      final hasNext = res.meta?.hasNextPage ?? (res.data.length >= _pageSize);
+      final existingIds = state.reports.map((r) => r.id).toSet();
+      final newItems =
+          res.data.where((r) => !existingIds.contains(r.id)).toList();
+
+      state = state.copyWith(
+        reports: [...state.reports, ...newItems],
+        currentPage: nextPage,
+        hasMore: hasNext,
+        isLoadingMore: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoadingMore: false,
+        loadMoreError: e.toString(),
+      );
+    }
+  }
+
+  Future<void> refresh() => loadReports();
 
   void selectStudent(int index) {
     state = state.copyWith(selectedStudentIndex: index);

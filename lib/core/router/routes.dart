@@ -482,9 +482,28 @@ class AppRouter {
         name: RoutePath.teacherReportSubmitted,
         path: RoutePath.teacherReportSubmitted.addBasePath,
         pageBuilder: (context, state) {
+          final extra = state.extra;
+          String? sessionId;
+          String? homeworkText;
+          AcademyClass? activeClass;
+
+          if (extra is Map<String, dynamic>) {
+            sessionId = extra['sessionId'] as String?;
+            homeworkText = extra['homeworkText'] as String?;
+            if (extra['activeClass'] is AcademyClass) {
+              activeClass = extra['activeClass'] as AcademyClass;
+            }
+          } else if (extra is String) {
+            sessionId = extra;
+          }
+
           return _buildPageWithAnimation(
             state: state,
-            child: TeacherReportSubmittedScreen(),
+            child: TeacherReportSubmittedScreen(
+              sessionId: sessionId,
+              homeworkText: homeworkText,
+              initialClass: activeClass,
+            ),
           );
         },
       ),
@@ -504,9 +523,38 @@ class AppRouter {
         name: RoutePath.teacherHomework,
         path: RoutePath.teacherHomework.addBasePath,
         pageBuilder: (context, state) {
+          final extra = state.extra;
+          String? initialCohortId;
+          String? initialSubjectId;
+          String? sessionId;
+          String? initialTitle;
+          String? initialDescription;
+          bool autoOpenCreateSheet = false;
+          bool fromClassFlow = false;
+
+          if (extra is Map<String, dynamic>) {
+            initialCohortId = extra['cohortId'] as String?;
+            initialSubjectId = extra['subjectId'] as String?;
+            sessionId = extra['sessionId'] as String?;
+            initialTitle = extra['title'] as String?;
+            initialDescription = extra['description'] as String?;
+            autoOpenCreateSheet = extra['autoOpenCreate'] == true;
+            fromClassFlow = extra['fromClassFlow'] == true;
+          } else if (extra is String) {
+            initialCohortId = extra;
+          }
+
           return _buildPageWithAnimation(
             state: state,
-            child: const TeacherHomeworkScreen(),
+            child: TeacherHomeworkScreen(
+              initialCohortId: initialCohortId,
+              initialSubjectId: initialSubjectId,
+              sessionId: sessionId,
+              initialTitle: initialTitle,
+              initialDescription: initialDescription,
+              autoOpenCreateSheet: autoOpenCreateSheet,
+              fromClassFlow: fromClassFlow,
+            ),
           );
         },
       ),

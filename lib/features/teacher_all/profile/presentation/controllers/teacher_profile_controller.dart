@@ -1,9 +1,11 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:aula360/core/errors/app_error_resolver.dart';
 import 'package:aula360/core/service/language/language_provider.dart';
+import 'package:aula360/core/services/notification/push_notification_service.dart';
 import 'package:aula360/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:aula360/features/auth/presentation/providers/auth_providers.dart';
 import 'package:aula360/features/profile/data/dtos/teacher_profile_dto.dart';
@@ -95,6 +97,28 @@ class TeacherProfileController extends Notifier<TeacherProfileState> {
     _hasFetched = true;
     state = state.copyWith(isLoading: true, error: null, userMessage: null);
     try {
+      // Ensure the device FCM token is registered on the backend session
+      try {
+        final pushService = ref.read(pushNotificationServiceProvider);
+        final token = await pushService.getCachedOrFetchToken();
+        if (token != null && token.isNotEmpty) {
+          debugPrint('══════════════════════════════════════════════════════════════');
+          debugPrint('🌐 FCM PUSH TEST: Pre-syncing device token before GET profile');
+          debugPrint('══════════════════════════════════════════════════════════════');
+          debugPrint('ACTION    : Syncing active FCM token with backend session');
+          debugPrint('ENDPOINT  : POST /api/v1/auth/check');
+          debugPrint('TOKEN     : $token');
+          debugPrint('TIMESTAMP : ${DateTime.now().toIso8601String()}');
+          debugPrint('══════════════════════════════════════════════════════════════');
+          await ref.read(checkSessionUseCaseProvider).call(fcmToken: token);
+          debugPrint('✅ FCM Token successfully registered on backend session.');
+        } else {
+          debugPrint('⚠️ Warning: FCM token is null/empty. Push cannot be received.');
+        }
+      } catch (e) {
+        debugPrint('⚠️ FCM Token pre-sync error: $e');
+      }
+
       final p = await ref.read(getTeacherProfileUseCaseProvider).call();
       _applyProfile(p);
     } catch (e) {

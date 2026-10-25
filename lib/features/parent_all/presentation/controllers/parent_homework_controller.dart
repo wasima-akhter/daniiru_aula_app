@@ -10,7 +10,11 @@ class ParentHomeworkState {
   final int selectedStudentIndex;
   final int selectedTab;
   final bool isLoading;
+  final bool isLoadingMore;
+  final bool hasMore;
+  final int currentPage;
   final String? error;
+  final String? loadMoreError;
 
   const ParentHomeworkState({
     this.homework = const [],
@@ -18,7 +22,11 @@ class ParentHomeworkState {
     this.selectedStudentIndex = 0,
     this.selectedTab = 0,
     this.isLoading = false,
+    this.isLoadingMore = false,
+    this.hasMore = true,
+    this.currentPage = 1,
     this.error,
+    this.loadMoreError,
   });
 
   List<HomeworkModel> get filteredHomework {
@@ -29,8 +37,8 @@ class ParentHomeworkState {
           .toList();
     }
     return homework
-        .where((item) => item.status == HomeworkStatus.completed)
-        .toList();
+          .where((item) => item.status == HomeworkStatus.completed)
+          .toList();
   }
 
   ParentHomeworkState copyWith({
@@ -39,7 +47,12 @@ class ParentHomeworkState {
     int? selectedStudentIndex,
     int? selectedTab,
     bool? isLoading,
+    bool? isLoadingMore,
+    bool? hasMore,
+    int? currentPage,
     String? error,
+    String? loadMoreError,
+    bool clearLoadMoreError = false,
   }) {
     return ParentHomeworkState(
       homework: homework ?? this.homework,
@@ -47,17 +60,23 @@ class ParentHomeworkState {
       selectedStudentIndex: selectedStudentIndex ?? this.selectedStudentIndex,
       selectedTab: selectedTab ?? this.selectedTab,
       isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      hasMore: hasMore ?? this.hasMore,
+      currentPage: currentPage ?? this.currentPage,
       error: error,
+      loadMoreError:
+          clearLoadMoreError ? null : (loadMoreError ?? this.loadMoreError),
     );
   }
 }
 
 final parentHomeworkControllerProvider =
     NotifierProvider<ParentHomeworkController, ParentHomeworkState>(
-      ParentHomeworkController.new,
-    );
+  ParentHomeworkController.new,
+);
 
 class ParentHomeworkController extends Notifier<ParentHomeworkState> {
+  static const int _pageSize = 20;
   ParentRepository get _repository => ref.read(parentRepositoryProvider);
 
   @override
@@ -75,22 +94,73 @@ class ParentHomeworkController extends Notifier<ParentHomeworkState> {
     return ParentHomeworkState(isLoading: true, students: students);
   }
 
+  String? _getActiveChildId() {
+    final children = ref.read(parentChildrenControllerProvider).children;
+    if (state.selectedStudentIndex < children.length) {
+      return children[state.selectedStudentIndex].id;
+    }
+    return ref.read(parentChildrenControllerProvider).selectedChild?.id;
+  }
+
   Future<void> loadHomework([String? childId]) async {
     try {
-      state = state.copyWith(isLoading: true, error: null);
-      final children = ref.read(parentChildrenControllerProvider).children;
-      final id = childId ??
-          (state.selectedStudentIndex < children.length
-              ? children[state.selectedStudentIndex].id
-              : ref.read(parentChildrenControllerProvider).selectedChild?.id);
-      final items = id != null
-          ? await _repository.getChildHomework(id)
-          : await _repository.getHomeworkList();
-      state = state.copyWith(homework: items, isLoading: false);
+      state = state.copyWith(
+        isLoading: true,
+        error: null,
+        currentPage: 1,
+        hasMore: true,
+        clearLoadMoreError: true,
+      );
+      final id = childId ?? _getActiveChildId();
+      final res = id != null
+          ? await _repository.getChildHomework(id, page: 1, limit: _pageSize)
+          : await _repository.getHomeworkList(page: 1, limit: _pageSize);
+      final hasNext = res.meta?.hasNextPage ?? (res.data.length >= _pageSize);
+      state = state.copyWith(
+        homework: res.data,
+        isLoading: false,
+        currentPage: 1,
+        hasMore: hasNext,
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
+
+  /// Paginated load more: strictly checks beforehand if there is more data.
+  Future<void> loadMore() async {
+    if (!state.hasMore || state.isLoadingMore || state.isLoading) {
+      return;
+    }
+
+    state = state.copyWith(isLoadingMore: true, clearLoadMoreError: true);
+    final nextPage = state.currentPage + 1;
+    final id = _getActiveChildId();
+
+    try {
+      final res = id != null
+          ? await _repository.getChildHomework(id, page: nextPage, limit: _pageSize)
+          : await _repository.getHomeworkList(page: nextPage, limit: _pageSize);
+      final hasNext = res.meta?.hasNextPage ?? (res.data.length >= _pageSize);
+      final existingIds = state.homework.map((h) => h.id).toSet();
+      final newItems =
+          res.data.where((h) => !existingIds.contains(h.id)).toList();
+
+      state = state.copyWith(
+        homework: [...state.homework, ...newItems],
+        currentPage: nextPage,
+        hasMore: hasNext,
+        isLoadingMore: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoadingMore: false,
+        loadMoreError: e.toString(),
+      );
+    }
+  }
+
+  Future<void> refresh() => loadHomework();
 
   void selectStudent(int index) {
     state = state.copyWith(selectedStudentIndex: index);

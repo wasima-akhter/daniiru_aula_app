@@ -27,9 +27,11 @@ class ApiSnackbar {
     String? displayDirective = directive;
 
     if (type == SnackbarType.error) {
+      final effectiveLang =
+          languageCode ?? LanguageNotifier.activeLanguageCode;
       final resolved = AppErrorResolver.resolve(
         message,
-        languageCode: languageCode,
+        languageCode: effectiveLang,
         fallbackDirective: directive,
       );
       if (displayTitle.isEmpty) {

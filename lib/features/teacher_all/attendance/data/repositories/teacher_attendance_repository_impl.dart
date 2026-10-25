@@ -11,53 +11,28 @@ class TeacherAttendanceRepositoryImpl implements TeacherAttendanceRepository {
 
   TeacherAttendanceRepositoryImpl(this._remoteDataSource);
 
-  final List<AttendanceStudent> _attendanceStudents = [
-    AttendanceStudent(
-      id: 'student-1',
-      name: 'Lucas Rivera',
-      initials: 'LR',
-      desk: 'Mesa 14',
-      status: TeacherAttendanceStatus.present,
-    ),
-    AttendanceStudent(
-      id: 'student-2',
-      name: 'Sofia Chen',
-      initials: 'SC',
-      desk: 'Mesa 02',
-      status: TeacherAttendanceStatus.present,
-    ),
-    AttendanceStudent(
-      id: 'student-3',
-      name: 'Marcos Williams',
-      initials: 'MW',
-      desk: 'Mesa 10',
-      status: TeacherAttendanceStatus.absent,
-    ),
-    AttendanceStudent(
-      id: 'student-4',
-      name: 'Elena Rostova',
-      initials: 'ER',
-      desk: 'Mesa 08',
-      status: TeacherAttendanceStatus.present,
-    ),
-    AttendanceStudent(
-      id: 'student-5',
-      name: 'Noah Kim',
-      initials: 'NK',
-      desk: 'Mesa 05',
-      status: TeacherAttendanceStatus.absent,
-    ),
-    AttendanceStudent(
-      id: 'student-6',
-      name: 'Maya Patel',
-      initials: 'MP',
-      desk: 'Mesa 22',
-      status: TeacherAttendanceStatus.absent,
-    ),
-  ];
+  List<AttendanceStudent> _attendanceStudents = [];
 
   @override
-  Future<List<AttendanceStudent>> getAttendanceStudents() async {
+  Future<List<AttendanceStudent>> getAttendanceStudents([String? sessionId]) async {
+    if (sessionId != null && sessionId.isNotEmpty) {
+      try {
+        final session = await _remoteDataSource.getSessionDetail(sessionId);
+        _attendanceStudents = session.students.map((s) {
+          return AttendanceStudent(
+            id: s.id,
+            name: s.fullName,
+            initials: s.initials,
+            desk: s.enrollmentNumber.isNotEmpty ? s.enrollmentNumber : 'STU',
+            status: TeacherAttendanceStatus.present,
+          );
+        }).toList();
+        return List.from(_attendanceStudents);
+      } catch (e) {
+        _attendanceStudents = [];
+        rethrow;
+      }
+    }
     return List.from(_attendanceStudents);
   }
 

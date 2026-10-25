@@ -1,4 +1,4 @@
-﻿import 'package:aula360/features/share/export/screen_export.dart';
+import 'package:aula360/features/share/export/screen_export.dart';
 
 class ErrorCard extends StatelessWidget {
   const ErrorCard({
@@ -25,6 +25,24 @@ class ErrorCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    final resolved = message != null
+        ? AppErrorResolver.resolve(
+            message,
+            languageCode: LanguageNotifier.activeLanguageCode,
+          )
+        : null;
+
+    final isSpanish =
+        LanguageNotifier.activeLanguageCode.toLowerCase().startsWith('es');
+    final displayTitle = title ??
+        resolved?.title ??
+        (isSpanish ? 'Ha ocurrido un error' : 'Something went wrong');
+    final displayMessage = resolved?.displayMessage ??
+        (isSpanish
+            ? 'Ha ocurrido un error inesperado. Inténtalo de nuevo.'
+            : 'An unexpected error occurred. Please try again.');
+    final displayButton = buttonText ?? (isSpanish ? 'Reintentar' : 'Retry');
 
     return Center(
       child: Container(
@@ -61,7 +79,7 @@ class ErrorCard extends StatelessWidget {
               ),
             const Gap(16),
             Text(
-              title ?? AppStrings.somethingWentWrong,
+              displayTitle,
               textAlign: TextAlign.center,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w700,
@@ -70,7 +88,7 @@ class ErrorCard extends StatelessWidget {
             ),
             const Gap(8),
             Text(
-              message ?? AppStrings.unknownErrorMessage,
+              displayMessage,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: AppColors.tertiaryTextColor,
@@ -88,7 +106,7 @@ class ErrorCard extends StatelessWidget {
                 ),
               ),
               child: Text(
-                buttonText ?? AppStrings.tryAgain,
+                displayButton,
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,

@@ -21,7 +21,6 @@ class LogoutBtn extends ConsumerWidget {
           children: [
             Container(
               width: 32.w,
-              height: 32.w,
               decoration: BoxDecoration(
                 color: const Color(0xFFFFEEEE),
                 borderRadius: BorderRadius.circular(7.r),
@@ -97,7 +96,7 @@ class LogoutBtn extends ConsumerWidget {
                 SizedBox(height: 23.h),
                 SizedBox(
                   width: double.infinity,
-                  height: 48.h,
+                  // height: 48.h,
                   child: AulaPrimaryButton(
                     text: ref.watchTr(AppStrings.logout),
                     backgroundColor: AppColors.error,

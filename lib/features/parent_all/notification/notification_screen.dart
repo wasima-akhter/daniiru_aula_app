@@ -3,11 +3,38 @@ import '../../share/export/screen_export.dart';
 import '../presentation/controllers/parent_notifications_controller.dart';
 import 'widgets/notification_tile.dart';
 
-class NotificationsScreen extends ConsumerWidget {
+class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NotificationsScreen> createState() =>
+      _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
+  final ScrollController _scrollController = ScrollController();
+  late final AulaPagedScrollListener _pagedListener;
+
+  @override
+  void initState() {
+    super.initState();
+    _pagedListener = AulaPagedScrollListener(
+      controller: _scrollController,
+      onLoadMore: () => ref
+          .read(parentNotificationsControllerProvider.notifier)
+          .loadMore(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pagedListener.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(parentNotificationsControllerProvider);
     final controller = ref.read(parentNotificationsControllerProvider.notifier);
     final notifications = state.notifications;
@@ -19,6 +46,16 @@ class NotificationsScreen extends ConsumerWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: Icon(
+                  Icons.arrow_back,
+                  color: AppColors.primaryDark,
+                  size: 21.sp,
+                ),
+                onPressed: () => context.pop(),
+              )
+            : null,
         title: Text(
           ref.watchTr(AppStrings.navNotifications),
           style: TxtStyle.titleLarge(
@@ -47,6 +84,7 @@ class NotificationsScreen extends ConsumerWidget {
           color: AppColors.primary,
           onRefresh: controller.refresh,
           child: CustomScrollView(
+            controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),
             ),
@@ -62,14 +100,54 @@ class NotificationsScreen extends ConsumerWidget {
                   hasScrollBody: false,
                   child: Center(child: CircularProgressIndicator()),
                 )
+              else if (state.error != null && notifications.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 24.w),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.error_outline_rounded,
+                            color: AppColors.error,
+                            size: 42.sp,
+                          ),
+                          SizedBox(height: 12.h),
+                          Text(
+                            ref.watchTr(AppStrings.somethingWentWrong),
+                            style: TxtStyle.titleLarge(
+                              fontSize: 17.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          SizedBox(height: 14.h),
+                          TextButton.icon(
+                            onPressed: () => controller.refresh(),
+                            icon: const Icon(Icons.refresh, color: AppColors.primary),
+                            label: Text(
+                              ref.watchTr(AppStrings.retry),
+                              style: TxtStyle.titleLarge(
+                                color: AppColors.primary,
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
               else if (notifications.isEmpty)
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: _buildEmptyState(context, ref),
                 )
-              else
+              else ...[
                 SliverPadding(
-                  padding: EdgeInsets.fromLTRB(14.w, 12.h, 14.w, 24.h),
+                  padding: EdgeInsets.fromLTRB(14.w, 12.h, 14.w, 16.h),
                   sliver: SliverList.separated(
                     itemCount: notifications.length,
                     separatorBuilder: (_, _) => SizedBox(height: 10.h),
@@ -82,6 +160,12 @@ class NotificationsScreen extends ConsumerWidget {
                     },
                   ),
                 ),
+                AulaPagedSliverFooter(
+                  isLoadingMore: state.isLoadingMore,
+                  loadMoreError: state.loadMoreError,
+                  onRetry: controller.loadMore,
+                ),
+              ],
             ],
           ),
         ),

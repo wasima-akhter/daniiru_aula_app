@@ -2,6 +2,7 @@ import '../../auth/presentation/controllers/auth_controller.dart';
 import '../../parent_all/helper/parent_home_helper.dart';
 import '../../share/export/screen_export.dart';
 import '../helper/teacher_models.dart';
+import 'presentation/controllers/teacher_reports_controller.dart';
 
 /// ===============================================================
 /// REPORT DETAILS SCREEN
@@ -26,7 +27,14 @@ class _TeacherReportDetailsScreenState
   bool _downloadSuccess = false;
   bool _isSharing = false;
 
-  TeacherReport get _report => widget.report ?? reports.first;
+  TeacherReport? get _effectiveReport {
+    if (widget.report != null) return widget.report;
+    final all = ref.watch(teacherReportsControllerProvider).reports;
+    if (all.isNotEmpty) return all.first;
+    return null;
+  }
+
+  TeacherReport get _report => _effectiveReport!;
 
   Future<void> _startDownload({bool andShare = false}) async {
     if (_isDownloading) return;
@@ -455,6 +463,57 @@ class _TeacherReportDetailsScreenState
 
   @override
   Widget build(BuildContext context) {
+    if (_effectiveReport == null) {
+      return Scaffold(
+        backgroundColor: AppColors.softBackground,
+        appBar: AulaAppBar(
+          title: ref.watchTr(AppStrings.reportDetailTitle),
+          showBack: true,
+        ),
+        body: Center(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 32.w),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 64.w,
+                  height: 64.w,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryDark.withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.assignment_outlined,
+                    color: AppColors.primaryDark,
+                    size: 30.sp,
+                  ),
+                ),
+                SizedBox(height: 16.h),
+                Text(
+                  ref.watchTr(AppStrings.noCompletedClassReports),
+                  textAlign: TextAlign.center,
+                  style: TxtStyle.titleLarge(
+                    fontSize: 17.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                Text(
+                  ref.watchTr(AppStrings.noCompletedClassReportsDesc),
+                  textAlign: TextAlign.center,
+                  style: TxtStyle.bodyMedium(
+                    color: AppColors.subtitleTextColor,
+                    fontSize: 13.5.sp,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.softBackground,
       appBar: AulaAppBar(

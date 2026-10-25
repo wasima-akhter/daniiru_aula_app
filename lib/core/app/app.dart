@@ -3,10 +3,10 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../utils/app_keys/app_keys.dart';
 import '../router/routes.dart';
 import '../service/language/language_provider.dart';
 import '../theme/light_theme.dart';
-import '../../utils/app_keys/app_keys.dart';
 
 class App extends ConsumerWidget {
   const App({super.key});

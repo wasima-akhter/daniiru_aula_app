@@ -30,7 +30,7 @@ class TeacherClassesScreen extends ConsumerWidget {
         showBack: false,
         actions: [
           IconButton(
-            tooltip: 'Tareas',
+            tooltip: ref.watchTr(AppStrings.homeworkTitle),
             icon: Icon(
               Icons.assignment_outlined,
               color: AppColors.primaryDark,
@@ -64,7 +64,7 @@ class TeacherClassesScreen extends ConsumerWidget {
                           ),
                           SizedBox(height: 12.h),
                           Text(
-                            'Error al cargar clases',
+                            ref.watchTr(AppStrings.loadClassesError),
                             style: TxtStyle.titleLarge(
                               fontSize: 18.sp,
                               fontWeight: FontWeight.w700,
@@ -72,7 +72,12 @@ class TeacherClassesScreen extends ConsumerWidget {
                           ),
                           SizedBox(height: 8.h),
                           Text(
-                            state.error!,
+                            AppErrorResolver.resolve(
+                              state.error!,
+                              languageCode:
+                                  ref.watch(languageProvider).valueOrNull?.languageCode ??
+                                  LanguageNotifier.activeLanguageCode,
+                            ).displayMessage,
                             textAlign: TextAlign.center,
                             style: TxtStyle.bodyMedium(
                               color: AppColors.subtitleTextColor,
@@ -81,7 +86,7 @@ class TeacherClassesScreen extends ConsumerWidget {
                           ),
                           SizedBox(height: 16.h),
                           AulaPrimaryButton(
-                            text: 'Reintentar',
+                            text: ref.watchTr(AppStrings.chatRetry),
                             onTap: () => controller.loadClasses(),
                           ),
                         ],
@@ -133,8 +138,8 @@ class TeacherClassesScreen extends ConsumerWidget {
                                 SizedBox(height: 16.h),
                                 Text(
                                   state.selectedTab == ClassTab.today
-                                      ? 'No hay clases programadas para hoy'
-                                      : 'No hay próximas clases programadas',
+                                      ? ref.watchTr(AppStrings.noClassesToday)
+                                      : ref.watchTr(AppStrings.noUpcomingClasses),
                                   textAlign: TextAlign.center,
                                   style: TxtStyle.titleLarge(
                                     fontSize: 17.sp,
@@ -143,7 +148,9 @@ class TeacherClassesScreen extends ConsumerWidget {
                                 ),
                                 SizedBox(height: 8.h),
                                 Text(
-                                  'Las clases asignadas por la administración aparecerán aquí automáticamente.',
+                                  state.selectedTab == ClassTab.today
+                                      ? ref.watchTr(AppStrings.noClassesTodayDesc)
+                                      : ref.watchTr(AppStrings.noUpcomingClassesDesc),
                                   textAlign: TextAlign.center,
                                   style: TxtStyle.bodyMedium(
                                     color: AppColors.subtitleTextColor,

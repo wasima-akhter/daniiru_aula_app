@@ -3,7 +3,9 @@ import 'package:intl/intl.dart';
 import '../../auth/presentation/controllers/auth_controller.dart';
 import '../../parent_all/helper/parent_home_helper.dart';
 import '../../share/export/screen_export.dart';
+import '../classes/presentation/controllers/teacher_classes_controller.dart';
 import '../helper/teacher_enums.dart';
+import '../helper/teacher_models.dart';
 import '../reports/presentation/controllers/teacher_reports_controller.dart';
 import 'presentation/controllers/teacher_attendance_controller.dart';
 
@@ -211,7 +213,36 @@ class _TeacherPostClassReportScreenState
 
     if (context.mounted) {
       if (success) {
-        context.push(RoutePath.teacherReportSubmitted);
+        final classesState = ref.read(teacherClassesControllerProvider);
+        final activeClass = classesState.todayClasses.firstWhere(
+          (c) => c.id == widget.sessionId,
+          orElse: () => classesState.upcomingClasses.firstWhere(
+            (c) => c.id == widget.sessionId,
+            orElse: () => classesState.todayClasses.isNotEmpty
+                ? classesState.todayClasses.first
+                : (classesState.upcomingClasses.isNotEmpty
+                    ? classesState.upcomingClasses.first
+                    : const AcademyClass(
+                        id: '',
+                        title: '',
+                        subtitle: '',
+                        time: '',
+                        room: '',
+                        students: 0,
+                        group: '',
+                        status: ClassStatus.scheduled,
+                      )),
+          ),
+        );
+
+        context.push(
+          RoutePath.teacherReportSubmitted,
+          extra: {
+            'sessionId': widget.sessionId,
+            'homeworkText': formState.homework,
+            'activeClass': activeClass,
+          },
+        );
       } else {
         final err =
             ref.read(teacherAttendanceControllerProvider).endSessionError;
@@ -219,8 +250,7 @@ class _TeacherPostClassReportScreenState
           SnackBar(
             backgroundColor: AppColors.error,
             content: Text(
-              err ??
-                  'No se pudo finalizar la clase. Revisa la conexión o el estado de la sesión.',
+              err ?? ref.watchTr(AppStrings.endSessionErrorNotice),
             ),
           ),
         );
@@ -237,11 +267,40 @@ class _TeacherPostClassReportScreenState
         : ref.watchTr(AppStrings.facultyPrefix);
     final dateStr = DateFormat('E, d MMM', langCode).format(DateTime.now());
 
+    final classesState = ref.watch(teacherClassesControllerProvider);
+    final activeClass = classesState.todayClasses.firstWhere(
+      (c) => c.id == widget.sessionId,
+      orElse: () => classesState.upcomingClasses.firstWhere(
+        (c) => c.id == widget.sessionId,
+        orElse: () => classesState.todayClasses.isNotEmpty
+            ? classesState.todayClasses.first
+            : (classesState.upcomingClasses.isNotEmpty
+                ? classesState.upcomingClasses.first
+                : const AcademyClass(
+                    id: '',
+                    title: '',
+                    subtitle: '',
+                    time: '',
+                    room: '',
+                    students: 0,
+                    group: '',
+                    status: ClassStatus.scheduled,
+                  )),
+      ),
+    );
+
+    final title = activeClass.title.isNotEmpty
+        ? activeClass.title
+        : '${ref.watchTr(AppStrings.subjectMathAdvanced)} (${ref.watchTr(AppStrings.subjectCalculusAlgebra)})';
+    final groupText = activeClass.subtitle.isNotEmpty
+        ? '${(activeClass.group.isNotEmpty ? activeClass.group : ref.watchTr(AppStrings.groupA)).toUpperCase()} • ${activeClass.subtitle.toUpperCase()}${activeClass.room.isNotEmpty ? ' • ${activeClass.room.toUpperCase()}' : ''}'
+        : '${ref.watchTr(AppStrings.groupA).toUpperCase()} • ${ref.watchTr(AppStrings.bachillerato1).toUpperCase()} • ${ref.watchTr(AppStrings.aula2).toUpperCase()}';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '${ref.watchTr(AppStrings.groupA).toUpperCase()} • ${ref.watchTr(AppStrings.bachillerato1).toUpperCase()} • ${ref.watchTr(AppStrings.aula2).toUpperCase()}',
+          groupText,
           style: TxtStyle.labelLarge(
             color: AppColors.subtitleTextColor,
             fontSize: 14.sp,
@@ -251,7 +310,7 @@ class _TeacherPostClassReportScreenState
         ),
         SizedBox(height: 7.h),
         Text(
-          '${ref.watchTr(AppStrings.subjectMathAdvanced)} (${ref.watchTr(AppStrings.subjectCalculusAlgebra)})',
+          title,
           style: TxtStyle.titleLarge(
             color: AppColors.text,
             fontSize: 23.sp,

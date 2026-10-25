@@ -1,5 +1,9 @@
 import '../../parent_all/helper/parent_home_helper.dart';
 import '../../share/export/screen_export.dart';
+import '../classes/presentation/controllers/teacher_classes_controller.dart';
+import '../helper/teacher_enums.dart';
+import '../helper/teacher_models.dart';
+import 'presentation/controllers/teacher_attendance_controller.dart';
 
 /// ===============================================================
 /// 1. END CLASS SCREEN
@@ -12,6 +16,27 @@ class TeacherEndClassScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final classesState = ref.watch(teacherClassesControllerProvider);
+    final attendanceState = ref.watch(teacherAttendanceControllerProvider);
+
+    final activeClass = classesState.todayClasses.firstWhere(
+      (c) => c.id == sessionId,
+      orElse: () => classesState.todayClasses.isNotEmpty
+          ? classesState.todayClasses.first
+          : (classesState.upcomingClasses.isNotEmpty
+              ? classesState.upcomingClasses.first
+              : AcademyClass(
+                  id: '',
+                  title: ref.watchTr(AppStrings.navClasses),
+                  subtitle: '',
+                  time: '',
+                  room: '',
+                  students: 0,
+                  group: '',
+                  status: ClassStatus.scheduled,
+                )),
+    );
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AulaAppBar(
@@ -57,7 +82,7 @@ class TeacherEndClassScreen extends ConsumerWidget {
 
                   SizedBox(height: 18.h),
 
-                  _classSummaryCard(ref),
+                  _classSummaryCard(ref, activeClass, attendanceState),
 
                   SizedBox(height: 17.h),
 
@@ -127,7 +152,7 @@ class TeacherEndClassScreen extends ConsumerWidget {
             ),
             SizedBox(width: 6.w),
             Text(
-              '${ref.watchTr(AppStrings.sessionInProgress)} • 88 min',
+              ref.watchTr(AppStrings.sessionInProgress),
               style: TxtStyle.labelLarge(
                 color: AppColors.primaryColor,
                 fontSize: 13.sp,
@@ -140,7 +165,11 @@ class TeacherEndClassScreen extends ConsumerWidget {
     );
   }
 
-  Widget _classSummaryCard(WidgetRef ref) {
+  Widget _classSummaryCard(
+    WidgetRef ref,
+    AcademyClass activeClass,
+    TeacherAttendanceState attendanceState,
+  ) {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(14.w),
@@ -184,7 +213,9 @@ class TeacherEndClassScreen extends ConsumerWidget {
           SizedBox(height: 9.h),
 
           Text(
-            ref.watchTr(AppStrings.subjectMathAdvanced),
+            activeClass.title.isNotEmpty
+                ? activeClass.title
+                : ref.watchTr(AppStrings.subjectMathAdvanced),
             style: TxtStyle.titleLarge(
               color: AppColors.text,
               fontSize: 18.sp,
@@ -195,7 +226,7 @@ class TeacherEndClassScreen extends ConsumerWidget {
           SizedBox(height: 3.h),
 
           Text(
-            '${ref.watchTr(AppStrings.subjectCalculusAlgebra)} • ${ref.watchTr(AppStrings.groupA)} • ${ref.watchTr(AppStrings.bachillerato1)}',
+            '${activeClass.subtitle.isNotEmpty ? activeClass.subtitle : ref.watchTr(AppStrings.subjectCalculusAlgebra)} • ${activeClass.group.isNotEmpty ? activeClass.group : ref.watchTr(AppStrings.groupA)} • ${ref.watchTr(AppStrings.bachillerato1)}',
             style: TxtStyle.bodyMedium(
               color: AppColors.subtitleTextColor,
               fontSize: 14.5.sp,
@@ -214,8 +245,9 @@ class TeacherEndClassScreen extends ConsumerWidget {
                 child: _smallInfo(
                   icon: Icons.location_on_outlined,
                   title: ref.watchTr(AppStrings.location),
-                  value:
-                      '${ref.watchTr(AppStrings.aula2)}, ${ref.watchTr(AppStrings.floor1)}',
+                  value: activeClass.room.isNotEmpty
+                      ? activeClass.room
+                      : '${ref.watchTr(AppStrings.aula2)}, ${ref.watchTr(AppStrings.floor1)}',
                 ),
               ),
               SizedBox(width: 8.w),
@@ -223,7 +255,9 @@ class TeacherEndClassScreen extends ConsumerWidget {
                 child: _smallInfo(
                   icon: Icons.access_time_outlined,
                   title: ref.watchTr(AppStrings.scheduleTitle),
-                  value: '09:00 – 10:30',
+                  value: activeClass.time.isNotEmpty
+                      ? activeClass.time
+                      : '09:00 – 10:30',
                 ),
               ),
             ],
@@ -231,7 +265,7 @@ class TeacherEndClassScreen extends ConsumerWidget {
 
           SizedBox(height: 12.h),
 
-          _attendanceSummary(ref),
+          _attendanceSummary(ref, attendanceState),
         ],
       ),
     );
@@ -279,7 +313,16 @@ class TeacherEndClassScreen extends ConsumerWidget {
     );
   }
 
-  Widget _attendanceSummary(WidgetRef ref) {
+  Widget _attendanceSummary(
+    WidgetRef ref,
+    TeacherAttendanceState attendanceState,
+  ) {
+    final total = attendanceState.totalCount;
+    final present = attendanceState.presentCount;
+    final absent = attendanceState.absentCount;
+    final percentage = total > 0 ? (present / total * 100).toStringAsFixed(1) : '100';
+    final progress = total > 0 ? (present / total) : 1.0;
+
     return Container(
       padding: EdgeInsets.fromLTRB(10.w, 10.h, 10.w, 9.h),
       decoration: BoxDecoration(
@@ -302,7 +345,7 @@ class TeacherEndClassScreen extends ConsumerWidget {
               ),
               const Spacer(),
               Text(
-                '83.3% ${ref.watchTr(AppStrings.present)}',
+                '$percentage% ${ref.watchTr(AppStrings.present)}',
                 style: TxtStyle.labelLarge(
                   color: AppColors.emeraldGreenColor,
                   fontSize: 12.5.sp,
@@ -315,7 +358,7 @@ class TeacherEndClassScreen extends ConsumerWidget {
           Row(
             children: [
               Text(
-                '15 ${ref.watchTr(AppStrings.ofCount)} 18 ${ref.watchTr(AppStrings.present)}',
+                '$present ${ref.watchTr(AppStrings.ofCount)} $total ${ref.watchTr(AppStrings.present)}',
                 style: TxtStyle.titleLarge(
                   color: AppColors.text,
                   fontSize: 16.sp,
@@ -324,7 +367,7 @@ class TeacherEndClassScreen extends ConsumerWidget {
               ),
               const Spacer(),
               Text(
-                '3 ${ref.watchTr(AppStrings.absent)}',
+                '$absent ${ref.watchTr(AppStrings.absent)}',
                 style: TxtStyle.labelLarge(
                   color: Colors.red.shade600,
                   fontSize: 13.sp,
@@ -337,7 +380,7 @@ class TeacherEndClassScreen extends ConsumerWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(10.r),
             child: LinearProgressIndicator(
-              value: 15 / 18,
+              value: progress,
               minHeight: 5.h,
               backgroundColor: const Color(0xFFD8E2E9),
               valueColor: const AlwaysStoppedAnimation(

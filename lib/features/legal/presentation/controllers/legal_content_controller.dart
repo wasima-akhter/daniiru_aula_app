@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/errors/app_error_resolver.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../domain/entities/legal_content.dart';
 import '../../domain/repositories/legal_repository.dart';
@@ -113,7 +114,7 @@ class LegalContentController
             ...state,
             type: current.copyWith(
               status: LegalContentStatus.serverError,
-              errorMessage: e.message,
+              errorMessage: AppErrorResolver.resolve(e).displayMessage,
               statusCode: e.statusCode,
               traceId: e.traceId,
             ),

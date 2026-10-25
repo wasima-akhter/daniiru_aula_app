@@ -4,8 +4,21 @@ import 'package:intl/intl.dart';
 import '../../../share/export/screen_export.dart';
 import '../controllers/chat_controller.dart';
 
-class ChatListScreen extends ConsumerWidget {
+class ChatListScreen extends ConsumerStatefulWidget {
   const ChatListScreen({super.key});
+
+  @override
+  ConsumerState<ChatListScreen> createState() => _ChatListScreenState();
+}
+
+class _ChatListScreenState extends ConsumerState<ChatListScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(chatControllerProvider.notifier).loadConversations();
+    });
+  }
 
   String _formatDate(String? isoDate, WidgetRef ref) {
     if (isoDate == null || isoDate.isEmpty) return '';
@@ -28,7 +41,7 @@ class ChatListScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final chatState = ref.watch(chatControllerProvider);
     final chatController = ref.read(chatControllerProvider.notifier);
 

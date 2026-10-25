@@ -63,6 +63,6 @@ class TeacherClassesRepositoryImpl implements TeacherClassesRepository {
         );
       }).toList();
     }
-    return upcomingClasses;
+    return const [];
   }
 }

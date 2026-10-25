@@ -15,6 +15,9 @@ import '../dtos/class_session_dto.dart';
 import '../dtos/end_session_dtos.dart';
 import '../dtos/teacher_homework_dto.dart';
 
+import '../../students/data/datasources/teacher_students_remote_data_source.dart';
+import '../../students/presentation/providers/teacher_students_providers.dart';
+
 final teacherRemoteDataSourceProvider = Provider<TeacherRemoteDataSource>((ref) {
   final client = ref.watch(apiClientProvider);
   return TeacherRemoteDataSourceImpl(client);
@@ -23,6 +26,7 @@ final teacherRemoteDataSourceProvider = Provider<TeacherRemoteDataSource>((ref) 
 final teacherRepositoryProvider = Provider<TeacherRepository>((ref) {
   return TeacherRepositoryImpl(
     remoteDataSource: ref.watch(teacherRemoteDataSourceProvider),
+    studentsRemoteDataSource: ref.watch(teacherStudentsRemoteDataSourceProvider),
     profileRepository: ref.watch(profileRepositoryProvider),
     settingsRepository: ref.watch(settingsRepositoryProvider),
   );
@@ -30,60 +34,24 @@ final teacherRepositoryProvider = Provider<TeacherRepository>((ref) {
 
 class TeacherRepositoryImpl implements TeacherRepository {
   final TeacherRemoteDataSource? remoteDataSource;
+  final TeacherStudentsRemoteDataSource? studentsRemoteDataSource;
   final ProfileRepository? profileRepository;
   final SettingsRepository? settingsRepository;
 
   TeacherRepositoryImpl({
     this.remoteDataSource,
+    this.studentsRemoteDataSource,
     this.profileRepository,
     this.settingsRepository,
   });
 
-  final List<AttendanceStudent> _attendanceStudents = [
-    AttendanceStudent(
-      name: 'Lucas Rivera',
-      initials: 'LR',
-      desk: 'Mesa 14',
-      status: TeacherAttendanceStatus.present,
-    ),
-    AttendanceStudent(
-      name: 'Sofia Chen',
-      initials: 'SC',
-      desk: 'Mesa 02',
-      status: TeacherAttendanceStatus.present,
-    ),
-    AttendanceStudent(
-      name: 'Marcos Williams',
-      initials: 'MW',
-      desk: 'Mesa 10',
-      status: TeacherAttendanceStatus.absent,
-    ),
-    AttendanceStudent(
-      name: 'Elena Rostova',
-      initials: 'ER',
-      desk: 'Mesa 08',
-      status: TeacherAttendanceStatus.present,
-    ),
-    AttendanceStudent(
-      name: 'Noah Kim',
-      initials: 'NK',
-      desk: 'Mesa 05',
-      status: TeacherAttendanceStatus.absent,
-    ),
-    AttendanceStudent(
-      name: 'Maya Patel',
-      initials: 'MP',
-      desk: 'Mesa 22',
-      status: TeacherAttendanceStatus.absent,
-    ),
-  ];
-
-  final List<TeacherReport> _reports = List.from(reports);
+  final List<AttendanceStudent> _attendanceStudents = [];
+  final List<TeacherReport> _reports = [];
 
   TeacherProfileData _profile = const TeacherProfileData(
-    name: 'Dña. Sarah Vance',
-    email: 'sarah.vance@aula360.es',
-    phone: '+34 654 987 321',
+    name: 'Docente Aula 360',
+    email: 'teacher@aula360.es',
+    phone: '',
   );
 
   @override
@@ -110,14 +78,30 @@ class TeacherRepositoryImpl implements TeacherRepository {
         );
       }).toList();
     }
-    await Future.delayed(const Duration(milliseconds: 150));
-    return todayClasses;
+    return const [];
   }
 
   @override
   Future<List<AcademyClass>> getUpcomingClasses() async {
-    await Future.delayed(const Duration(milliseconds: 150));
-    return upcomingClasses;
+    if (remoteDataSource != null) {
+      final tomorrow = DateTime.now().add(const Duration(days: 1));
+      final sessions = await remoteDataSource!.getSessions(date: tomorrow);
+      return sessions.map((s) {
+        return AcademyClass(
+          id: s.id,
+          scheduleId: s.scheduleId,
+          time: '${s.startTime} - ${s.endTime}',
+          title: s.subjectName,
+          subtitle: s.cohortName,
+          room: s.classroomRoomNumber,
+          group: s.cohortName,
+          students: 24,
+          status: ClassStatus.scheduled,
+          rawStatus: s.status,
+        );
+      }).toList();
+    }
+    return const [];
   }
 
   @override
@@ -143,26 +127,46 @@ class TeacherRepositoryImpl implements TeacherRepository {
         );
       }).toList();
     }
-    await Future.delayed(const Duration(milliseconds: 150));
-    return homeSchedule;
+    return const [];
   }
 
   @override
   Future<List<TeacherStudent>> getStudents() async {
-    await Future.delayed(const Duration(milliseconds: 150));
-    return students;
+    if (studentsRemoteDataSource != null) {
+      try {
+        final roster = await studentsRemoteDataSource!.getStudents();
+        return roster.map((dto) => dto.toTeacherStudent()).toList();
+      } catch (_) {
+        return const [];
+      }
+    }
+    return const [];
   }
 
   @override
   Future<TeacherStudent> getStudentDetail(String id) async {
-    await Future.delayed(const Duration(milliseconds: 150));
-    return students.firstWhere((s) => s.id == id, orElse: () => students.first);
+    if (studentsRemoteDataSource != null) {
+      final dto = await studentsRemoteDataSource!.getStudentDetail(id);
+      return TeacherStudent(
+        id: dto.id,
+        name: dto.fullName,
+        group: StudentGroup.groupA,
+        room: dto.gradeLevel ?? 'Aula 1',
+        desk: dto.enrollmentNumber,
+        attendance: dto.attendancePercentage.toInt(),
+        status: dto.attendancePercentage >= 80 ? StudentStatus.present : StudentStatus.needsCheckIn,
+        initials: dto.initials,
+        avatarUrl: dto.avatarUrl,
+        gradeLevel: dto.gradeLevel,
+        enrollmentNumber: dto.enrollmentNumber,
+      );
+    }
+    throw UnsupportedError('Remote student data source not available');
   }
 
   @override
   Future<List<AttendanceStudent>> getAttendanceStudents() async {
-    await Future.delayed(const Duration(milliseconds: 150));
-    return _attendanceStudents;
+    return List.from(_attendanceStudents);
   }
 
   @override
@@ -177,13 +181,37 @@ class TeacherRepositoryImpl implements TeacherRepository {
 
   @override
   Future<List<TeacherReport>> getReports() async {
-    await Future.delayed(const Duration(milliseconds: 150));
-    return _reports;
+    final list = <TeacherReport>[..._reports];
+    final remote = remoteDataSource;
+    if (remote != null) {
+      try {
+        final sessions = await remote.getSessions();
+        for (final s in sessions) {
+          if (s.status == 'COMPLETED') {
+            final dateStr = s.sessionDate.length >= 10
+                ? s.sessionDate.substring(0, 10)
+                : s.sessionDate;
+            list.add(
+              TeacherReport(
+                category: ReportCategory.classReport,
+                group: StudentGroup.groupA,
+                room: s.classroomRoomNumber,
+                title: s.subjectName,
+                subtitle: s.cohortName,
+                date: dateStr,
+                time: '${s.startTime} - ${s.endTime}',
+                status: ReportStatus.submitted,
+              ),
+            );
+          }
+        }
+      } catch (_) {}
+    }
+    return list;
   }
 
   @override
   Future<void> submitReport(TeacherReport report) async {
-    await Future.delayed(const Duration(milliseconds: 300));
     _reports.insert(0, report);
   }
 

@@ -8,6 +8,7 @@ import '../dtos/teacher_homework_dto.dart';
 
 abstract class TeacherRemoteDataSource {
   Future<List<ClassSessionDto>> getSessions({DateTime? date});
+  Future<ClassSessionDto> getSessionDetail(String sessionId);
   Future<ClassSessionDto> startSession(String sessionId);
   Future<int> takeAttendance(String sessionId, TakeAttendancePayloadDto payload);
   Future<ClassSessionDto> endSession(String sessionId, EndSessionPayloadDto payload);
@@ -67,6 +68,34 @@ class TeacherRemoteDataSourceImpl implements TeacherRemoteDataSource {
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException(message: 'Failed to fetch teacher sessions: $e', statusCode: 500);
+    }
+  }
+
+  @override
+  Future<ClassSessionDto> getSessionDetail(String sessionId) async {
+    try {
+      final response = await _client.get(
+        ApiConstants.teacherSessionDetail(sessionId),
+      );
+
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        final nested = data['data'];
+        if (nested is Map<String, dynamic>) {
+          return ClassSessionDto.fromJson(nested);
+        }
+      }
+
+      throw ApiException(
+        message: 'Invalid response fetching session details',
+        statusCode: response.statusCode ?? 500,
+      );
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException(
+        message: 'Failed to fetch session detail: $e',
+        statusCode: 500,
+      );
     }
   }
 

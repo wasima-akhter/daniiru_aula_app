@@ -57,6 +57,7 @@ class ChildReportDto {
         : contentCovered;
 
     return ReportModel(
+      id: id,
       dateLabel: dateLabel,
       date: dt,
       subject: subjectName,

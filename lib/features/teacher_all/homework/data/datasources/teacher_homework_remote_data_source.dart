@@ -1,11 +1,17 @@
 import 'package:aula360/core/constants/api_constants.dart';
 import 'package:aula360/core/network/api_client.dart';
 import 'package:aula360/core/network/api_exception.dart';
+import 'package:aula360/features/share/model/pagination_meta_model.dart';
+import 'package:aula360/features/share/widgets/paginator/paginator.dart';
 import 'package:aula360/features/teacher_all/homework/data/dtos/teacher_homework_dto.dart';
 
 abstract class TeacherHomeworkRemoteDataSource {
   Future<TeacherHomeworkDto> createHomework(CreateHomeworkRequestDto payload);
-  Future<List<TeacherHomeworkDto>> getHomework({String? cohortId});
+  Future<PaginatedResult<TeacherHomeworkDto>> getHomework({
+    String? cohortId,
+    int page = 1,
+    int limit = 20,
+  });
   Future<HomeworkSubmissionDto> markHomeworkSubmission(
     String homeworkId,
     String studentId,
@@ -51,35 +57,51 @@ class TeacherHomeworkRemoteDataSourceImpl
   }
 
   @override
-  Future<List<TeacherHomeworkDto>> getHomework({String? cohortId}) async {
+  Future<PaginatedResult<TeacherHomeworkDto>> getHomework({
+    String? cohortId,
+    int page = 1,
+    int limit = 20,
+  }) async {
     try {
-      final queryParams = <String, dynamic>{};
+      final queryParams = <String, dynamic>{
+        'page': page,
+        'limit': limit,
+      };
       if (cohortId != null && cohortId.isNotEmpty) {
         queryParams['cohortId'] = cohortId;
       }
 
       final response = await _client.get(
         ApiConstants.teacherHomework,
-        queryParameters: queryParams.isEmpty ? null : queryParams,
+        queryParameters: queryParams,
       );
 
       final data = response.data;
+      PaginationMeta? meta;
+      List<TeacherHomeworkDto> list = [];
+
       if (data is Map<String, dynamic>) {
-        final list = data['data'];
-        if (list is List) {
-          return list
+        if (data['meta'] is Map<String, dynamic>) {
+          meta = PaginationMeta.fromJson(data['meta'] as Map<String, dynamic>);
+        }
+        final rawList = data['data'];
+        if (rawList is List) {
+          list = rawList
               .whereType<Map<String, dynamic>>()
               .map(TeacherHomeworkDto.fromJson)
               .toList();
         }
       } else if (data is List) {
-        return data
+        list = data
             .whereType<Map<String, dynamic>>()
             .map(TeacherHomeworkDto.fromJson)
             .toList();
       }
 
-      return const [];
+      return PaginatedResult<TeacherHomeworkDto>(
+        data: list,
+        meta: meta,
+      );
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException(

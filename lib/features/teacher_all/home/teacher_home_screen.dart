@@ -97,7 +97,7 @@ class TeacherHomeScreen extends ConsumerWidget {
                 children: [
                   IconButton(
                     onPressed: () {
-                      context.push(RoutePath.navigationPages, extra: 3);
+                      context.push(RoutePath.notification);
                     },
                     splashRadius: 22,
                     icon: Icon(
@@ -150,7 +150,7 @@ class TeacherHomeScreen extends ConsumerWidget {
                       ),
                       SizedBox(height: 12.h),
                       Text(
-                        'Error al cargar horario',
+                        ref.watchTr(AppStrings.loadScheduleError),
                         style: TxtStyle.titleLarge(
                           fontSize: 18.sp,
                           fontWeight: FontWeight.w700,
@@ -158,7 +158,12 @@ class TeacherHomeScreen extends ConsumerWidget {
                       ),
                       SizedBox(height: 8.h),
                       Text(
-                        state.error!,
+                        AppErrorResolver.resolve(
+                          state.error!,
+                          languageCode:
+                              ref.watch(languageProvider).valueOrNull?.languageCode ??
+                              LanguageNotifier.activeLanguageCode,
+                        ).displayMessage,
                         textAlign: TextAlign.center,
                         style: TxtStyle.bodyMedium(
                           color: AppColors.subtitleTextColor,
@@ -214,7 +219,7 @@ class TeacherHomeScreen extends ConsumerWidget {
                             ),
                             SizedBox(height: 14.h),
                             Text(
-                              'No hay clases para hoy',
+                              ref.watchTr(AppStrings.noClassesToday),
                               textAlign: TextAlign.center,
                               style: TxtStyle.titleLarge(
                                 fontSize: 17.sp,
@@ -223,7 +228,7 @@ class TeacherHomeScreen extends ConsumerWidget {
                             ),
                             SizedBox(height: 6.h),
                             Text(
-                              'No tienes sesiones programadas en este momento.',
+                              ref.watchTr(AppStrings.noClassesTodayDesc),
                               textAlign: TextAlign.center,
                               style: TxtStyle.bodyMedium(
                                 color: AppColors.subtitleTextColor,

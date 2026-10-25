@@ -6,10 +6,7 @@ import '../../storage/storage_service.dart';
 import '../../utils/jwt_helper.dart';
 
 class AuthInterceptor extends Interceptor {
-  AuthInterceptor({
-    required this.storageService,
-    this.sessionManager,
-  });
+  AuthInterceptor({required this.storageService, this.sessionManager});
 
   final StorageService storageService;
   final SessionManager? sessionManager;
@@ -99,8 +96,9 @@ class AuthInterceptor extends Interceptor {
     final statusCode = err.response?.statusCode;
     final path = err.requestOptions.path;
 
-    // Check if error represents an expired or invalidated session
-    final isAuthError = (statusCode == 401 || statusCode == 403) ||
+    // Check if error represents an expired or invalidated session (401 Unauthorized)
+    final isAuthError =
+        (statusCode == 401) ||
         (err.response?.data is Map &&
             (err.response!.data['errorType'] == 'TOKEN_EXPIRED' ||
                 err.response!.data['errorType'] == 'UNAUTHORIZED' ||

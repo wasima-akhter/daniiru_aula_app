@@ -2,8 +2,33 @@ import '../../../share/export/screen_export.dart';
 import '../../helper/parent_home_helper.dart';
 import '../../presentation/controllers/parent_homework_controller.dart';
 
-class HomeworkScreen extends ConsumerWidget {
+class HomeworkScreen extends ConsumerStatefulWidget {
   const HomeworkScreen({super.key});
+
+  @override
+  ConsumerState<HomeworkScreen> createState() => _HomeworkScreenState();
+}
+
+class _HomeworkScreenState extends ConsumerState<HomeworkScreen> {
+  final ScrollController _scrollController = ScrollController();
+  late final AulaPagedScrollListener _pagedListener;
+
+  @override
+  void initState() {
+    super.initState();
+    _pagedListener = AulaPagedScrollListener(
+      controller: _scrollController,
+      onLoadMore: () =>
+          ref.read(parentHomeworkControllerProvider.notifier).loadMore(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pagedListener.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   List<String> _getTabs(WidgetRef ref, int total, int pending, int completed) {
     return [
@@ -14,7 +39,7 @@ class HomeworkScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final state = ref.watch(parentHomeworkControllerProvider);
     final controller = ref.read(parentHomeworkControllerProvider.notifier);
 
@@ -44,6 +69,7 @@ class HomeworkScreen extends ConsumerWidget {
           color: AppColors.primary,
           onRefresh: () => controller.loadHomework(),
           child: CustomScrollView(
+            controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),
             ),
@@ -75,10 +101,19 @@ class HomeworkScreen extends ConsumerWidget {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.error_outline, color: AppColors.error, size: 40.sp),
+                          Icon(
+                            Icons.error_outline,
+                            color: AppColors.error,
+                            size: 40.sp,
+                          ),
                           SizedBox(height: 12.h),
                           Text(
-                            state.error!,
+                            AppErrorResolver.resolve(
+                              state.error!,
+                              languageCode:
+                                  ref.watch(languageProvider).valueOrNull?.languageCode ??
+                                  LanguageNotifier.activeLanguageCode,
+                            ).displayMessage,
                             textAlign: TextAlign.center,
                             style: TxtStyle.titleLarge(
                               color: AppColors.secondaryText,
@@ -88,7 +123,10 @@ class HomeworkScreen extends ConsumerWidget {
                           SizedBox(height: 16.h),
                           TextButton.icon(
                             onPressed: () => controller.loadHomework(),
-                            icon: const Icon(Icons.refresh, color: AppColors.primary),
+                            icon: const Icon(
+                              Icons.refresh,
+                              color: AppColors.primary,
+                            ),
                             label: Text(
                               ref.watchTr(AppStrings.retry),
                               style: TxtStyle.titleLarge(
@@ -148,9 +186,9 @@ class HomeworkScreen extends ConsumerWidget {
                     ),
                   ),
                 )
-              else
+              else ...[
                 SliverPadding(
-                  padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 30.h),
+                  padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
                       for (final item in filtered) ...[
@@ -160,6 +198,13 @@ class HomeworkScreen extends ConsumerWidget {
                     ]),
                   ),
                 ),
+                AulaPagedSliverFooter(
+                  isLoadingMore: state.isLoadingMore,
+                  loadMoreError: state.loadMoreError,
+                  onRetry: controller.loadMore,
+                ),
+                SliverToBoxAdapter(child: SizedBox(height: 16.h)),
+              ],
             ],
           ),
         ),
@@ -182,7 +227,11 @@ class HomeworkScreen extends ConsumerWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.person_outline, color: AppColors.subtitleTextColor, size: 24.sp),
+            Icon(
+              Icons.person_outline,
+              color: AppColors.subtitleTextColor,
+              size: 24.sp,
+            ),
             SizedBox(width: 8.w),
             Expanded(
               child: Consumer(

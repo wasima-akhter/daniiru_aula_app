@@ -484,6 +484,10 @@ class _TeacherInformationScreenState
   }
 
   Widget _errorView(WidgetRef ref, String error, VoidCallback onRetry) {
+    final langCode = ref.watch(languageProvider).valueOrNull?.languageCode ??
+        LanguageNotifier.activeLanguageCode;
+    final resolved = AppErrorResolver.resolve(error, languageCode: langCode);
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(vertical: 24.h, horizontal: 20.w),
@@ -501,7 +505,7 @@ class _TeacherInformationScreenState
           ),
           SizedBox(height: 10.h),
           Text(
-            error,
+            resolved.displayMessage,
             textAlign: TextAlign.center,
             style: TxtStyle.bodyMedium(
               color: AppColors.text,

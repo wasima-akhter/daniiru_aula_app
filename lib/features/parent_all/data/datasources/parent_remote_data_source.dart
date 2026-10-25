@@ -1,6 +1,8 @@
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_exception.dart';
+import '../../../share/model/pagination_meta_model.dart';
+import '../../../share/widgets/paginator/paginator.dart';
 import '../dtos/add_child_dto.dart';
 import '../dtos/announcement_dto.dart';
 import '../dtos/child_attendance_dto.dart';
@@ -18,17 +20,17 @@ abstract class ParentRemoteDataSource {
   Future<ChildDto> addChild(AddChildDto dto);
   Future<(ChildAttendanceMetaDto?, List<ChildAttendanceDto>)>
   getChildAttendance(String childId, {int page = 1, int limit = 20});
-  Future<List<ChildReportDto>> getChildReports(
+  Future<PaginatedResult<ChildReportDto>> getChildReports(
     String childId, {
     int page = 1,
     int limit = 20,
   });
-  Future<List<ChildHomeworkDto>> getChildHomework(
+  Future<PaginatedResult<ChildHomeworkDto>> getChildHomework(
     String childId, {
     int page = 1,
     int limit = 20,
   });
-  Future<List<ParentInvoiceDto>> getInvoices({
+  Future<PaginatedResult<ParentInvoiceDto>> getInvoices({
     String? status,
     int page = 1,
     int limit = 20,
@@ -41,7 +43,7 @@ abstract class ParentRemoteDataSource {
   });
   Future<List<ChildTeacherDto>> getChildTeachers(String childId);
   Future<ChildProgressDto> getChildProgress(String childId);
-  Future<List<AnnouncementDto>> getAnnouncements({
+  Future<PaginatedResult<AnnouncementDto>> getAnnouncements({
     int page = 1,
     int limit = 10,
   });
@@ -131,7 +133,7 @@ class ParentRemoteDataSourceImpl implements ParentRemoteDataSource {
   }
 
   @override
-  Future<List<ChildReportDto>> getChildReports(
+  Future<PaginatedResult<ChildReportDto>> getChildReports(
     String childId, {
     int page = 1,
     int limit = 20,
@@ -143,17 +145,23 @@ class ParentRemoteDataSourceImpl implements ParentRemoteDataSource {
       );
 
       final data = response.data;
+      PaginationMeta? meta;
+      List<ChildReportDto> list = [];
+
       if (data is Map<String, dynamic>) {
+        if (data['meta'] is Map<String, dynamic>) {
+          meta = PaginationMeta.fromJson(data['meta'] as Map<String, dynamic>);
+        }
         final rawList = data['data'];
         if (rawList is List) {
-          return rawList
+          list = rawList
               .whereType<Map<String, dynamic>>()
               .map(ChildReportDto.fromJson)
               .toList();
         }
       }
 
-      return const [];
+      return PaginatedResult<ChildReportDto>(data: list, meta: meta);
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException(
@@ -164,7 +172,7 @@ class ParentRemoteDataSourceImpl implements ParentRemoteDataSource {
   }
 
   @override
-  Future<List<ChildHomeworkDto>> getChildHomework(
+  Future<PaginatedResult<ChildHomeworkDto>> getChildHomework(
     String childId, {
     int page = 1,
     int limit = 20,
@@ -176,17 +184,23 @@ class ParentRemoteDataSourceImpl implements ParentRemoteDataSource {
       );
 
       final data = response.data;
+      PaginationMeta? meta;
+      List<ChildHomeworkDto> list = [];
+
       if (data is Map<String, dynamic>) {
+        if (data['meta'] is Map<String, dynamic>) {
+          meta = PaginationMeta.fromJson(data['meta'] as Map<String, dynamic>);
+        }
         final rawList = data['data'];
         if (rawList is List) {
-          return rawList
+          list = rawList
               .whereType<Map<String, dynamic>>()
               .map(ChildHomeworkDto.fromJson)
               .toList();
         }
       }
 
-      return const [];
+      return PaginatedResult<ChildHomeworkDto>(data: list, meta: meta);
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException(
@@ -197,7 +211,7 @@ class ParentRemoteDataSourceImpl implements ParentRemoteDataSource {
   }
 
   @override
-  Future<List<ParentInvoiceDto>> getInvoices({
+  Future<PaginatedResult<ParentInvoiceDto>> getInvoices({
     String? status,
     int page = 1,
     int limit = 20,
@@ -214,17 +228,23 @@ class ParentRemoteDataSourceImpl implements ParentRemoteDataSource {
       );
 
       final data = response.data;
+      PaginationMeta? meta;
+      List<ParentInvoiceDto> list = [];
+
       if (data is Map<String, dynamic>) {
+        if (data['meta'] is Map<String, dynamic>) {
+          meta = PaginationMeta.fromJson(data['meta'] as Map<String, dynamic>);
+        }
         final rawList = data['data'];
         if (rawList is List) {
-          return rawList
+          list = rawList
               .whereType<Map<String, dynamic>>()
               .map(ParentInvoiceDto.fromJson)
               .toList();
         }
       }
 
-      return const [];
+      return PaginatedResult<ParentInvoiceDto>(data: list, meta: meta);
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException(
@@ -447,7 +467,7 @@ class ParentRemoteDataSourceImpl implements ParentRemoteDataSource {
   }
 
   @override
-  Future<List<AnnouncementDto>> getAnnouncements({
+  Future<PaginatedResult<AnnouncementDto>> getAnnouncements({
     int page = 1,
     int limit = 10,
   }) async {
@@ -457,21 +477,27 @@ class ParentRemoteDataSourceImpl implements ParentRemoteDataSource {
         queryParameters: {'page': page, 'limit': limit},
       );
       final data = response.data;
+      PaginationMeta? meta;
+      List<AnnouncementDto> list = [];
+
       if (data is Map<String, dynamic>) {
-        final list = data['data'];
-        if (list is List) {
-          return list
+        if (data['meta'] is Map<String, dynamic>) {
+          meta = PaginationMeta.fromJson(data['meta'] as Map<String, dynamic>);
+        }
+        final rawList = data['data'];
+        if (rawList is List) {
+          list = rawList
               .whereType<Map<String, dynamic>>()
               .map(AnnouncementDto.fromJson)
               .toList();
         }
       } else if (data is List) {
-        return data
+        list = data
             .whereType<Map<String, dynamic>>()
             .map(AnnouncementDto.fromJson)
             .toList();
       }
-      return const [];
+      return PaginatedResult<AnnouncementDto>(data: list, meta: meta);
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException(

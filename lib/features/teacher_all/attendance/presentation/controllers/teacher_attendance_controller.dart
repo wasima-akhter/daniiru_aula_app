@@ -63,10 +63,11 @@ class TeacherAttendanceController extends Notifier<TeacherAttendanceState> {
     return const TeacherAttendanceState(isLoading: true);
   }
 
-  Future<void> loadStudents() async {
+  Future<void> loadStudents([String? sessionId]) async {
+    state = state.copyWith(isLoading: true, error: null);
     try {
-      final list = await _repository.getAttendanceStudents();
-      state = state.copyWith(students: list, isLoading: false);
+      final list = await _repository.getAttendanceStudents(sessionId);
+      state = state.copyWith(students: list, isLoading: false, error: null);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -103,23 +104,35 @@ class TeacherAttendanceController extends Notifier<TeacherAttendanceState> {
   }
 
   Future<bool> submitAttendance({String? sessionId}) async {
+    if (sessionId == null || sessionId.trim().isEmpty) {
+      state = state.copyWith(
+        isSubmitting: false,
+        error: 'Session ID is required to submit attendance',
+      );
+      return false;
+    }
+
+    if (state.students.isEmpty) {
+      state = state.copyWith(
+        isSubmitting: false,
+        error: 'No students enrolled to record attendance',
+      );
+      return false;
+    }
+
     state = state.copyWith(isSubmitting: true, error: null);
     try {
-      final items = state.students.asMap().entries.map((entry) {
-        final index = entry.key;
-        final student = entry.value;
+      final items = state.students.map((student) {
         return TakeAttendanceItemDto(
-          studentId:
-              student.id.isNotEmpty ? student.id : 'student-$index',
+          studentId: student.id,
           status: student.status == TeacherAttendanceStatus.present
               ? 'PRESENT'
               : 'ABSENT',
         );
       }).toList();
 
-      final sid = sessionId ?? 'active-session';
       await _repository.takeAttendance(
-        sid,
+        sessionId.trim(),
         TakeAttendancePayloadDto(attendance: items),
       );
       state = state.copyWith(isSubmitting: false);

@@ -21,5 +21,6 @@ final teacherHomeworkRepositoryProvider =
 final teacherHomeworkListProvider =
     FutureProvider.family<List<TeacherHomeworkDto>, String?>((ref, cohortId) async {
   final repository = ref.watch(teacherHomeworkRepositoryProvider);
-  return repository.getHomework(cohortId: cohortId);
+  final res = await repository.getHomework(cohortId: cohortId);
+  return res.data;
 });

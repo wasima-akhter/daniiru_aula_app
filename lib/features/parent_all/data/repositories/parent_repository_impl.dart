@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/network_providers.dart';
+import '../../../share/widgets/paginator/paginator.dart';
 import '../../domain/models/parent_models.dart';
 import '../../domain/repositories/parent_repository.dart';
 import '../datasources/notification_remote_data_source.dart';
 import '../datasources/parent_remote_data_source.dart';
 import '../dtos/add_child_dto.dart';
 import '../dtos/announcement_dto.dart';
+import '../dtos/child_attendance_dto.dart';
 import '../dtos/child_progress_dto.dart';
 import '../dtos/child_schedule_dto.dart';
 import '../dtos/child_teacher_dto.dart';
@@ -185,62 +187,97 @@ class ParentRepositoryImpl implements ParentRepository {
   }
 
   @override
-  Future<List<ReportModel>> getReports() async {
+  Future<PaginatedResult<ReportModel>> getReports({
+    int page = 1,
+    int limit = 20,
+  }) async {
     if (_children.isNotEmpty) {
-      return getChildReports(_children.first.id);
+      return getChildReports(_children.first.id, page: page, limit: limit);
     }
-    return const [];
+    return const PaginatedResult<ReportModel>(data: [], meta: null);
   }
 
   @override
-  Future<List<ReportModel>> getChildReports(String childId) async {
+  Future<PaginatedResult<ReportModel>> getChildReports(
+    String childId, {
+    int page = 1,
+    int limit = 20,
+  }) async {
     if (parentRemoteDataSource != null) {
       try {
-        final dtos = await parentRemoteDataSource!.getChildReports(childId);
-        return dtos.map((d) => d.toModel()).toList();
+        final res = await parentRemoteDataSource!.getChildReports(
+          childId,
+          page: page,
+          limit: limit,
+        );
+        return PaginatedResult<ReportModel>(
+          data: res.data.map((d) => d.toModel()).toList(),
+          meta: res.meta,
+        );
       } catch (e) {
         debugPrint('ParentRepositoryImpl getChildReports error: $e');
       }
     }
-    return const [];
+    return const PaginatedResult<ReportModel>(data: [], meta: null);
   }
 
   @override
-  Future<List<HomeworkModel>> getHomeworkList() async {
+  Future<PaginatedResult<HomeworkModel>> getHomeworkList({
+    int page = 1,
+    int limit = 20,
+  }) async {
     if (_children.isNotEmpty) {
-      return getChildHomework(_children.first.id);
+      return getChildHomework(_children.first.id, page: page, limit: limit);
     }
-    return const [];
+    return const PaginatedResult<HomeworkModel>(data: [], meta: null);
   }
 
   @override
-  Future<List<HomeworkModel>> getChildHomework(String childId) async {
+  Future<PaginatedResult<HomeworkModel>> getChildHomework(
+    String childId, {
+    int page = 1,
+    int limit = 20,
+  }) async {
     if (parentRemoteDataSource != null) {
       try {
-        final dtos = await parentRemoteDataSource!.getChildHomework(childId);
-        return dtos.map((d) => d.toModel()).toList();
+        final res = await parentRemoteDataSource!.getChildHomework(
+          childId,
+          page: page,
+          limit: limit,
+        );
+        return PaginatedResult<HomeworkModel>(
+          data: res.data.map((d) => d.toModel()).toList(),
+          meta: res.meta,
+        );
       } catch (e) {
         debugPrint('ParentRepositoryImpl getChildHomework error: $e');
       }
     }
-    return const [];
+    return const PaginatedResult<HomeworkModel>(data: [], meta: null);
   }
 
   @override
-  Future<List<AttendanceRecord>> getAttendanceHistory(String childId) async {
+  Future<(ChildAttendanceMetaDto?, List<AttendanceRecord>)> getAttendanceHistory(
+    String childId, {
+    int page = 1,
+    int limit = 20,
+  }) async {
     if (parentRemoteDataSource != null) {
       try {
-        final (meta, dtos) =
-            await parentRemoteDataSource!.getChildAttendance(childId);
+        final (meta, dtos) = await parentRemoteDataSource!.getChildAttendance(
+          childId,
+          page: page,
+          limit: limit,
+        );
         if (meta != null) {
           _attendancePercentages[childId] = meta.percentage;
         }
-        return dtos.map((d) => d.toRecord()).toList();
+        return (meta, dtos.map((d) => d.toRecord()).toList());
       } catch (e) {
         debugPrint('ParentRepositoryImpl getAttendanceHistory error: $e');
       }
     }
-    return const [];
+    return (null, const <AttendanceRecord>[]);
   }
 
   @override
@@ -252,25 +289,47 @@ class ParentRepositoryImpl implements ParentRepository {
   }
 
   @override
-  Future<List<InvoiceModel>> getInvoices({String? status}) async {
+  Future<PaginatedResult<InvoiceModel>> getInvoices({
+    String? status,
+    int page = 1,
+    int limit = 20,
+  }) async {
     if (parentRemoteDataSource != null) {
       try {
-        final dtos = await parentRemoteDataSource!.getInvoices(status: status);
-        _invoices = dtos.map((d) => d.toModel()).toList();
-        return _invoices;
+        final res = await parentRemoteDataSource!.getInvoices(
+          status: status,
+          page: page,
+          limit: limit,
+        );
+        final models = res.data.map((d) => d.toModel()).toList();
+        if (page == 1) {
+          _invoices = models;
+        }
+        return PaginatedResult<InvoiceModel>(
+          data: models,
+          meta: res.meta,
+        );
       } catch (e) {
         debugPrint('ParentRepositoryImpl getInvoices error: $e');
       }
     }
-    return _invoices;
+    return PaginatedResult<InvoiceModel>(data: _invoices, meta: null);
   }
 
   @override
-  Future<List<ParentInvoiceDto>> getRawInvoices({String? status}) async {
+  Future<PaginatedResult<ParentInvoiceDto>> getRawInvoices({
+    String? status,
+    int page = 1,
+    int limit = 20,
+  }) async {
     if (parentRemoteDataSource != null) {
-      return parentRemoteDataSource!.getInvoices(status: status);
+      return parentRemoteDataSource!.getInvoices(
+        status: status,
+        page: page,
+        limit: limit,
+      );
     }
-    return const [];
+    return const PaginatedResult<ParentInvoiceDto>(data: [], meta: null);
   }
 
   @override
@@ -298,17 +357,32 @@ class ParentRepositoryImpl implements ParentRepository {
   }
 
   @override
-  Future<List<ParentNotificationModel>> getNotifications() async {
+  Future<PaginatedResult<ParentNotificationModel>> getNotifications({
+    int page = 1,
+    int limit = 20,
+  }) async {
     if (notificationRemoteDataSource != null) {
       try {
-        final dtos = await notificationRemoteDataSource!.getAllNotifications();
-        if (dtos.isNotEmpty) {
-          _notifications = dtos.map((d) => d.toModel()).toList();
-          return _notifications;
+        final res = await notificationRemoteDataSource!.getAllNotifications(
+          page: page,
+          limit: limit,
+        );
+        final models = res.data.map((d) => d.toModel()).toList();
+        if (page == 1) {
+          _notifications = models;
         }
-      } catch (_) {}
+        return PaginatedResult<ParentNotificationModel>(
+          data: models,
+          meta: res.meta,
+        );
+      } catch (e) {
+        debugPrint('ParentRepositoryImpl getNotifications error: $e');
+      }
     }
-    return _notifications;
+    return PaginatedResult<ParentNotificationModel>(
+      data: _notifications,
+      meta: null,
+    );
   }
 
   @override
@@ -401,7 +475,7 @@ class ParentRepositoryImpl implements ParentRepository {
   }
 
   @override
-  Future<List<AnnouncementDto>> getAnnouncements({
+  Future<PaginatedResult<AnnouncementDto>> getAnnouncements({
     int page = 1,
     int limit = 10,
   }) async {
@@ -413,7 +487,7 @@ class ParentRepositoryImpl implements ParentRepository {
         );
       } catch (_) {}
     }
-    return const [];
+    return const PaginatedResult<AnnouncementDto>(data: [], meta: null);
   }
 
   @override

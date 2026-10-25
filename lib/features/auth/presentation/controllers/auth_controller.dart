@@ -7,11 +7,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/errors/app_error_resolver.dart';
 import '../../../../core/network/api_exception.dart';
+import '../../../../core/network/socket_service.dart';
 import '../../../../core/service/language/language_provider.dart';
 import '../../../../core/services/notification/push_notification_service.dart';
 import '../../../../core/session/session_manager.dart';
 import '../../../../core/storage/storage_provider.dart';
 import '../../../../utils/enum/app_enum.dart';
+import '../../../chat/presentation/controllers/chat_controller.dart';
 import '../../../nav/user_role/user_role_provider.dart';
 import '../../data/dtos/profile_setup_dtos.dart';
 import '../../domain/entities/auth_user.dart';
@@ -73,6 +75,8 @@ class AuthController extends Notifier<AuthState> {
 
   void _onSessionExpired() {
     ref.read(userRoleProvider.notifier).clearRole();
+    ref.read(socketServiceProvider).disconnect();
+    ref.invalidate(chatControllerProvider);
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 
@@ -237,6 +241,8 @@ class AuthController extends Notifier<AuthState> {
       }
 
       // Case 4: Fully authenticated
+      ref.invalidate(chatControllerProvider);
+      ref.read(socketServiceProvider).connect(customToken: session.accessToken);
       state = state.copyWith(
         status: AuthStatus.authenticated,
         user: session.user,
@@ -600,6 +606,8 @@ class AuthController extends Notifier<AuthState> {
       await ref.read(logoutUseCaseProvider).call();
     } finally {
       ref.read(userRoleProvider.notifier).clearRole();
+      ref.read(socketServiceProvider).disconnect();
+      ref.invalidate(chatControllerProvider);
       state = const AuthState(status: AuthStatus.unauthenticated);
     }
   }

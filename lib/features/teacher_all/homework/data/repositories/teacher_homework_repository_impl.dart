@@ -1,3 +1,4 @@
+import 'package:aula360/features/share/widgets/paginator/paginator.dart';
 import 'package:aula360/features/teacher_all/homework/data/datasources/teacher_homework_remote_data_source.dart';
 import 'package:aula360/features/teacher_all/homework/data/dtos/teacher_homework_dto.dart';
 import 'package:aula360/features/teacher_all/homework/domain/repositories/teacher_homework_repository.dart';
@@ -13,8 +14,16 @@ class TeacherHomeworkRepositoryImpl implements TeacherHomeworkRepository {
   }
 
   @override
-  Future<List<TeacherHomeworkDto>> getHomework({String? cohortId}) {
-    return _remoteDataSource.getHomework(cohortId: cohortId);
+  Future<PaginatedResult<TeacherHomeworkDto>> getHomework({
+    String? cohortId,
+    int page = 1,
+    int limit = 20,
+  }) {
+    return _remoteDataSource.getHomework(
+      cohortId: cohortId,
+      page: page,
+      limit: limit,
+    );
   }
 
   @override

@@ -38,6 +38,7 @@ class ChildHomeworkDto {
     final isCompleted = status.toUpperCase() == 'COMPLETED';
 
     return HomeworkModel(
+      id: id,
       subject: subjectName,
       teacher: 'Profesor titular',
       period: 'Trimestre 1',

@@ -1,3 +1,4 @@
+import '../../chat/presentation/controllers/chat_controller.dart';
 import '../../share/export/screen_export.dart';
 import '../data/dtos/child_progress_dto.dart';
 import '../domain/models/parent_models.dart';
@@ -110,7 +111,7 @@ class _ChildProfileScreenState extends ConsumerState<ChildProfileScreen> {
                   progressState,
                 ),
                 SizedBox(height: 13.h),
-                _messageCard(context),
+                _messageCard(context, ref),
               ],
             ),
           ),
@@ -695,10 +696,21 @@ class _ChildProfileScreenState extends ConsumerState<ChildProfileScreen> {
     );
   }
 
-  Widget _messageCard(BuildContext context) {
+  Widget _messageCard(BuildContext context, WidgetRef ref) {
     return InkWell(
-      onTap: () {
-        context.push(RoutePath.chatList);
+      onTap: () async {
+        final conv = await ref
+            .read(chatControllerProvider.notifier)
+            .startAdminConversation();
+        if (context.mounted) {
+          final activeConv =
+              conv ?? ref.read(chatControllerProvider).selectedConversation;
+          if (activeConv != null) {
+            context.push(RoutePath.chatInbox, extra: activeConv);
+          } else {
+            context.push(RoutePath.chatList);
+          }
+        }
       },
       borderRadius: BorderRadius.circular(8.r),
       child: Container(
@@ -729,7 +741,7 @@ class _ChildProfileScreenState extends ConsumerState<ChildProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Mensaje a la Academia',
+                    ref.watchTr(AppStrings.chatWithAdmin),
                     style: TxtStyle.titleLarge(
                       color: AppColors.text,
                       fontSize: 15.5.sp,
@@ -738,7 +750,7 @@ class _ChildProfileScreenState extends ConsumerState<ChildProfileScreen> {
                   ),
                   SizedBox(height: 2.h),
                   Text(
-                    'Contactar con secretaría o tutor',
+                    ref.watchTr(AppStrings.communicationSubtitle),
                     style: TxtStyle.bodyMedium(
                       color: AppColors.subtitleTextColor,
                       fontSize: 13.5.sp,
@@ -754,7 +766,7 @@ class _ChildProfileScreenState extends ConsumerState<ChildProfileScreen> {
                 borderRadius: BorderRadius.circular(6.r),
               ),
               child: Text(
-                'Contactar',
+                ref.watchTr(AppStrings.chatWithAdmin),
                 style: TxtStyle.titleLarge(
                   color: AppColors.primaryDark,
                   fontSize: 14.sp,

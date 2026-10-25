@@ -5,7 +5,7 @@ import 'package:aula360/features/teacher_all/helper/teacher_enums.dart';
 import 'package:aula360/features/teacher_all/helper/teacher_models.dart';
 
 abstract class TeacherAttendanceRepository {
-  Future<List<AttendanceStudent>> getAttendanceStudents();
+  Future<List<AttendanceStudent>> getAttendanceStudents([String? sessionId]);
   void updateStudentAttendance(int index, TeacherAttendanceStatus status);
   Future<int> takeAttendance(
     String sessionId,

@@ -74,14 +74,14 @@ class ChatRepositoryImpl implements ChatRepository {
 
   @override
   Future<ConversationDto> createConversation({String? targetUserId}) async {
-    final effectiveTarget = (targetUserId != null && targetUserId.isNotEmpty)
-        ? targetUserId
-        : ApiConstants.defaultAdminUserId;
-
     try {
-      final payload = <String, dynamic>{
-        'targetUserId': effectiveTarget,
-      };
+      // Backend guideline:
+      // When initiating as Parent or Teacher to chat with Administration, send empty body: {}
+      // The backend automatically looks up or creates the central PARENT_ADMIN or TEACHER_ADMIN conversation.
+      final payload = (targetUserId != null && targetUserId.isNotEmpty)
+          ? <String, dynamic>{'targetUserId': targetUserId}
+          : <String, dynamic>{};
+
       final response = await _client.post(
         ApiConstants.conversations,
         data: payload,
@@ -91,6 +91,13 @@ class ChatRepositoryImpl implements ChatRepository {
         final convData = data['data'];
         if (convData is Map<String, dynamic>) {
           return ConversationDto.fromJson(convData);
+        } else if (convData is List && convData.isNotEmpty) {
+          final first = convData.first;
+          if (first is Map<String, dynamic>) {
+            return ConversationDto.fromJson(first);
+          }
+        } else if (data['id'] != null) {
+          return ConversationDto.fromJson(data);
         }
       }
       throw ApiException(
@@ -98,21 +105,6 @@ class ChatRepositoryImpl implements ChatRepository {
         statusCode: 500,
       );
     } catch (e) {
-      if (targetUserId == null && effectiveTarget != ApiConstants.defaultAdminSwaggerUserId) {
-        try {
-          final fallbackResponse = await _client.post(
-            ApiConstants.conversations,
-            data: {'targetUserId': ApiConstants.defaultAdminSwaggerUserId},
-          );
-          final data = fallbackResponse.data;
-          if (data is Map<String, dynamic>) {
-            final convData = data['data'];
-            if (convData is Map<String, dynamic>) {
-              return ConversationDto.fromJson(convData);
-            }
-          }
-        } catch (_) {}
-      }
       if (e is ApiException) rethrow;
       throw ApiException(
         message: 'Failed to create conversation: $e',

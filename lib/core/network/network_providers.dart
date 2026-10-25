@@ -9,6 +9,7 @@ import 'dio_client.dart';
 import 'interceptors/auth_interceptor.dart';
 import 'interceptors/in_flight_request_interceptor.dart';
 import 'interceptors/logging_interceptor.dart';
+import 'interceptors/server_error_interceptor.dart';
 
 /// App configuration.
 final appConfigProvider = Provider<AppConfig>((ref) {
@@ -28,6 +29,11 @@ final authInterceptorProvider = Provider<AuthInterceptor>((ref) {
   );
 });
 
+/// Server error sanitization interceptor.
+final serverErrorInterceptorProvider = Provider<ServerErrorInterceptor>((ref) {
+  return ServerErrorInterceptor();
+});
+
 /// API logging interceptor.
 final apiLogInterceptorProvider = Provider<ApiLogInterceptor>((ref) {
   return ApiLogInterceptor();
@@ -40,6 +46,7 @@ final dioClientProvider = Provider<DioClient>((ref) {
     interceptors: [
       ref.watch(inFlightRequestInterceptorProvider),
       ref.watch(authInterceptorProvider),
+      ref.watch(serverErrorInterceptorProvider),
       ref.watch(apiLogInterceptorProvider),
     ],
   );

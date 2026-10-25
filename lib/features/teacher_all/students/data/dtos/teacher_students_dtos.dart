@@ -49,10 +49,11 @@ class TeacherStudentRosterDto {
   }
 
   TeacherStudent toTeacherStudent() {
+    final isGroupB = gradeLevel.toUpperCase().contains('B') || id.hashCode.isOdd;
     return TeacherStudent(
       id: id,
       name: fullName,
-      group: StudentGroup.groupA,
+      group: isGroupB ? StudentGroup.groupB : StudentGroup.groupA,
       room: gradeLevel.isNotEmpty ? gradeLevel : 'Aula 1',
       desk: enrollmentNumber.isNotEmpty ? enrollmentNumber : 'STU',
       attendance: attendancePercentage.toInt(),

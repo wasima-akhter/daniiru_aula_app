@@ -29,6 +29,8 @@ class SocketService {
   final _connectionStatusController = StreamController<bool>.broadcast();
   final _typingController = StreamController<Map<String, dynamic>>.broadcast();
 
+  String? _currentToken;
+
   SocketService({required this.storageService});
 
   bool get isConnected => _isConnected;
@@ -49,19 +51,22 @@ class SocketService {
 
     if (token == null || token.isEmpty) {
       debugPrint('[SocketService] Cannot connect: Access token is null or empty. Please ensure the user is logged in.');
-      _isConnected = false;
-      _connectionStatusController.add(false);
+      disconnect();
       return;
     }
 
-    if (_socket != null && _socket!.connected) {
-      debugPrint('[SocketService] Socket is already connected to ${ApiConstants.chatSocketUrl}.');
+    if (_socket != null && _socket!.connected && _currentToken == token) {
+      debugPrint('[SocketService] Socket is already connected with current token to ${ApiConstants.chatSocketUrl}.');
       _isConnected = true;
       _connectionStatusController.add(true);
       return;
     }
 
+    _currentToken = token;
+    _currentConversationId = null;
+    _socket?.disconnect();
     _socket?.dispose();
+    _socket = null;
 
     debugPrint('[SocketService] Building Socket.IO options with websocket transport...');
 
@@ -127,6 +132,7 @@ class SocketService {
     });
 
     // Message events
+    _socket!.on('chat:new_message', (data) => _onIncomingMessage(data));
     _socket!.on('new_message', (data) => _onIncomingMessage(data));
     _socket!.on('message', (data) => _onIncomingMessage(data));
     _socket!.on('newMessage', (data) => _onIncomingMessage(data));
@@ -201,6 +207,9 @@ class SocketService {
   void joinConversation(String conversationId) {
     _currentConversationId = conversationId;
     if (_socket != null && _socket!.connected) {
+      // Backend spec: Socket event chat:join
+      _socket!.emit('chat:join', {'conversationId': conversationId});
+      _socket!.emit('chat:join', conversationId);
       _socket!.emit('conversation:join', {'conversationId': conversationId});
       _socket!.emit('join:conversation', {'conversationId': conversationId});
       _socket!.emit('joinRoom', conversationId);
@@ -213,6 +222,8 @@ class SocketService {
       _currentConversationId = null;
     }
     if (_socket != null && _socket!.connected) {
+      _socket!.emit('chat:leave', {'conversationId': conversationId});
+      _socket!.emit('chat:leave', conversationId);
       _socket!.emit('conversation:leave', {'conversationId': conversationId});
       _socket!.emit('leave:conversation', {'conversationId': conversationId});
       _socket!.emit('leaveRoom', conversationId);
@@ -246,16 +257,22 @@ class SocketService {
     String? attachmentUrl,
   }) {
     if (_socket != null && _socket!.connected) {
-      _socket!.emit('sendMessage', {
+      final payload = <String, dynamic>{
         'conversationId': conversationId,
         'body': body,
-        'attachmentUrl': ?attachmentUrl,
-      });
+      };
+      if (attachmentUrl != null) {
+        payload['attachmentUrl'] = attachmentUrl;
+      }
+      // Emit both modern chat:send_message and legacy sendMessage for compatibility
+      _socket!.emit('chat:send_message', payload);
+      _socket!.emit('sendMessage', payload);
     }
   }
 
   void disconnect() {
     _currentConversationId = null;
+    _currentToken = null;
     _socket?.disconnect();
     _socket?.dispose();
     _socket = null;

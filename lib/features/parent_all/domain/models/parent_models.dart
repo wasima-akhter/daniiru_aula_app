@@ -136,6 +136,7 @@ class StudentModel {
 // ===============================================================
 
 class ReportModel {
+  final String? id;
   final String dateLabel;
   final DateTime? date;
   final String subject;
@@ -147,6 +148,7 @@ class ReportModel {
   final String initials;
 
   const ReportModel({
+    this.id,
     required this.dateLabel,
     this.date,
     required this.subject,
@@ -166,6 +168,7 @@ class ReportModel {
 enum HomeworkStatus { pending, completed }
 
 class HomeworkModel {
+  final String? id;
   final String subject;
   final String teacher;
   final String period;
@@ -176,6 +179,7 @@ class HomeworkModel {
   final String time;
 
   const HomeworkModel({
+    this.id,
     required this.subject,
     required this.teacher,
     required this.period,
@@ -187,6 +191,7 @@ class HomeworkModel {
   });
 
   HomeworkModel copyWith({
+    String? id,
     String? subject,
     String? teacher,
     String? period,
@@ -197,6 +202,7 @@ class HomeworkModel {
     String? time,
   }) {
     return HomeworkModel(
+      id: id ?? this.id,
       subject: subject ?? this.subject,
       teacher: teacher ?? this.teacher,
       period: period ?? this.period,

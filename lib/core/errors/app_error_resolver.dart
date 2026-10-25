@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../enums/backend_enums.dart';
 import '../network/api_exception.dart';
+import '../service/language/language_provider.dart';
 import 'app_failure.dart';
 
 /// ============================================================================
@@ -55,7 +56,9 @@ class AppErrorResolver {
     String? languageCode,
     String? fallbackDirective,
   }) {
-    final isSpanish = _isSpanish(languageCode);
+    final effectiveLangCode =
+        languageCode ?? LanguageNotifier.activeLanguageCode;
+    final isSpanish = _isSpanish(effectiveLangCode);
 
     if (error == null) {
       return _buildMessage(
@@ -141,6 +144,25 @@ class AppErrorResolver {
     final rawMessage = data['message']?.toString();
     final traceId = data['traceId']?.toString();
     final rawErrors = data['errors'];
+    final rawStatusCode = data['statusCode'] ?? data['status'];
+    final parsedStatus = rawStatusCode is int
+        ? rawStatusCode
+        : (int.tryParse(rawStatusCode?.toString() ?? '') ?? 0);
+
+    // Any HTTP 500 or backend internal server error must never show technical error text
+    if (parsedStatus >= 500 ||
+        rawErrorType == 'INTERNAL_SERVER_ERROR' ||
+        rawErrorType == 'SERVER_ERROR' ||
+        (rawErrorType != null &&
+            (rawErrorType.contains('SERVER') ||
+                rawErrorType.contains('INTERNAL')))) {
+      return _buildMessage(
+        type: ApiErrorType.serverError,
+        isSpanish: isSpanish,
+        customDirective: customDirective,
+        traceId: traceId,
+      );
+    }
 
     // 1. Check if backend provided structured validation errors list or map
     if (rawErrors != null) {
@@ -230,6 +252,17 @@ class AppErrorResolver {
     String? customDirective,
   }) {
     final response = dioError.response;
+    final status = response?.statusCode ?? 0;
+
+    // Immediately map any 500+ status code to serverError, suppressing technical bodies
+    if (status >= 500) {
+      return _buildMessage(
+        type: ApiErrorType.serverError,
+        isSpanish: isSpanish,
+        customDirective: customDirective,
+      );
+    }
+
     if (response != null && response.data is Map) {
       return _fromBackendMap(
         Map<String, dynamic>.from(response.data as Map),
@@ -250,32 +283,32 @@ class AppErrorResolver {
           customDirective: customDirective,
         );
       case DioExceptionType.badResponse:
-        final status = response?.statusCode ?? 500;
-        if (status == 401) {
+        final badStatus = response?.statusCode ?? 500;
+        if (badStatus == 401) {
           return _buildMessage(
             type: ApiErrorType.unauthorized,
             isSpanish: isSpanish,
             customDirective: customDirective,
           );
-        } else if (status == 403) {
+        } else if (badStatus == 403) {
           return _buildMessage(
             type: ApiErrorType.forbidden,
             isSpanish: isSpanish,
             customDirective: customDirective,
           );
-        } else if (status == 404) {
+        } else if (badStatus == 404) {
           return _buildMessage(
             type: ApiErrorType.notFound,
             isSpanish: isSpanish,
             customDirective: customDirective,
           );
-        } else if (status == 429) {
+        } else if (badStatus == 429) {
           return _buildMessage(
             type: ApiErrorType.rateLimitExceeded,
             isSpanish: isSpanish,
             customDirective: customDirective,
           );
-        } else if (status >= 500) {
+        } else if (badStatus >= 500) {
           return _buildMessage(
             type: ApiErrorType.serverError,
             isSpanish: isSpanish,
@@ -312,6 +345,16 @@ class AppErrorResolver {
     required bool isSpanish,
     String? customDirective,
   }) {
+    // Immediately map any 500+ status code to serverError, suppressing technical messages
+    if (apiException.statusCode >= 500) {
+      return _buildMessage(
+        type: ApiErrorType.serverError,
+        isSpanish: isSpanish,
+        customDirective: customDirective,
+        traceId: apiException.traceId,
+      );
+    }
+
     if (apiException.data is Map) {
       return _fromBackendMap(
         Map<String, dynamic>.from(apiException.data as Map),
@@ -529,6 +572,22 @@ class AppErrorResolver {
         lower.contains('sin conexión')) {
       return _buildMessage(
         type: ApiErrorType.networkError,
+        isSpanish: isSpanish,
+        customDirective: customDirective,
+      );
+    }
+
+    if (lower.contains('500') ||
+        lower.contains('internal server error') ||
+        lower.contains('internal_server_error') ||
+        lower.contains('server error') ||
+        lower.contains('server_error') ||
+        lower.contains('error del servidor') ||
+        lower.contains('error interno') ||
+        lower.contains('bad response') ||
+        lower.contains('failed to fetch')) {
+      return _buildMessage(
+        type: ApiErrorType.serverError,
         isSpanish: isSpanish,
         customDirective: customDirective,
       );
@@ -858,10 +917,14 @@ class AppErrorResolver {
     );
     cleaned = cleaned.replaceAll(RegExp(r'\[.*?\]'), '').trim();
 
-    // Reject raw JSON dumps, trace dumps, or HTTP status dumps
+    // Reject raw JSON dumps, trace dumps, HTTP status dumps, or 500 errors
     if (cleaned.startsWith('{') ||
         cleaned.contains('traceId') ||
-        cleaned.contains('statusCode')) {
+        cleaned.contains('statusCode') ||
+        cleaned.contains('500') ||
+        cleaned.toLowerCase().contains('internal server') ||
+        cleaned.toLowerCase().contains('server error') ||
+        cleaned.toLowerCase().contains('error del servidor')) {
       return null;
     }
 
@@ -1177,11 +1240,9 @@ class AppErrorResolver {
       case ApiErrorType.serverError:
         return UserFriendlyMessage(
           title: isSpanish ? 'Servicio no disponible' : 'Service Interruption',
-          message:
-              customMessage ??
-              (isSpanish
-                  ? 'Los servidores de la academia están experimentando una interrupción técnica.'
-                  : 'The academy servers are currently experiencing technical difficulties.'),
+          message: isSpanish
+              ? 'Los servidores de la academia están experimentando una interrupción técnica.'
+              : 'The academy servers are currently experiencing technical difficulties.',
           directive:
               customDirective ??
               (isSpanish

@@ -5,6 +5,7 @@ import 'package:aula360/features/teacher_all/classes/data/dtos/class_session_dto
 
 abstract class TeacherClassesRemoteDataSource {
   Future<List<ClassSessionDto>> getSessions({DateTime? date});
+  Future<ClassSessionDto> getSessionDetail(String sessionId);
   Future<ClassSessionDto> startSession(String sessionId);
 }
 
@@ -54,6 +55,34 @@ class TeacherClassesRemoteDataSourceImpl
       if (e is ApiException) rethrow;
       throw ApiException(
         message: 'Failed to fetch teacher sessions: $e',
+        statusCode: 500,
+      );
+    }
+  }
+
+  @override
+  Future<ClassSessionDto> getSessionDetail(String sessionId) async {
+    try {
+      final response = await _client.get(
+        ApiConstants.teacherSessionDetail(sessionId),
+      );
+
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        final sessionData = data['data'];
+        if (sessionData is Map<String, dynamic>) {
+          return ClassSessionDto.fromJson(sessionData);
+        }
+      }
+
+      throw ApiException(
+        message: 'Invalid response when fetching session details',
+        statusCode: response.statusCode ?? 500,
+      );
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException(
+        message: 'Failed to fetch session details: $e',
         statusCode: 500,
       );
     }

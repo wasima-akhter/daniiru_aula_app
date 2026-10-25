@@ -8,11 +8,37 @@ import 'presentation/controllers/teacher_students_controller.dart';
 /// TEACHER STUDENTS SCREEN
 /// ===============================================================
 
-class TeacherStudentsScreen extends ConsumerWidget {
+class TeacherStudentsScreen extends ConsumerStatefulWidget {
   const TeacherStudentsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TeacherStudentsScreen> createState() =>
+      _TeacherStudentsScreenState();
+}
+
+class _TeacherStudentsScreenState extends ConsumerState<TeacherStudentsScreen> {
+  final ScrollController _scrollController = ScrollController();
+  AulaPagedScrollListener? _pagedListener;
+
+  @override
+  void initState() {
+    super.initState();
+    _pagedListener = AulaPagedScrollListener(
+      controller: _scrollController,
+      onLoadMore: () =>
+          ref.read(teacherStudentsControllerProvider.notifier).loadMore(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pagedListener?.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(teacherStudentsControllerProvider);
     final controller = ref.read(teacherStudentsControllerProvider.notifier);
     final filteredStudents = state.filteredStudents;
@@ -37,6 +63,7 @@ class TeacherStudentsScreen extends ConsumerWidget {
                         child: filteredStudents.isEmpty
                             ? _emptyView(ref, controller)
                             : ListView(
+                                controller: _scrollController,
                                 physics: const AlwaysScrollableScrollPhysics(
                                   parent: BouncingScrollPhysics(),
                                 ),
@@ -46,6 +73,12 @@ class TeacherStudentsScreen extends ConsumerWidget {
                                   _rosterHeader(ref, state.students),
                                   SizedBox(height: 7.h),
                                   _studentList(context, ref, filteredStudents),
+                                  AulaPagedFooter(
+                                    isLoadingMore: state.isLoadingMore,
+                                    loadMoreError: state.loadMoreError,
+                                    onRetry: controller.loadMore,
+                                    indicatorColor: AppColors.primaryDark,
+                                  ),
                                 ],
                               ),
                       ),
@@ -388,8 +421,6 @@ class TeacherStudentsScreen extends ConsumerWidget {
     String error,
     TeacherStudentsController controller,
   ) {
-    final isSpanish = ref.watch(languageProvider).valueOrNull?.language ==
-        AppLanguage.spanish;
     return Center(
       child: Padding(
         padding: EdgeInsets.all(24.w),
@@ -403,9 +434,7 @@ class TeacherStudentsScreen extends ConsumerWidget {
             ),
             SizedBox(height: 12.h),
             Text(
-              isSpanish
-                  ? 'Error al cargar estudiantes'
-                  : 'Failed to load students',
+              ref.watchTr(AppStrings.loadStudentsError),
               style: TxtStyle.titleLarge(
                 fontSize: 18.sp,
                 fontWeight: FontWeight.w700,
@@ -414,7 +443,12 @@ class TeacherStudentsScreen extends ConsumerWidget {
             ),
             SizedBox(height: 6.h),
             Text(
-              error,
+              AppErrorResolver.resolve(
+                error,
+                languageCode:
+                    ref.watch(languageProvider).valueOrNull?.languageCode ??
+                    LanguageNotifier.activeLanguageCode,
+              ).displayMessage,
               textAlign: TextAlign.center,
               style: TxtStyle.bodyMedium(
                 fontSize: 14.sp,
@@ -426,7 +460,7 @@ class TeacherStudentsScreen extends ConsumerWidget {
               onPressed: () => controller.refresh(),
               icon: const Icon(Icons.refresh_rounded, size: 18),
               label: Text(
-                isSpanish ? 'Reintentar' : 'Retry',
+                ref.watchTr(AppStrings.retry),
                 style: TxtStyle.bodyMedium(
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
@@ -450,8 +484,6 @@ class TeacherStudentsScreen extends ConsumerWidget {
     TeacherStudentsController controller,
   ) {
     final tr = ref.watchTr;
-    final isSpanish = ref.watch(languageProvider).valueOrNull?.language ==
-        AppLanguage.spanish;
     return Center(
       child: Padding(
         padding: EdgeInsets.all(24.w),
@@ -474,9 +506,7 @@ class TeacherStudentsScreen extends ConsumerWidget {
             ),
             SizedBox(height: 6.h),
             Text(
-              isSpanish
-                  ? 'No hay alumnos que coincidan con los filtros actuales.'
-                  : 'No students match your current search or filter.',
+              tr(AppStrings.noStudentsFilterDesc),
               textAlign: TextAlign.center,
               style: TxtStyle.bodyMedium(
                 fontSize: 14.sp,

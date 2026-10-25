@@ -338,7 +338,7 @@ void main() {
       expect(state.isConnected, isTrue);
     });
 
-    test('startAdminConversation creates server conversation with defaultAdminUserId when empty', () async {
+    test('startAdminConversation creates server conversation with empty body {} according to backend guideline', () async {
       final mockSocket = MockSocketService();
       mockSocket.isConnected = true;
       final mockApi = ChatMockApiClient();
@@ -370,7 +370,8 @@ void main() {
       expect(conv, isNotNull);
       expect(conv!.id, '000e4567-e89b-12d3-a456-426614174999');
       expect(mockApi.lastPostPath, '/conversations');
-      expect(mockApi.lastPostData, {'targetUserId': '000e4567-e89b-12d3-a456-426614174000'});
+      // Backend guideline: sends empty body {} (no targetUserId needed)
+      expect(mockApi.lastPostData, <String, dynamic>{});
     });
   });
 }

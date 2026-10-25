@@ -1,3 +1,4 @@
+import '../../chat/presentation/controllers/chat_controller.dart';
 import '../../share/component/logout_btn.dart';
 import '../../share/export/screen_export.dart';
 import '../helper/parent_widgets.dart';
@@ -306,8 +307,19 @@ class ParentProfileScreen extends ConsumerWidget {
             icon: Icons.chat_bubble_outline,
             title: ref.watchTr(AppStrings.communicationTitle),
             subtitle: ref.watchTr(AppStrings.communicationSubtitle),
-            onTap: () {
-              context.push(RoutePath.chatList);
+            onTap: () async {
+              final conv = await ref
+                  .read(chatControllerProvider.notifier)
+                  .startAdminConversation();
+              if (context.mounted) {
+                final activeConv =
+                    conv ?? ref.read(chatControllerProvider).selectedConversation;
+                if (activeConv != null) {
+                  context.push(RoutePath.chatInbox, extra: activeConv);
+                } else {
+                  context.push(RoutePath.chatList);
+                }
+              }
             },
           ),
           _divider(),

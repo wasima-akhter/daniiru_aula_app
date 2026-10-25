@@ -65,13 +65,13 @@ class TeacherHomeController extends Notifier<TeacherHomeState> {
             rawStatus: s.status,
           );
         }).toList();
-        state = state.copyWith(schedule: items, isLoading: false);
+        state = state.copyWith(schedule: items, isLoading: false, error: null);
       } else {
-        state = state.copyWith(schedule: homeSchedule, isLoading: false);
+        state = state.copyWith(schedule: const [], isLoading: false, error: null);
       }
     } catch (e) {
       state = state.copyWith(
-        schedule: homeSchedule,
+        schedule: const [],
         isLoading: false,
         error: e.toString(),
       );

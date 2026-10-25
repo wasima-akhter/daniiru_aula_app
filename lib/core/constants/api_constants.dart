@@ -56,6 +56,7 @@ abstract final class ApiConstants {
   // Teacher Endpoints
   // ==============================
   static const String teacherSessions = '/teacher/sessions';
+  static String teacherSessionDetail(String id) => '/teacher/sessions/$id';
   static String teacherSessionStart(String id) => '/teacher/sessions/$id/start';
   static String teacherSessionAttendance(String id) =>
       '/teacher/sessions/$id/attendance';

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/socket_service.dart';
 import '../../../../utils/app_strings/app_strings.dart';
 import '../../../parent_all/data/dtos/conversation_dto.dart';
@@ -234,15 +233,26 @@ class ChatController extends Notifier<ChatState> {
       return;
     }
     try {
-      final msgs = await _repository.getConversationMessages(conversationId);
+      final msgs = List<ChatMessageDto>.from(
+        await _repository.getConversationMessages(conversationId),
+      );
       // Sort oldest to newest for chat timeline
       msgs.sort((a, b) {
         final aDate = DateTime.tryParse(a.sentAt ?? '') ?? DateTime(1970);
         final bDate = DateTime.tryParse(b.sentAt ?? '') ?? DateTime(1970);
         return aDate.compareTo(bDate);
       });
-      state = state.copyWith(messages: msgs);
+      state = state.copyWith(messages: msgs, error: null);
     } catch (e) {
+      debugPrint('[ChatController] loadMessages error: $e');
+      final errStr = e.toString().toLowerCase();
+      // If access is denied (403), this conversation is not valid for current user
+      if (errStr.contains('403') || errStr.contains('access denied')) {
+        state = state.copyWith(clearSelected: true, messages: [], error: null);
+        // Automatically start the correct admin conversation for this user
+        startAdminConversation();
+        return;
+      }
       state = state.copyWith(error: e.toString());
     }
   }
@@ -250,40 +260,11 @@ class ChatController extends Notifier<ChatState> {
   Future<ConversationDto?> startAdminConversation({
     String? targetUserId,
   }) async {
-    // 1. Ensure conversations list is loaded first
-    if (state.conversations.isEmpty) {
-      await loadConversations();
-    }
-
-    // 2. Check if an admin conversation already exists
-    if (state.conversations.isNotEmpty) {
-      final existingAdmin = state.conversations.where((c) {
-        final role = (c.role ?? '').toUpperCase();
-        final type = (c.type ?? '').toUpperCase();
-        final name = c.displayName.toUpperCase();
-        return role == 'ADMIN' ||
-            type.contains('ADMIN') ||
-            name.contains('ADMIN');
-      }).firstOrNull;
-
-      if (existingAdmin != null) {
-        selectConversation(existingAdmin);
-        return existingAdmin;
-      }
-      final existing = state.conversations.first;
-      selectConversation(existing);
-      return existing;
-    }
-
-    // 3. Initialize conversation on the server using documented admin target ID
-    final effectiveTargetId = (targetUserId != null && targetUserId.isNotEmpty)
-        ? targetUserId
-        : ApiConstants.defaultAdminUserId;
-
+    // Initiate or retrieve the central Admin conversation via POST /api/v1/conversations with {}
     try {
       state = state.copyWith(isLoading: true, error: null);
       final conv = await _repository.createConversation(
-        targetUserId: effectiveTargetId,
+        targetUserId: targetUserId,
       );
       final updated = [
         conv,
@@ -296,7 +277,7 @@ class ChatController extends Notifier<ChatState> {
       debugPrint('[ChatController] startAdminConversation error: $e');
       state = state.copyWith(
         isLoading: false,
-        error: AppStrings.chatTargetAdminNotFound,
+        error: e.toString(),
       );
       return null;
     }

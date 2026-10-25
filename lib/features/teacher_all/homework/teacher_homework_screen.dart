@@ -7,28 +7,95 @@ import 'presentation/controllers/teacher_homework_controller.dart';
 import 'presentation/providers/teacher_homework_providers.dart';
 
 class TeacherHomeworkScreen extends ConsumerStatefulWidget {
-  const TeacherHomeworkScreen({super.key});
+  final String? initialCohortId;
+  final String? initialSubjectId;
+  final String? sessionId;
+  final String? initialTitle;
+  final String? initialDescription;
+  final bool autoOpenCreateSheet;
+  final bool fromClassFlow;
+
+  const TeacherHomeworkScreen({
+    super.key,
+    this.initialCohortId,
+    this.initialSubjectId,
+    this.sessionId,
+    this.initialTitle,
+    this.initialDescription,
+    this.autoOpenCreateSheet = false,
+    this.fromClassFlow = false,
+  });
 
   @override
-  ConsumerState<TeacherHomeworkScreen> createState() => _TeacherHomeworkScreenState();
+  ConsumerState<TeacherHomeworkScreen> createState() =>
+      _TeacherHomeworkScreenState();
 }
 
 class _TeacherHomeworkScreenState extends ConsumerState<TeacherHomeworkScreen> {
   String? _selectedCohortId;
+  final ScrollController _scrollController = ScrollController();
+  late final AulaPagedScrollListener _pagedListener;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialCohortId != null && widget.initialCohortId!.isNotEmpty) {
+      _selectedCohortId = widget.initialCohortId;
+    }
+    _pagedListener = AulaPagedScrollListener(
+      controller: _scrollController,
+      onLoadMore: () =>
+          ref.read(teacherHomeworkListControllerProvider.notifier).loadMore(),
+    );
+
+    if (widget.autoOpenCreateSheet) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _openCreateHomeworkSheet(context);
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _pagedListener.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final homeworkAsync = ref.watch(teacherHomeworkListProvider(_selectedCohortId));
+    final listState = ref.watch(teacherHomeworkListControllerProvider);
+    final listController = ref.read(
+      teacherHomeworkListControllerProvider.notifier,
+    );
+    final homeworkList = listState.items;
 
     return Scaffold(
       backgroundColor: AppColors.softBackground,
       appBar: AulaAppBar(
-        title: 'Tareas',
+        title: ref.watchTr(AppStrings.homeworkTitle),
         showBack: true,
+        leading: widget.fromClassFlow
+            ? IconButton(
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: AppColors.primaryDark,
+                  size: 24.sp,
+                ),
+                tooltip: ref.watchTr(AppStrings.finishBtn),
+                onPressed: () => context.go(RoutePath.navigationPages),
+              )
+            : null,
         actions: [
           IconButton(
-            icon: Icon(Icons.add_circle_outline_rounded, color: AppColors.primaryDark, size: 24.sp),
-            tooltip: 'Nueva Tarea',
+            icon: Icon(
+              Icons.add_circle_outline_rounded,
+              color: AppColors.primaryDark,
+              size: 24.sp,
+            ),
+            tooltip: ref.watchTr(AppStrings.newHomeworkTitle),
             onPressed: () => _openCreateHomeworkSheet(context),
           ),
           SizedBox(width: 8.w),
@@ -37,48 +104,83 @@ class _TeacherHomeworkScreenState extends ConsumerState<TeacherHomeworkScreen> {
       body: SafeArea(
         child: RefreshIndicator(
           color: AppColors.primaryDark,
-          onRefresh: () async {
-            ref.invalidate(teacherHomeworkListProvider(_selectedCohortId));
-          },
-          child: homeworkAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, _) => Center(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24.w),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.error_outline_rounded, color: AppColors.error, size: 48.sp),
-                    SizedBox(height: 12.h),
-                    Text(
-                      'Error al cargar tareas',
-                      style: TxtStyle.titleLarge(fontSize: 18.sp, fontWeight: FontWeight.w700),
+          onRefresh: listController.refresh,
+          child: Builder(
+            builder: (context) {
+              if (listState.isLoading && homeworkList.isEmpty) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (listState.error != null && homeworkList.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24.w),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.error_outline_rounded,
+                          color: AppColors.error,
+                          size: 48.sp,
+                        ),
+                        SizedBox(height: 12.h),
+                        Text(
+                          ref.watchTr(AppStrings.loadHomeworkError),
+                          style: TxtStyle.titleLarge(
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(height: 8.h),
+                        Text(
+                          AppErrorResolver.resolve(
+                            listState.error!,
+                            languageCode:
+                                ref.watch(languageProvider).valueOrNull?.languageCode ??
+                                LanguageNotifier.activeLanguageCode,
+                          ).displayMessage,
+                          textAlign: TextAlign.center,
+                          style: TxtStyle.bodyMedium(
+                            color: AppColors.subtitleTextColor,
+                            fontSize: 13.sp,
+                          ),
+                        ),
+                        SizedBox(height: 16.h),
+                        AulaPrimaryButton(
+                          text: ref.watchTr(AppStrings.retry),
+                          onTap: listController.loadInitial,
+                        ),
+                      ],
                     ),
-                    SizedBox(height: 8.h),
-                    Text(
-                      err.toString(),
-                      textAlign: TextAlign.center,
-                      style: TxtStyle.bodyMedium(color: AppColors.subtitleTextColor, fontSize: 13.sp),
-                    ),
-                    SizedBox(height: 16.h),
-                    AulaPrimaryButton(
-                      text: 'Reintentar',
-                      onTap: () => ref.invalidate(teacherHomeworkListProvider(_selectedCohortId)),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            data: (homeworkList) {
+                  ),
+                );
+              }
+
               if (homeworkList.isEmpty) {
                 return _buildEmptyState(context);
               }
+
+              final hasFooter =
+                  listState.isLoadingMore ||
+                  (listState.loadMoreError != null &&
+                      listState.loadMoreError!.isNotEmpty);
+
               return ListView.separated(
-                physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
                 padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 32.h),
-                itemCount: homeworkList.length,
-                separatorBuilder: (_, _) => SizedBox(height: 12.h),
+                itemCount: homeworkList.length + (hasFooter ? 1 : 0),
+                separatorBuilder: (_, index) => SizedBox(height: 12.h),
                 itemBuilder: (context, index) {
+                  if (index >= homeworkList.length) {
+                    return AulaPagedFooter(
+                      isLoadingMore: listState.isLoadingMore,
+                      loadMoreError: listState.loadMoreError,
+                      onRetry: listController.loadMore,
+                    );
+                  }
                   final item = homeworkList[index];
                   return _buildHomeworkCard(context, item);
                 },
@@ -92,8 +194,11 @@ class _TeacherHomeworkScreenState extends ConsumerState<TeacherHomeworkScreen> {
         onPressed: () => _openCreateHomeworkSheet(context),
         icon: const Icon(Icons.add, color: Colors.white),
         label: Text(
-          'Nueva Tarea',
-          style: TxtStyle.titleMedium(color: Colors.white, fontWeight: FontWeight.w700),
+          ref.watchTr(AppStrings.newHomeworkTitle),
+          style: TxtStyle.titleMedium(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );
@@ -101,7 +206,9 @@ class _TeacherHomeworkScreenState extends ConsumerState<TeacherHomeworkScreen> {
 
   Widget _buildEmptyState(BuildContext context) {
     return ListView(
-      physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
       children: [
         SizedBox(height: 100.h),
         Center(
@@ -115,23 +222,36 @@ class _TeacherHomeworkScreenState extends ConsumerState<TeacherHomeworkScreen> {
                   color: AppColors.blueSoft,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.assignment_outlined, color: AppColors.primaryDark, size: 36.sp),
+                child: Icon(
+                  Icons.assignment_outlined,
+                  color: AppColors.primaryDark,
+                  size: 36.sp,
+                ),
               ),
               SizedBox(height: 16.h),
               Text(
-                'No hay tareas asignadas',
-                style: TxtStyle.titleLarge(fontSize: 18.sp, fontWeight: FontWeight.w700),
+                ref.watchTr(AppStrings.noHomeworkTeacher),
+                style: TxtStyle.titleLarge(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               SizedBox(height: 8.h),
               Text(
-                'Crea una nueva tarea para tus alumnos pulsando el botón inferior.',
+                ref.watchTr(AppStrings.noHomeworkTeacherDesc),
                 textAlign: TextAlign.center,
-                style: TxtStyle.bodyMedium(color: AppColors.subtitleTextColor, fontSize: 14.sp),
+                style: TxtStyle.bodyMedium(
+                  color: AppColors.subtitleTextColor,
+                  fontSize: 14.sp,
+                ),
               ),
               SizedBox(height: 24.h),
-              AulaPrimaryButton(
-                text: 'Asignar Tarea',
-                onTap: () => _openCreateHomeworkSheet(context),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12.w),
+                child: AulaPrimaryButton(
+                  text: ref.watchTr(AppStrings.assignHomeworkBtn),
+                  onTap: () => _openCreateHomeworkSheet(context),
+                ),
               ),
             ],
           ),
@@ -167,7 +287,9 @@ class _TeacherHomeworkScreenState extends ConsumerState<TeacherHomeworkScreen> {
                   borderRadius: BorderRadius.circular(6.r),
                 ),
                 child: Text(
-                  item.subjectName.isNotEmpty ? item.subjectName : 'Matemáticas',
+                  item.subjectName.isNotEmpty
+                      ? item.subjectName
+                      : ref.watchTr(AppStrings.defaultSubjectName),
                   style: TxtStyle.labelLarge(
                     color: AppColors.primaryDark,
                     fontSize: 12.sp,
@@ -185,10 +307,14 @@ class _TeacherHomeworkScreenState extends ConsumerState<TeacherHomeworkScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.people_outline_rounded, size: 14.sp, color: AppColors.subtitleTextColor),
+                    Icon(
+                      Icons.people_outline_rounded,
+                      size: 14.sp,
+                      color: AppColors.subtitleTextColor,
+                    ),
                     SizedBox(width: 4.w),
                     Text(
-                      '${item.submissionsCount} entregas',
+                      '${item.submissionsCount} ${ref.watchTr(AppStrings.submissionsCountLabel)}',
                       style: TxtStyle.bodyMedium(
                         color: AppColors.subtitleTextColor,
                         fontSize: 12.sp,
@@ -227,10 +353,14 @@ class _TeacherHomeworkScreenState extends ConsumerState<TeacherHomeworkScreen> {
           SizedBox(height: 10.h),
           Row(
             children: [
-              Icon(Icons.calendar_today_outlined, size: 13.sp, color: AppColors.subtitleTextColor),
+              Icon(
+                Icons.calendar_today_outlined,
+                size: 13.sp,
+                color: AppColors.subtitleTextColor,
+              ),
               SizedBox(width: 4.w),
               Text(
-                'Entrega: ${_formatDate(item.dueDate)}',
+                '${ref.watchTr(AppStrings.duePrefix)}: ${_formatDate(item.dueDate)}',
                 style: TxtStyle.bodyMedium(
                   color: AppColors.subtitleTextColor,
                   fontSize: 12.5.sp,
@@ -241,7 +371,7 @@ class _TeacherHomeworkScreenState extends ConsumerState<TeacherHomeworkScreen> {
               InkWell(
                 onTap: () => _openMarkSubmissionDialog(context, item),
                 child: Text(
-                  'Calificar',
+                  ref.watchTr(AppStrings.gradeBtn),
                   style: TxtStyle.titleMedium(
                     color: AppColors.primaryDark,
                     fontSize: 13.5.sp,
@@ -257,7 +387,7 @@ class _TeacherHomeworkScreenState extends ConsumerState<TeacherHomeworkScreen> {
   }
 
   String _formatDate(String isoDate) {
-    if (isoDate.isEmpty) return 'Próximamente';
+    if (isoDate.isEmpty) return ref.watchTr(AppStrings.soonLabel);
     try {
       final dt = DateTime.parse(isoDate);
       return DateFormat('d MMM, yyyy').format(dt);
@@ -267,10 +397,22 @@ class _TeacherHomeworkScreenState extends ConsumerState<TeacherHomeworkScreen> {
   }
 
   void _openCreateHomeworkSheet(BuildContext context) {
-    final titleController = TextEditingController();
-    final descriptionController = TextEditingController();
-    final cohortController = TextEditingController(text: 'Cohort-1');
-    final subjectController = TextEditingController(text: 'Subject-1');
+    final titleController = TextEditingController(
+      text: widget.initialTitle ?? '',
+    );
+    final descriptionController = TextEditingController(
+      text: widget.initialDescription ?? '',
+    );
+    final cohortController = TextEditingController(
+      text: widget.initialCohortId?.isNotEmpty == true
+          ? widget.initialCohortId!
+          : 'Cohort-1',
+    );
+    final subjectController = TextEditingController(
+      text: widget.initialSubjectId?.isNotEmpty == true
+          ? widget.initialSubjectId!
+          : 'Subject-1',
+    );
     DateTime selectedDueDate = DateTime.now().add(const Duration(days: 7));
 
     showModalBottomSheet<void>(
@@ -281,135 +423,195 @@ class _TeacherHomeworkScreenState extends ConsumerState<TeacherHomeworkScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
       ),
       builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 20.w,
-                right: 20.w,
-                top: 20.h,
-                bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24.h,
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          'Crear Nueva Tarea',
-                          style: TxtStyle.titleLarge(fontSize: 19.sp, fontWeight: FontWeight.w800),
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.of(sheetContext).pop(),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 16.h),
-                    TextField(
-                      controller: titleController,
-                      decoration: InputDecoration(
-                        labelText: 'Título de la tarea',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.r)),
-                      ),
-                    ),
-                    SizedBox(height: 12.h),
-                    TextField(
-                      controller: descriptionController,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        labelText: 'Instrucciones / Descripción',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.r)),
-                      ),
-                    ),
-                    SizedBox(height: 12.h),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: cohortController,
+        return Consumer(
+          builder: (sheetCtx, sheetRef, _) {
+            final tr = sheetRef.watchTr;
+            return StatefulBuilder(
+              builder: (context, setSheetState) {
+                return Padding(
+                  padding: EdgeInsets.only(
+                    left: 20.w,
+                    right: 20.w,
+                    top: 20.h,
+                    bottom:
+                        MediaQuery.of(sheetContext).viewInsets.bottom + 24.h,
+                  ),
+                  child: SafeArea(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                tr(AppStrings.createHomeworkSheetTitle),
+                                style: TxtStyle.titleLarge(
+                                  fontSize: 19.sp,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const Spacer(),
+                              IconButton(
+                                icon: const Icon(Icons.close),
+                                onPressed: () =>
+                                    Navigator.of(sheetContext).pop(),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 16.h),
+                          TextField(
+                            controller: titleController,
                             decoration: InputDecoration(
-                              labelText: 'Cohorte / Grupo',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.r)),
+                              labelText: tr(AppStrings.homeworkTitleField),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8.r),
+                              ),
                             ),
                           ),
-                        ),
-                        SizedBox(width: 10.w),
-                        Expanded(
-                          child: TextField(
-                            controller: subjectController,
+                          SizedBox(height: 12.h),
+                          TextField(
+                            controller: descriptionController,
+                            maxLines: 3,
                             decoration: InputDecoration(
-                              labelText: 'ID Asignatura',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.r)),
+                              labelText: tr(
+                                AppStrings.homeworkInstructionsField,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8.r),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 12.h),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(Icons.event_outlined, color: AppColors.primaryDark),
-                      title: Text(
-                        'Fecha límite: ${DateFormat('d MMM, yyyy').format(selectedDueDate)}',
-                        style: TxtStyle.bodyMedium(fontSize: 14.sp, fontWeight: FontWeight.w600),
-                      ),
-                      trailing: TextButton(
-                        child: const Text('Cambiar'),
-                        onPressed: () async {
-                          final picked = await showDatePicker(
-                            context: sheetContext,
-                            initialDate: selectedDueDate,
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime.now().add(const Duration(days: 365)),
-                          );
-                          if (picked != null) {
-                            setSheetState(() => selectedDueDate = picked);
-                          }
-                        },
-                      ),
-                    ),
-                    SizedBox(height: 20.h),
-                    Consumer(
-                      builder: (ctx, innerRef, _) {
-                        final actionState = innerRef.watch(teacherHomeworkControllerProvider);
-                        return SizedBox(
-                          width: double.infinity,
-                          child: AulaPrimaryButton(
-                            text: 'Publicar Tarea',
-                            isLoading: actionState.isLoading,
-                            onTap: () async {
-                              if (titleController.text.trim().isEmpty) return;
-                              final success = await innerRef
-                                  .read(teacherHomeworkControllerProvider.notifier)
-                                  .createHomework(
-                                    cohortId: cohortController.text.trim(),
-                                    subjectId: subjectController.text.trim(),
-                                    title: titleController.text.trim(),
-                                    description: descriptionController.text.trim().isEmpty
-                                        ? null
-                                        : descriptionController.text.trim(),
-                                    startDate: DateTime.now(),
-                                    dueDate: selectedDueDate,
-                                  );
-                              if (success && sheetContext.mounted) {
-                                Navigator.of(sheetContext).pop();
-                                innerRef.invalidate(teacherHomeworkListProvider(_selectedCohortId));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Tarea creada exitosamente')),
+                          SizedBox(height: 12.h),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: cohortController,
+                                  decoration: InputDecoration(
+                                    labelText: tr(AppStrings.cohortGroupField),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8.r),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 10.w),
+                              Expanded(
+                                child: TextField(
+                                  controller: subjectController,
+                                  decoration: InputDecoration(
+                                    labelText: tr(AppStrings.subjectIdField),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8.r),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 12.h),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              Icons.event_outlined,
+                              color: AppColors.primaryDark,
+                            ),
+                            title: Text(
+                              '${tr(AppStrings.dueDateLabel)}: ${DateFormat('d MMM, yyyy').format(selectedDueDate)}',
+                              style: TxtStyle.bodyMedium(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            trailing: TextButton(
+                              child: Text(tr(AppStrings.changeBtn)),
+                              onPressed: () async {
+                                final picked = await showDatePicker(
+                                  context: sheetContext,
+                                  initialDate: selectedDueDate,
+                                  firstDate: DateTime.now(),
+                                  lastDate: DateTime.now().add(
+                                    const Duration(days: 365),
+                                  ),
                                 );
-                              }
+                                if (picked != null) {
+                                  setSheetState(() => selectedDueDate = picked);
+                                }
+                              },
+                            ),
+                          ),
+                          SizedBox(height: 20.h),
+                          Consumer(
+                            builder: (ctx, innerRef, _) {
+                              final actionState = innerRef.watch(
+                                teacherHomeworkControllerProvider,
+                              );
+                              return SizedBox(
+                                width: double.infinity,
+                                child: AulaPrimaryButton(
+                                  text: tr(AppStrings.publishHomeworkBtn),
+                                  isLoading: actionState.isLoading,
+                                  onTap: () async {
+                                    if (titleController.text.trim().isEmpty) {
+                                      return;
+                                    }
+                                    final success = await innerRef
+                                        .read(
+                                          teacherHomeworkControllerProvider
+                                              .notifier,
+                                        )
+                                        .createHomework(
+                                          cohortId: cohortController.text
+                                              .trim(),
+                                          subjectId: subjectController.text
+                                              .trim(),
+                                          sessionId: widget.sessionId,
+                                          title: titleController.text.trim(),
+                                          description:
+                                              descriptionController.text
+                                                  .trim()
+                                                  .isEmpty
+                                              ? null
+                                              : descriptionController.text
+                                                    .trim(),
+                                          startDate: DateTime.now(),
+                                          dueDate: selectedDueDate,
+                                        );
+                                    if (success && sheetContext.mounted) {
+                                      Navigator.of(sheetContext).pop();
+                                      innerRef.invalidate(
+                                        teacherHomeworkListProvider(
+                                          _selectedCohortId,
+                                        ),
+                                      );
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            tr(
+                                              AppStrings.homeworkCreatedSuccess,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                      if (widget.fromClassFlow &&
+                                          context.mounted) {
+                                        context.go(RoutePath.navigationPages);
+                                      }
+                                    }
+                                  },
+                                ),
+                              );
                             },
                           ),
-                        );
-                      },
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             );
           },
         );
@@ -417,101 +619,146 @@ class _TeacherHomeworkScreenState extends ConsumerState<TeacherHomeworkScreen> {
     );
   }
 
-  void _openMarkSubmissionDialog(BuildContext context, TeacherHomeworkDto item) {
+  void _openMarkSubmissionDialog(
+    BuildContext context,
+    TeacherHomeworkDto item,
+  ) {
     final noteController = TextEditingController();
     String selectedStatus = 'COMPLETED';
 
     showDialog<void>(
       context: context,
       builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text(
-                'Calificar Entrega',
-                style: TxtStyle.titleLarge(fontSize: 18.sp, fontWeight: FontWeight.w700),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Tarea: ${item.title}',
-                    style: TxtStyle.bodyMedium(fontSize: 14.sp, color: AppColors.subtitleTextColor),
-                  ),
-                  SizedBox(height: 14.h),
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedStatus,
-                    decoration: InputDecoration(
-                      labelText: 'Estado',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.r)),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'COMPLETED', child: Text('Completada')),
-                      DropdownMenuItem(value: 'NEEDS_REVISION', child: Text('Requiere Revisión')),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) setDialogState(() => selectedStatus = val);
-                    },
-                  ),
-                  SizedBox(height: 12.h),
-                  TextField(
-                    controller: noteController,
-                    maxLines: 2,
-                    decoration: InputDecoration(
-                      labelText: 'Comentario / Nota',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.r)),
+        return Consumer(
+          builder: (dialogCtx, dialogRef, _) {
+            final tr = dialogRef.watchTr;
+            return StatefulBuilder(
+              builder: (context, setDialogState) {
+                return AlertDialog(
+                  title: Text(
+                    tr(AppStrings.gradeSubmissionTitle),
+                    style: TxtStyle.titleLarge(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('Cancelar'),
-                ),
-                Consumer(
-                  builder: (ctx, innerRef, _) {
-                    final actionState = innerRef.watch(teacherHomeworkControllerProvider);
-                    return TextButton(
-                      onPressed: actionState.isLoading
-                          ? null
-                          : () async {
-                              final success = await innerRef
-                                  .read(teacherHomeworkControllerProvider.notifier)
-                                  .markHomeworkSubmission(
-                                    homeworkId: item.id.isNotEmpty ? item.id : 'hw-1',
-                                    studentId: 'student-1',
-                                    status: selectedStatus,
-                                    note: noteController.text.trim().isEmpty
-                                        ? null
-                                        : noteController.text.trim(),
-                                  );
-                              if (dialogContext.mounted) {
-                                Navigator.of(dialogContext).pop();
-                                innerRef.invalidate(teacherHomeworkListProvider(_selectedCohortId));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      success
-                                          ? 'Entrega calificada exitosamente'
-                                          : 'No se pudo actualizar entrega',
-                                    ),
-                                  ),
-                                );
-                              }
-                            },
-                      child: Text(
-                        'Guardar',
-                        style: TxtStyle.titleMedium(
-                          color: AppColors.primaryDark,
-                          fontWeight: FontWeight.w700,
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${tr(AppStrings.homeworkLabel)}: ${item.title}',
+                        style: TxtStyle.bodyMedium(
+                          fontSize: 14.sp,
+                          color: AppColors.subtitleTextColor,
                         ),
                       ),
-                    );
-                  },
-                ),
-              ],
+                      SizedBox(height: 14.h),
+                      DropdownButtonFormField<String>(
+                        initialValue: selectedStatus,
+                        decoration: InputDecoration(
+                          labelText: tr(AppStrings.statusLabel),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
+                        ),
+                        items: [
+                          DropdownMenuItem(
+                            value: 'COMPLETED',
+                            child: Text(tr(AppStrings.statusCompletedOption)),
+                          ),
+                          DropdownMenuItem(
+                            value: 'NEEDS_REVISION',
+                            child: Text(
+                              tr(AppStrings.statusNeedsRevisionOption),
+                            ),
+                          ),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            setDialogState(() => selectedStatus = val);
+                          }
+                        },
+                      ),
+                      SizedBox(height: 12.h),
+                      TextField(
+                        controller: noteController,
+                        maxLines: 2,
+                        decoration: InputDecoration(
+                          labelText: tr(AppStrings.commentNoteField),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      child: Text(tr(AppStrings.cancelBtn)),
+                    ),
+                    Consumer(
+                      builder: (ctx, innerRef, _) {
+                        final actionState = innerRef.watch(
+                          teacherHomeworkControllerProvider,
+                        );
+                        return TextButton(
+                          onPressed: actionState.isLoading
+                              ? null
+                              : () async {
+                                  final success = await innerRef
+                                      .read(
+                                        teacherHomeworkControllerProvider
+                                            .notifier,
+                                      )
+                                      .markHomeworkSubmission(
+                                        homeworkId: item.id.isNotEmpty
+                                            ? item.id
+                                            : 'hw-1',
+                                        studentId: 'student-1',
+                                        status: selectedStatus,
+                                        note: noteController.text.trim().isEmpty
+                                            ? null
+                                            : noteController.text.trim(),
+                                      );
+                                  if (dialogContext.mounted) {
+                                    Navigator.of(dialogContext).pop();
+                                    innerRef.invalidate(
+                                      teacherHomeworkListProvider(
+                                        _selectedCohortId,
+                                      ),
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          success
+                                              ? tr(
+                                                  AppStrings
+                                                      .submissionGradedSuccess,
+                                                )
+                                              : tr(
+                                                  AppStrings
+                                                      .submissionGradedError,
+                                                ),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                          child: Text(
+                            tr(AppStrings.saveBtn),
+                            style: TxtStyle.titleMedium(
+                              color: AppColors.primaryDark,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                );
+              },
             );
           },
         );
@@ -519,3 +766,13 @@ class _TeacherHomeworkScreenState extends ConsumerState<TeacherHomeworkScreen> {
     );
   }
 }
+
+/*
+
+
+lib\features\teacher_all\homework\teacher_homework_screen.dart --> in the bottom sheet,
+this is not properly implemented.
+no validation snack, no message showing the reason why the publish homework failed.
+
+
+*/

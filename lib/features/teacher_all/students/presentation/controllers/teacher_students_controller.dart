@@ -10,14 +10,22 @@ class TeacherStudentsState {
   final StudentGroupFilter selectedFilter;
   final String searchQuery;
   final bool isLoading;
+  final bool isLoadingMore;
+  final bool hasMore;
+  final int currentPage;
   final String? error;
+  final String? loadMoreError;
 
   const TeacherStudentsState({
     this.students = const [],
     this.selectedFilter = StudentGroupFilter.all,
     this.searchQuery = '',
     this.isLoading = false,
+    this.isLoadingMore = false,
+    this.hasMore = true,
+    this.currentPage = 1,
     this.error,
+    this.loadMoreError,
   });
 
   List<TeacherStudent> get filteredStudents {
@@ -41,14 +49,25 @@ class TeacherStudentsState {
     StudentGroupFilter? selectedFilter,
     String? searchQuery,
     bool? isLoading,
+    bool? isLoadingMore,
+    bool? hasMore,
+    int? currentPage,
     String? error,
+    String? loadMoreError,
+    bool clearLoadMoreError = false,
   }) {
     return TeacherStudentsState(
       students: students ?? this.students,
       selectedFilter: selectedFilter ?? this.selectedFilter,
       searchQuery: searchQuery ?? this.searchQuery,
       isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      hasMore: hasMore ?? this.hasMore,
+      currentPage: currentPage ?? this.currentPage,
       error: error,
+      loadMoreError: clearLoadMoreError
+          ? null
+          : (loadMoreError ?? this.loadMoreError),
     );
   }
 }
@@ -59,7 +78,9 @@ final teacherStudentsControllerProvider =
 );
 
 class TeacherStudentsController extends Notifier<TeacherStudentsState> {
-  TeacherStudentsRepository get _repository => ref.read(teacherStudentsRepositoryProvider);
+  static const int _pageSize = 20;
+  TeacherStudentsRepository get _repository =>
+      ref.read(teacherStudentsRepositoryProvider);
 
   @override
   TeacherStudentsState build() {
@@ -68,12 +89,65 @@ class TeacherStudentsController extends Notifier<TeacherStudentsState> {
   }
 
   Future<void> loadStudents({String? search}) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(
+      isLoading: true,
+      error: null,
+      currentPage: 1,
+      hasMore: true,
+      clearLoadMoreError: true,
+    );
     try {
-      final list = await _repository.getStudents(search: search);
-      state = state.copyWith(students: list, isLoading: false, error: null);
+      final list = await _repository.getStudents(
+        page: 1,
+        limit: _pageSize,
+        search: search,
+      );
+      state = state.copyWith(
+        students: list,
+        isLoading: false,
+        error: null,
+        currentPage: 1,
+        hasMore: list.length >= _pageSize,
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  /// Paginated load more: strictly checks beforehand if there is more data.
+  Future<void> loadMore() async {
+    if (!state.hasMore || state.isLoadingMore || state.isLoading) {
+      return;
+    }
+
+    state = state.copyWith(isLoadingMore: true, clearLoadMoreError: true);
+    final nextPage = state.currentPage + 1;
+
+    try {
+      final nextList = await _repository.getStudents(
+        page: nextPage,
+        limit: _pageSize,
+        search: state.searchQuery.trim().isEmpty
+            ? null
+            : state.searchQuery.trim(),
+      );
+
+      final existingIds = state.students.map((s) => s.id).toSet();
+      final newItems =
+          nextList.where((s) => !existingIds.contains(s.id)).toList();
+      final updated = [...state.students, ...newItems];
+
+      state = state.copyWith(
+        students: updated,
+        currentPage: nextPage,
+        hasMore: nextList.length >= _pageSize,
+        isLoadingMore: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoadingMore: false,
+        loadMoreError: e.toString(),
+      );
     }
   }
 

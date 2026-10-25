@@ -1,10 +1,12 @@
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_exception.dart';
+import '../../../share/model/pagination_meta_model.dart';
+import '../../../share/widgets/paginator/paginator.dart';
 import '../dtos/notification_dto.dart';
 
 abstract class NotificationRemoteDataSource {
-  Future<List<NotificationDto>> getAllNotifications({int page = 1, int limit = 20});
+  Future<PaginatedResult<NotificationDto>> getAllNotifications({int page = 1, int limit = 20});
   Future<int> getUnreadCount();
   Future<void> markAsRead(String id);
   Future<void> markAllAsRead();
@@ -16,7 +18,7 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
   NotificationRemoteDataSourceImpl(this._client);
 
   @override
-  Future<List<NotificationDto>> getAllNotifications({int page = 1, int limit = 20}) async {
+  Future<PaginatedResult<NotificationDto>> getAllNotifications({int page = 1, int limit = 20}) async {
     try {
       final response = await _client.get(
         ApiConstants.notifications,
@@ -26,23 +28,28 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
         },
       );
       final data = response.data;
+      PaginationMeta? meta;
+      List<NotificationDto> list = [];
 
       if (data is Map<String, dynamic>) {
+        if (data['meta'] is Map<String, dynamic>) {
+          meta = PaginationMeta.fromJson(data['meta'] as Map<String, dynamic>);
+        }
         final listData = data['data'];
         if (listData is List) {
-          return listData
+          list = listData
               .whereType<Map<String, dynamic>>()
               .map(NotificationDto.fromJson)
               .toList();
         }
       } else if (data is List) {
-        return data
+        list = data
             .whereType<Map<String, dynamic>>()
             .map(NotificationDto.fromJson)
             .toList();
       }
 
-      return const [];
+      return PaginatedResult<NotificationDto>(data: list, meta: meta);
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException(message: 'Failed to fetch notifications: $e', statusCode: 500);

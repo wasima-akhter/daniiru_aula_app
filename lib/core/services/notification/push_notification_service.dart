@@ -7,11 +7,11 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../../../../utils/extension/base_extension.dart';
 import '../../router/route_path.dart';
 import '../../router/routes.dart';
 import '../../storage/storage_provider.dart';
 import '../../storage/storage_service.dart';
-import '../../../../utils/extension/base_extension.dart';
 import 'widgets/in_app_notification_overlay.dart';
 
 /// Top-level background message handler executed by the Flutter engine
@@ -22,9 +22,21 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp();
     }
+    debugPrint('══════════════════════════════════════════════════════════════');
+    debugPrint('📥 FCM NOTIFICATION RECEIVED [STATE: BACKGROUND / ISOLATE]');
+    debugPrint('══════════════════════════════════════════════════════════════');
+    debugPrint('MESSAGE ID   : ${message.messageId}');
     debugPrint(
-      'PushNotificationService: Background message received id=${message.messageId} data=${message.data}',
+      'TITLE        : ${message.notification?.title ?? message.data['title'] ?? '(No title)'}',
     );
+    debugPrint(
+      'BODY         : ${message.notification?.body ?? message.data['body'] ?? '(No body)'}',
+    );
+    debugPrint('DATA PAYLOAD : ${message.data}');
+    debugPrint('SENT TIME    : ${message.sentTime?.toIso8601String() ?? 'N/A'}');
+    debugPrint('LIFECYCLE    : Top-level background handler executed');
+    debugPrint('TIMESTAMP    : ${DateTime.now().toIso8601String()}');
+    debugPrint('══════════════════════════════════════════════════════════════');
   } catch (e) {
     debugPrint('PushNotificationService: Background handler error: $e');
   }
@@ -69,18 +81,25 @@ class PushNotificationService {
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
       // 2. Configure iOS foreground presentation options
-      await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
+      await FirebaseMessaging.instance
+          .setForegroundNotificationPresentationOptions(
+            alert: true,
+            badge: true,
+            sound: true,
+          );
 
       // 3. Listen for token rotations while the app is active
       _tokenRefreshSubscription?.cancel();
       // ignore: deprecated_member_use
       _tokenRefreshSubscription = FirebaseMessaging.instance.onTokenRefresh
           .listen((newToken) async {
-            debugPrint('FCM token refreshed: $newToken');
+            debugPrint('══════════════════════════════════════════════════════════════');
+            debugPrint('🔄 FCM DEVICE TOKEN REFRESHED / ROTATED');
+            debugPrint('══════════════════════════════════════════════════════════════');
+            debugPrint('NEW TOKEN : $newToken');
+            debugPrint('ACTION    : Cached in local storage and triggering sync callback');
+            debugPrint('TIMESTAMP : ${DateTime.now().toIso8601String()}');
+            debugPrint('══════════════════════════════════════════════════════════════');
             await _storageService.saveFcmToken(newToken);
             onTokenRefreshed?.call(newToken);
           });
@@ -90,7 +109,20 @@ class PushNotificationService {
       _foregroundSubscription = FirebaseMessaging.onMessage.listen((
         RemoteMessage message,
       ) {
-        debugPrint('FCM foreground message received: ${message.messageId}');
+        debugPrint('══════════════════════════════════════════════════════════════');
+        debugPrint('📥 FCM NOTIFICATION RECEIVED [STATE: FOREGROUND]');
+        debugPrint('══════════════════════════════════════════════════════════════');
+        debugPrint('MESSAGE ID   : ${message.messageId}');
+        debugPrint(
+          'TITLE        : ${message.notification?.title ?? message.data['title'] ?? '(No title)'}',
+        );
+        debugPrint(
+          'BODY         : ${message.notification?.body ?? message.data['body'] ?? '(No body)'}',
+        );
+        debugPrint('DATA PAYLOAD : ${message.data}');
+        debugPrint('ACTION       : Presenting InAppNotificationOverlay banner');
+        debugPrint('TIMESTAMP    : ${DateTime.now().toIso8601String()}');
+        debugPrint('══════════════════════════════════════════════════════════════');
         _foregroundMessageController.add(message);
         showInAppNotification(message);
       });
@@ -100,23 +132,42 @@ class PushNotificationService {
       _messageOpenedSubscription = FirebaseMessaging.onMessageOpenedApp.listen((
         RemoteMessage message,
       ) {
+        debugPrint('══════════════════════════════════════════════════════════════');
+        debugPrint('👆 FCM NOTIFICATION TAPPED [STATE: RESUMED FROM BACKGROUND]');
+        debugPrint('══════════════════════════════════════════════════════════════');
+        debugPrint('MESSAGE ID   : ${message.messageId}');
         debugPrint(
-          'FCM notification opened from background: ${message.messageId}',
+          'TITLE        : ${message.notification?.title ?? message.data['title'] ?? '(No title)'}',
         );
+        debugPrint('DATA PAYLOAD : ${message.data}');
+        debugPrint('ACTION       : Executing handleNotificationNavigation()');
+        debugPrint('TIMESTAMP    : ${DateTime.now().toIso8601String()}');
+        debugPrint('══════════════════════════════════════════════════════════════');
         handleNotificationNavigation(message.data);
       });
 
       // 6. Terminated notification tapped handling (cold boot)
-      final initialMessage =
-          await FirebaseMessaging.instance.getInitialMessage();
+      final initialMessage = await FirebaseMessaging.instance
+          .getInitialMessage();
       if (initialMessage != null) {
+        debugPrint('══════════════════════════════════════════════════════════════');
+        debugPrint('🚀 FCM APP COLD BOOT FROM NOTIFICATION [STATE: TERMINATED]');
+        debugPrint('══════════════════════════════════════════════════════════════');
+        debugPrint('MESSAGE ID   : ${initialMessage.messageId}');
         debugPrint(
-          'FCM app launched from terminated notification: ${initialMessage.messageId}',
+          'TITLE        : ${initialMessage.notification?.title ?? initialMessage.data['title'] ?? '(No title)'}',
         );
+        debugPrint('DATA PAYLOAD : ${initialMessage.data}');
+        debugPrint('ACTION       : Stored pending initial message for navigation after boot');
+        debugPrint('TIMESTAMP    : ${DateTime.now().toIso8601String()}');
+        debugPrint('══════════════════════════════════════════════════════════════');
         _pendingInitialMessage = initialMessage;
       }
 
       _isInitialized = true;
+
+      // Eagerly acquire and cache device FCM push token in background
+      unawaited(getFcmToken(requestPermissionFirst: false));
     } catch (e) {
       debugPrint(
         'PushNotificationService: Firebase initialization skipped/failed: $e',
@@ -156,8 +207,8 @@ class PushNotificationService {
   Future<bool> isPermissionGranted() async {
     try {
       await initialize();
-      final settings =
-          await FirebaseMessaging.instance.getNotificationSettings();
+      final settings = await FirebaseMessaging.instance
+          .getNotificationSettings();
       return settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional;
     } catch (_) {
@@ -169,8 +220,8 @@ class PushNotificationService {
   Future<AuthorizationStatus> getAuthorizationStatus() async {
     try {
       await initialize();
-      final settings =
-          await FirebaseMessaging.instance.getNotificationSettings();
+      final settings = await FirebaseMessaging.instance
+          .getNotificationSettings();
       return settings.authorizationStatus;
     } catch (_) {
       return AuthorizationStatus.notDetermined;
@@ -178,21 +229,23 @@ class PushNotificationService {
   }
 
   /// Retrieves the current device FCM Push Token.
-  /// If [requestPermissionFirst] is true, prompts the user for notification permissions
-  /// before requesting the device token.
-  Future<String?> getFcmToken({bool requestPermissionFirst = true}) async {
+  /// Even if notification permissions are denied or not yet granted,
+  /// FCM token retrieval on Android proceeds so the device can be registered
+  /// on the backend.
+  Future<String?> getFcmToken({bool requestPermissionFirst = false}) async {
     try {
       await initialize();
 
       if (requestPermissionFirst) {
-        final settings = await requestPermissions();
-        final isDenied =
-            settings?.authorizationStatus == AuthorizationStatus.denied;
-        if (isDenied) {
+        try {
+          final settings = await requestPermissions();
           debugPrint(
-            'PushNotificationService: Notification permissions denied by user',
+            'PushNotificationService: Permission status: ${settings?.authorizationStatus}',
           );
-          return null;
+        } catch (e) {
+          debugPrint(
+            'PushNotificationService: Error requesting permission before token: $e',
+          );
         }
       }
 
@@ -207,10 +260,18 @@ class PushNotificationService {
         }
       }
 
+      // Retrieve device FCM Push Token regardless of notification permission
       // ignore: deprecated_member_use
       final token = await FirebaseMessaging.instance.getToken();
       if (token != null && token.isNotEmpty) {
-        debugPrint('PushNotificationService: Successfully acquired FCM token');
+        debugPrint('══════════════════════════════════════════════════════════════');
+        debugPrint('🔑 FCM DEVICE TOKEN ACQUIRED');
+        debugPrint('══════════════════════════════════════════════════════════════');
+        debugPrint('TOKEN     : $token');
+        debugPrint('SAVED     : Local storage updated');
+        debugPrint('CALLBACK  : onTokenRefreshed triggered for session sync');
+        debugPrint('TIMESTAMP : ${DateTime.now().toIso8601String()}');
+        debugPrint('══════════════════════════════════════════════════════════════');
         await _storageService.saveFcmToken(token);
         onTokenRefreshed?.call(token);
         return token;
@@ -269,8 +330,8 @@ class PushNotificationService {
 
       await _storageService.setNotificationPrimerDismissed(dismissed: true);
 
+      final token = await getFcmToken(requestPermissionFirst: false);
       if (isGranted) {
-        final token = await getFcmToken(requestPermissionFirst: false);
         debugPrint(
           'PushNotificationService: Permission granted via primer, FCM token: $token',
         );
@@ -290,6 +351,13 @@ class PushNotificationService {
     final pending = _pendingInitialMessage;
     if (pending != null) {
       _pendingInitialMessage = null;
+      debugPrint('══════════════════════════════════════════════════════════════');
+      debugPrint('🚀 EXECUTING PENDING TERMINATED NOTIFICATION NAVIGATION');
+      debugPrint('══════════════════════════════════════════════════════════════');
+      debugPrint('MESSAGE ID : ${pending.messageId}');
+      debugPrint('DATA       : ${pending.data}');
+      debugPrint('TIMESTAMP  : ${DateTime.now().toIso8601String()}');
+      debugPrint('══════════════════════════════════════════════════════════════');
       WidgetsBinding.instance.addPostFrameCallback((_) {
         handleNotificationNavigation(pending.data);
       });
@@ -329,15 +397,19 @@ class PushNotificationService {
       return;
     }
 
-    final type =
-        (data['type'] ?? data['click_action'] ?? data['screen'] ?? '')
-            .toString()
-            .toUpperCase();
+    final type = (data['type'] ?? data['click_action'] ?? data['screen'] ?? '')
+        .toString()
+        .toUpperCase();
     final entityId = data['entity_id'] ?? data['id'] ?? data['conversationId'];
 
-    debugPrint(
-      'PushNotificationService: Routing notification type=$type, entityId=$entityId',
-    );
+    debugPrint('══════════════════════════════════════════════════════════════');
+    debugPrint('🧭 NOTIFICATION NAVIGATION DISPATCHER');
+    debugPrint('══════════════════════════════════════════════════════════════');
+    debugPrint('TARGET TYPE : $type');
+    debugPrint('ENTITY ID   : $entityId');
+    debugPrint('RAW DATA    : $data');
+    debugPrint('TIMESTAMP   : ${DateTime.now().toIso8601String()}');
+    debugPrint('══════════════════════════════════════════════════════════════');
 
     switch (type) {
       case 'CHAT':
@@ -351,7 +423,7 @@ class PushNotificationService {
       case 'ANNOUNCEMENT':
       case 'NOTICE':
       case 'BROADCAST':
-        AppRouter.router.push(RoutePath.notification.addBasePath);
+        AppRouter.router.push(RoutePath.notification);
         break;
 
       case 'ATTENDANCE':
@@ -392,7 +464,7 @@ class PushNotificationService {
         break;
 
       default:
-        AppRouter.router.push(RoutePath.notification.addBasePath);
+        AppRouter.router.push(RoutePath.notification);
         break;
     }
   }

@@ -623,6 +623,10 @@ class AppStrings {
   static const String seeMore = 'see_more';
   static const String somethingWentWrong = 'something_went_wrong';
   static const String unknownErrorMessage = 'unknown_error_message';
+  static const String serverError = 'server_error';
+  static const String serverErrorTitle = 'server_error_title';
+  static const String serverErrorMessage = 'server_error_message';
+  static const String serverErrorDirective = 'server_error_directive';
   static const String tryAgain = 'try_again';
   static const String retry = 'retry';
   static const String somethingWentWrongRetry = 'something_went_wrong_retry';
@@ -832,4 +836,58 @@ class AppStrings {
   static const String switchChildSubtitle = 'switch_child_subtitle';
   static const String switchedToChild = 'switched_to_child';
   static const String activeStudent = 'active_student';
+
+  // ── Teacher Placeholders & Labels ──────────────────────────────────────
+  static const String noClassesTodayDesc = 'no_classes_today_desc';
+  static const String noUpcomingClasses = 'no_upcoming_classes';
+  static const String noUpcomingClassesDesc = 'no_upcoming_classes_desc';
+  static const String loadClassesError = 'load_classes_error';
+  static const String loadScheduleError = 'load_schedule_error';
+  static const String startClassSuccess = 'start_class_success';
+  static const String startClassError = 'start_class_error';
+  static const String startClassBtn = 'start_class_btn';
+  static const String classCompletedBadge = 'class_completed_badge';
+  static const String loadAttendanceError = 'load_attendance_error';
+  static const String noStudentsAttendance = 'no_students_attendance';
+  static const String noStudentsAttendanceDesc = 'no_students_attendance_desc';
+  static const String attendanceRecordedSuccess = 'attendance_recorded_success';
+  static const String endSessionErrorNotice = 'end_session_error_notice';
+  static const String newHomeworkTitle = 'new_homework_title';
+  static const String loadHomeworkError = 'load_homework_error';
+  static const String noHomeworkTeacher = 'no_homework_teacher';
+  static const String noHomeworkTeacherDesc = 'no_homework_teacher_desc';
+  static const String assignHomeworkBtn = 'assign_homework_btn';
+  static const String noCompletedClassReports = 'no_completed_class_reports';
+  static const String noCompletedClassReportsDesc = 'no_completed_class_reports_desc';
+  static const String noStudentsFilterDesc = 'no_students_filter_desc';
+  static const String noActiveHomeworkAssigned = 'no_active_homework_assigned';
+  static const String loadStudentsError = 'load_students_error';
+  static const String searchResultCount = 'search_result_count';
+  static const String searchResultsCount = 'search_results_count';
+
+  // ── Teacher Homework Bottom Sheet & Grading ─────────────────────────────
+  static const String createHomeworkSheetTitle = 'create_homework_sheet_title';
+  static const String homeworkTitleField = 'homework_title_field';
+  static const String homeworkInstructionsField = 'homework_instructions_field';
+  static const String cohortGroupField = 'cohort_group_field';
+  static const String subjectIdField = 'subject_id_field';
+  static const String dueDateLabel = 'due_date_label';
+  static const String changeBtn = 'change_btn';
+  static const String publishHomeworkBtn = 'publish_homework_btn';
+  static const String homeworkCreatedSuccess = 'homework_created_success';
+  static const String gradeSubmissionTitle = 'grade_submission_title';
+  static const String homeworkLabel = 'homework_label';
+  static const String statusLabel = 'status_label';
+  static const String statusCompletedOption = 'status_completed_option';
+  static const String statusNeedsRevisionOption = 'status_needs_revision_option';
+  static const String commentNoteField = 'comment_note_field';
+  static const String cancelBtn = 'cancel_btn';
+  static const String saveBtn = 'save_btn';
+  static const String submissionGradedSuccess = 'submission_graded_success';
+  static const String submissionGradedError = 'submission_graded_error';
+  static const String defaultSubjectName = 'default_subject_name';
+  static const String submissionsCountLabel = 'submissions_count_label';
+  static const String gradeBtn = 'grade_btn';
+  static const String soonLabel = 'soon_label';
 }
+

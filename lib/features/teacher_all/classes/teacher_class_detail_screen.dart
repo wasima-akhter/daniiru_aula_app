@@ -21,7 +21,60 @@ class TeacherClassDetailScreen extends ConsumerWidget {
         academyClass ??
         (classesState.todayClasses.isNotEmpty
             ? classesState.todayClasses.first
-            : todayClasses.first);
+            : (classesState.upcomingClasses.isNotEmpty
+                ? classesState.upcomingClasses.first
+                : null));
+
+    if (currentClass == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AulaAppBar(
+          title: ref.watchTr(AppStrings.classDetailsTitle),
+          showBack: true,
+        ),
+        body: Center(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 32.w),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 68.w,
+                  height: 68.w,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryDark.withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.calendar_today_outlined,
+                    color: AppColors.primaryDark,
+                    size: 30.sp,
+                  ),
+                ),
+                SizedBox(height: 16.h),
+                Text(
+                  ref.watchTr(AppStrings.noClassesToday),
+                  textAlign: TextAlign.center,
+                  style: TxtStyle.titleLarge(
+                    fontSize: 17.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                Text(
+                  ref.watchTr(AppStrings.noClassesTodayDesc),
+                  textAlign: TextAlign.center,
+                  style: TxtStyle.bodyMedium(
+                    color: AppColors.subtitleTextColor,
+                    fontSize: 13.5.sp,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -121,9 +174,11 @@ class TeacherClassDetailScreen extends ConsumerWidget {
                   if (context.mounted) {
                     if (success) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
+                        SnackBar(
                           backgroundColor: AppColors.emeraldGreenColor,
-                          content: Text('Clase iniciada exitosamente'),
+                          content: Text(
+                            ref.watchTr(AppStrings.startClassSuccess),
+                          ),
                         ),
                       );
                     } else {
@@ -133,13 +188,15 @@ class TeacherClassDetailScreen extends ConsumerWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           backgroundColor: AppColors.error,
-                          content: Text(err ?? 'Error al iniciar la sesión'),
+                          content: Text(
+                            err ?? ref.watchTr(AppStrings.startClassError),
+                          ),
                         ),
                       );
                     }
                   }
                 },
-          text: 'Comenzar Clase',
+          text: ref.watchTr(AppStrings.startClassBtn),
           backgroundColor: AppColors.primaryDark,
           trailing: Icon(
             Icons.play_arrow_rounded,
@@ -167,7 +224,7 @@ class TeacherClassDetailScreen extends ConsumerWidget {
             ),
             SizedBox(width: 8.w),
             Text(
-              'Clase Finalizada',
+              ref.watchTr(AppStrings.classCompletedBadge),
               style: TxtStyle.titleMedium(
                 color: AppColors.emeraldGreenColor,
                 fontWeight: FontWeight.w700,

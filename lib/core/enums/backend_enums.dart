@@ -646,6 +646,9 @@ enum ApiErrorType {
         if (normalized.contains('AUTH') || normalized.contains('UNAUTHORIZED')) {
           return ApiErrorType.unauthorized;
         }
+        if (normalized.contains('SERVER') || normalized.contains('INTERNAL')) {
+          return ApiErrorType.serverError;
+        }
         return fallback;
       },
     );

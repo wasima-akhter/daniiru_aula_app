@@ -1,5 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../../../utils/color/app_colors.dart';
 import '../../../../utils/enum/app_enum.dart';
 import '../../model/pagination_meta_model.dart';
 
@@ -27,6 +30,17 @@ class PaginatedResult<T> {
   final SummaryModel? summary;
 
   const PaginatedResult({required this.data, this.meta, this.summary});
+
+  List<T> get items => data;
+  bool get hasMore => meta?.hasNextPage ?? (data.isNotEmpty);
+
+  int get length => data.length;
+  bool get isEmpty => data.isEmpty;
+  bool get isNotEmpty => data.isNotEmpty;
+  T get first => data.first;
+  T get last => data.last;
+  T operator [](int index) => data[index];
+  Iterator<T> get iterator => data.iterator;
 }
 
 // ============================================================
@@ -222,3 +236,131 @@ class PaginatorNotifier<T> extends Notifier<PaginatorState<T>> {
     state = PaginatorState<T>();
   }
 }
+
+// ============================================================
+// Central Scroll Controller Listener
+// ============================================================
+
+/// Clean helper that attaches to any [ScrollController] and triggers
+/// [onLoadMore] strictly when near the bottom of the list.
+class AulaPagedScrollListener {
+  final ScrollController controller;
+  final Future<void> Function() onLoadMore;
+  final double threshold;
+  bool _isDisposed = false;
+
+  AulaPagedScrollListener({
+    required this.controller,
+    required this.onLoadMore,
+    this.threshold = 200.0,
+  }) {
+    controller.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_isDisposed || !controller.hasClients) return;
+    final maxScroll = controller.position.maxScrollExtent;
+    final currentScroll = controller.position.pixels;
+    if (maxScroll - currentScroll <= threshold) {
+      onLoadMore();
+    }
+  }
+
+  void dispose() {
+    _isDisposed = true;
+    controller.removeListener(_onScroll);
+  }
+}
+
+// ============================================================
+// Central Footer Widgets
+// ============================================================
+
+/// Reusable footer displayed at the bottom of paginated list views.
+class AulaPagedFooter extends StatelessWidget {
+  final bool isLoadingMore;
+  final String? loadMoreError;
+  final VoidCallback? onRetry;
+  final Color? indicatorColor;
+
+  const AulaPagedFooter({
+    super.key,
+    required this.isLoadingMore,
+    this.loadMoreError,
+    this.onRetry,
+    this.indicatorColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoadingMore) {
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: 16.h),
+        child: Center(
+          child: SizedBox(
+            width: 22.w,
+            height: 22.w,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.5,
+              color: indicatorColor ?? AppColors.primary,
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (loadMoreError != null && loadMoreError!.isNotEmpty) {
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
+        child: Center(
+          child: TextButton.icon(
+            onPressed: onRetry,
+            icon: Icon(Icons.refresh, size: 16.sp, color: AppColors.error),
+            label: Text(
+              'Reintentar / Retry',
+              style: TextStyle(
+                color: AppColors.error,
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+}
+
+/// Reusable sliver adapter for [AulaPagedFooter] in [CustomScrollView].
+class AulaPagedSliverFooter extends StatelessWidget {
+  final bool isLoadingMore;
+  final String? loadMoreError;
+  final VoidCallback? onRetry;
+  final Color? indicatorColor;
+
+  const AulaPagedSliverFooter({
+    super.key,
+    required this.isLoadingMore,
+    this.loadMoreError,
+    this.onRetry,
+    this.indicatorColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isLoadingMore && (loadMoreError == null || loadMoreError!.isEmpty)) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+    return SliverToBoxAdapter(
+      child: AulaPagedFooter(
+        isLoadingMore: isLoadingMore,
+        loadMoreError: loadMoreError,
+        onRetry: onRetry,
+        indicatorColor: indicatorColor,
+      ),
+    );
+  }
+}
+
