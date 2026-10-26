@@ -8,6 +8,7 @@ import 'package:aula360/features/teacher_all/reports/presentation/providers/teac
 class TeacherReportsState {
   final List<TeacherReport> reports;
   final ReportFilter selectedFilter;
+  final String? statusFilter; // null (all), 'SUBMITTED', 'REVIEWED'
   final String searchQuery;
   final bool isSubmitting;
   final bool isLoading;
@@ -16,6 +17,7 @@ class TeacherReportsState {
   const TeacherReportsState({
     this.reports = const [],
     this.selectedFilter = ReportFilter.all,
+    this.statusFilter,
     this.searchQuery = '',
     this.isSubmitting = false,
     this.isLoading = false,
@@ -45,6 +47,22 @@ class TeacherReportsState {
         break;
     }
 
+    if (statusFilter != null && statusFilter!.isNotEmpty) {
+      baseList = baseList.where((report) {
+        final raw = report.rawStatus.toUpperCase();
+        if (raw == statusFilter!.toUpperCase()) return true;
+        if (statusFilter!.toUpperCase() == 'SUBMITTED' &&
+            report.status == ReportStatus.submitted) {
+          return true;
+        }
+        if (statusFilter!.toUpperCase() == 'REVIEWED' &&
+            report.status == ReportStatus.reviewed) {
+          return true;
+        }
+        return false;
+      }).toList();
+    }
+
     final query = searchQuery.trim().toLowerCase();
     if (query.isEmpty) {
       return baseList;
@@ -53,6 +71,16 @@ class TeacherReportsState {
     return baseList.where((report) {
       final titleMatch = report.title.toLowerCase().contains(query);
       final subtitleMatch = report.subtitle.toLowerCase().contains(query);
+      final subjectMatch =
+          report.subjectName?.toLowerCase().contains(query) ?? false;
+      final cohortMatch =
+          report.cohortName?.toLowerCase().contains(query) ?? false;
+      final contentMatch =
+          report.contentCovered?.toLowerCase().contains(query) ?? false;
+      final homeworkMatch =
+          report.homeworkAssigned?.toLowerCase().contains(query) ?? false;
+      final obsMatch =
+          report.observations?.toLowerCase().contains(query) ?? false;
       final studentMatch =
           report.studentName?.toLowerCase().contains(query) ?? false;
       final studentIdMatch =
@@ -63,6 +91,11 @@ class TeacherReportsState {
       final dateMatch = report.date.toLowerCase().contains(query);
       return titleMatch ||
           subtitleMatch ||
+          subjectMatch ||
+          cohortMatch ||
+          contentMatch ||
+          homeworkMatch ||
+          obsMatch ||
           studentMatch ||
           studentIdMatch ||
           roomMatch ||
@@ -75,6 +108,8 @@ class TeacherReportsState {
   TeacherReportsState copyWith({
     List<TeacherReport>? reports,
     ReportFilter? selectedFilter,
+    String? statusFilter,
+    bool clearStatusFilter = false,
     String? searchQuery,
     bool? isSubmitting,
     bool? isLoading,
@@ -83,6 +118,8 @@ class TeacherReportsState {
     return TeacherReportsState(
       reports: reports ?? this.reports,
       selectedFilter: selectedFilter ?? this.selectedFilter,
+      statusFilter:
+          clearStatusFilter ? null : (statusFilter ?? this.statusFilter),
       searchQuery: searchQuery ?? this.searchQuery,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       isLoading: isLoading ?? this.isLoading,
@@ -97,7 +134,8 @@ final teacherReportsControllerProvider =
 );
 
 class TeacherReportsController extends Notifier<TeacherReportsState> {
-  TeacherReportsRepository get _repository => ref.read(teacherReportsRepositoryProvider);
+  TeacherReportsRepository get _repository =>
+      ref.read(teacherReportsRepositoryProvider);
 
   @override
   TeacherReportsState build() {
@@ -106,12 +144,26 @@ class TeacherReportsController extends Notifier<TeacherReportsState> {
   }
 
   Future<void> loadReports() async {
+    state = state.copyWith(isLoading: true, error: null);
     try {
-      final list = await _repository.getReports();
+      final list = await _repository.getReports(status: state.statusFilter);
       state = state.copyWith(reports: list, isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
+  }
+
+  Future<void> refresh() async {
+    await loadReports();
+  }
+
+  void setStatusFilter(String? status) {
+    if (state.statusFilter == status) return;
+    state = state.copyWith(
+      statusFilter: status,
+      clearStatusFilter: status == null,
+    );
+    loadReports();
   }
 
   void selectFilter(ReportFilter filter) {
@@ -130,7 +182,7 @@ class TeacherReportsController extends Notifier<TeacherReportsState> {
     state = state.copyWith(isSubmitting: true);
     try {
       await _repository.submitReport(report);
-      final updated = await _repository.getReports();
+      final updated = await _repository.getReports(status: state.statusFilter);
       state = state.copyWith(reports: updated, isSubmitting: false);
       return true;
     } catch (e) {

@@ -90,8 +90,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   _studentSection(ref, state, controller),
-                  SizedBox(height: 22.h),
-                  _categoryTabs(state, controller, categories),
+                  // SizedBox(height: 22.h),
+                  // _categoryTabs(state, controller, categories),
                 ]),
               ),
             ),
@@ -112,13 +112,20 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error_outline, color: AppColors.error, size: 40.sp),
+                        Icon(
+                          Icons.error_outline,
+                          color: AppColors.error,
+                          size: 40.sp,
+                        ),
                         SizedBox(height: 12.h),
                         Text(
                           AppErrorResolver.resolve(
                             state.error!,
                             languageCode:
-                                ref.watch(languageProvider).valueOrNull?.languageCode ??
+                                ref
+                                    .watch(languageProvider)
+                                    .valueOrNull
+                                    ?.languageCode ??
                                 LanguageNotifier.activeLanguageCode,
                           ).displayMessage,
                           textAlign: TextAlign.center,
@@ -130,7 +137,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         SizedBox(height: 16.h),
                         TextButton.icon(
                           onPressed: () => controller.loadReports(),
-                          icon: const Icon(Icons.refresh, color: AppColors.primary),
+                          icon: const Icon(
+                            Icons.refresh,
+                            color: AppColors.primary,
+                          ),
                           label: Text(
                             ref.watchTr(AppStrings.retry),
                             style: TxtStyle.titleLarge(
@@ -184,7 +194,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               ],
 
               if (filteredReports.isEmpty)
-                SliverFillRemaining(hasScrollBody: false, child: _emptyState(ref))
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _emptyState(ref),
+                )
               else
                 AulaPagedSliverFooter(
                   isLoadingMore: state.isLoadingMore,
@@ -248,7 +261,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             ),
             child: Row(
               children: [
-                Icon(Icons.person_outline, color: AppColors.subtitleTextColor, size: 24.sp),
+                Icon(
+                  Icons.person_outline,
+                  color: AppColors.subtitleTextColor,
+                  size: 24.sp,
+                ),
                 SizedBox(width: 8.w),
                 Expanded(
                   child: Text(

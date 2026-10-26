@@ -17,8 +17,9 @@ class _ClassDetailsScreenState extends ConsumerState<ClassDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final data = widget.classData;
-    final selectedChild =
-        ref.watch(parentChildrenControllerProvider).selectedChild;
+    final selectedChild = ref
+        .watch(parentChildrenControllerProvider)
+        .selectedChild;
     final childName =
         selectedChild?.name ?? ref.watchTr(AppStrings.studentLabel);
     final childGrade = selectedChild?.grade ?? '';
@@ -27,15 +28,17 @@ class _ClassDetailsScreenState extends ConsumerState<ClassDetailsScreen> {
         : '';
     final childInitials =
         selectedChild != null && selectedChild.name.trim().isNotEmpty
-            ? selectedChild.name
-                .trim()
-                .substring(0, selectedChild.name.trim().length >= 2 ? 2 : 1)
-                .toUpperCase()
-            : 'E';
+        ? selectedChild.name
+              .trim()
+              .substring(0, selectedChild.name.trim().length >= 2 ? 2 : 1)
+              .toUpperCase()
+        : 'E';
     final langCode =
         ref.watch(languageProvider).valueOrNull?.language.code ?? 'en';
-    final formattedDate =
-        DateFormat('EEEE, d MMMM yyyy', langCode).format(DateTime.now());
+    final formattedDate = DateFormat(
+      'EEEE, d MMMM yyyy',
+      langCode,
+    ).format(DateTime.now());
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7FC),
@@ -204,28 +207,32 @@ class _ClassDetailsScreenState extends ConsumerState<ClassDetailsScreen> {
                             _smallTitle(
                               ref.watchTr(AppStrings.academyLocation),
                             ),
-                            const Spacer(),
+
+                            // const Spacer(),
+                          ],
+                        ),
+                        SizedBox(height: 12.h),
+                        Row(
+                          children: [
                             Icon(
                               Icons.business_outlined,
                               size: 14.sp,
                               color: AppColors.primary,
                             ),
                             SizedBox(width: 4.w),
-                            Flexible(
-                              child: Text(
-                                ref.watchTr(AppStrings.mockMainBuilding),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TxtStyle.titleLarge(
-                                  color: AppColors.primary,
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                            Text(
+                              ref.watchTr(AppStrings.mockMainBuilding),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TxtStyle.titleLarge(
+                                color: AppColors.primary,
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ],
                         ),
-                        SizedBox(height: 12.h),
+                        SizedBox(height: 6.h),
                         Text(
                           '${data.room}, ${data.building}',
                           style: TxtStyle.titleLarge(
@@ -242,6 +249,8 @@ class _ClassDetailsScreenState extends ConsumerState<ClassDetailsScreen> {
                             fontSize: 14.sp,
                           ),
                         ),
+
+                        /*
                         SizedBox(height: 12.h),
                         Container(
                           height: 150.h,
@@ -316,6 +325,7 @@ class _ClassDetailsScreenState extends ConsumerState<ClassDetailsScreen> {
                             ],
                           ),
                         ),
+                    */
                       ],
                     ),
                   ),

@@ -49,3 +49,4 @@ app.*.map.json
 .env.*
 *.env
 lib/core/config/app_config.dart
+lib/core/config/stripe_config.dart

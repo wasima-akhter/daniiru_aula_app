@@ -334,14 +334,11 @@ class ParentRepositoryImpl implements ParentRepository {
 
   @override
   Future<String?> payInvoice(String invoiceId, [String? paymentMethod]) async {
-    String? clientSecret;
     if (parentRemoteDataSource != null) {
-      try {
-        clientSecret = await parentRemoteDataSource!.payInvoice(invoiceId);
-      } catch (_) {}
+      return await parentRemoteDataSource!.payInvoice(invoiceId);
     }
 
-    // Optimistic local update
+    // Mock fallback when testing without remote data source
     _invoices = _invoices.map((inv) {
       if (inv.id == invoiceId) {
         return inv.copyWith(
@@ -353,7 +350,7 @@ class ParentRepositoryImpl implements ParentRepository {
       return inv;
     }).toList();
 
-    return clientSecret;
+    return 'pi_mock_secret_${DateTime.now().millisecondsSinceEpoch}';
   }
 
   @override

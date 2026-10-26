@@ -5,10 +5,13 @@ import '../../share/export/screen_export.dart';
 import 'data/dtos/teacher_homework_dto.dart';
 import 'presentation/controllers/teacher_homework_controller.dart';
 import 'presentation/providers/teacher_homework_providers.dart';
+import 'presentation/widgets/assign_homework_bottom_sheet.dart';
 
 class TeacherHomeworkScreen extends ConsumerStatefulWidget {
   final String? initialCohortId;
+  final String? initialCohortName;
   final String? initialSubjectId;
+  final String? initialSubjectName;
   final String? sessionId;
   final String? initialTitle;
   final String? initialDescription;
@@ -18,13 +21,23 @@ class TeacherHomeworkScreen extends ConsumerStatefulWidget {
   const TeacherHomeworkScreen({
     super.key,
     this.initialCohortId,
+    this.initialCohortName,
     this.initialSubjectId,
+    this.initialSubjectName,
     this.sessionId,
     this.initialTitle,
     this.initialDescription,
     this.autoOpenCreateSheet = false,
     this.fromClassFlow = false,
   });
+
+  static bool isValidUuid(String? str) {
+    if (str == null) return false;
+    final trimmed = str.trim();
+    return RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    ).hasMatch(trimmed);
+  }
 
   @override
   ConsumerState<TeacherHomeworkScreen> createState() =>
@@ -136,7 +149,10 @@ class _TeacherHomeworkScreenState extends ConsumerState<TeacherHomeworkScreen> {
                           AppErrorResolver.resolve(
                             listState.error!,
                             languageCode:
-                                ref.watch(languageProvider).valueOrNull?.languageCode ??
+                                ref
+                                    .watch(languageProvider)
+                                    .valueOrNull
+                                    ?.languageCode ??
                                 LanguageNotifier.activeLanguageCode,
                           ).displayMessage,
                           textAlign: TextAlign.center,
@@ -396,227 +412,21 @@ class _TeacherHomeworkScreenState extends ConsumerState<TeacherHomeworkScreen> {
     }
   }
 
-  void _openCreateHomeworkSheet(BuildContext context) {
-    final titleController = TextEditingController(
-      text: widget.initialTitle ?? '',
-    );
-    final descriptionController = TextEditingController(
-      text: widget.initialDescription ?? '',
-    );
-    final cohortController = TextEditingController(
-      text: widget.initialCohortId?.isNotEmpty == true
-          ? widget.initialCohortId!
-          : 'Cohort-1',
-    );
-    final subjectController = TextEditingController(
-      text: widget.initialSubjectId?.isNotEmpty == true
-          ? widget.initialSubjectId!
-          : 'Subject-1',
-    );
-    DateTime selectedDueDate = DateTime.now().add(const Duration(days: 7));
-
-    showModalBottomSheet<void>(
+  Future<void> _openCreateHomeworkSheet(BuildContext context) async {
+    final created = await showAssignHomeworkBottomSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
-      ),
-      builder: (sheetContext) {
-        return Consumer(
-          builder: (sheetCtx, sheetRef, _) {
-            final tr = sheetRef.watchTr;
-            return StatefulBuilder(
-              builder: (context, setSheetState) {
-                return Padding(
-                  padding: EdgeInsets.only(
-                    left: 20.w,
-                    right: 20.w,
-                    top: 20.h,
-                    bottom:
-                        MediaQuery.of(sheetContext).viewInsets.bottom + 24.h,
-                  ),
-                  child: SafeArea(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                tr(AppStrings.createHomeworkSheetTitle),
-                                style: TxtStyle.titleLarge(
-                                  fontSize: 19.sp,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const Spacer(),
-                              IconButton(
-                                icon: const Icon(Icons.close),
-                                onPressed: () =>
-                                    Navigator.of(sheetContext).pop(),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 16.h),
-                          TextField(
-                            controller: titleController,
-                            decoration: InputDecoration(
-                              labelText: tr(AppStrings.homeworkTitleField),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8.r),
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 12.h),
-                          TextField(
-                            controller: descriptionController,
-                            maxLines: 3,
-                            decoration: InputDecoration(
-                              labelText: tr(
-                                AppStrings.homeworkInstructionsField,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8.r),
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 12.h),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: cohortController,
-                                  decoration: InputDecoration(
-                                    labelText: tr(AppStrings.cohortGroupField),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8.r),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: 10.w),
-                              Expanded(
-                                child: TextField(
-                                  controller: subjectController,
-                                  decoration: InputDecoration(
-                                    labelText: tr(AppStrings.subjectIdField),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8.r),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 12.h),
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: Icon(
-                              Icons.event_outlined,
-                              color: AppColors.primaryDark,
-                            ),
-                            title: Text(
-                              '${tr(AppStrings.dueDateLabel)}: ${DateFormat('d MMM, yyyy').format(selectedDueDate)}',
-                              style: TxtStyle.bodyMedium(
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            trailing: TextButton(
-                              child: Text(tr(AppStrings.changeBtn)),
-                              onPressed: () async {
-                                final picked = await showDatePicker(
-                                  context: sheetContext,
-                                  initialDate: selectedDueDate,
-                                  firstDate: DateTime.now(),
-                                  lastDate: DateTime.now().add(
-                                    const Duration(days: 365),
-                                  ),
-                                );
-                                if (picked != null) {
-                                  setSheetState(() => selectedDueDate = picked);
-                                }
-                              },
-                            ),
-                          ),
-                          SizedBox(height: 20.h),
-                          Consumer(
-                            builder: (ctx, innerRef, _) {
-                              final actionState = innerRef.watch(
-                                teacherHomeworkControllerProvider,
-                              );
-                              return SizedBox(
-                                width: double.infinity,
-                                child: AulaPrimaryButton(
-                                  text: tr(AppStrings.publishHomeworkBtn),
-                                  isLoading: actionState.isLoading,
-                                  onTap: () async {
-                                    if (titleController.text.trim().isEmpty) {
-                                      return;
-                                    }
-                                    final success = await innerRef
-                                        .read(
-                                          teacherHomeworkControllerProvider
-                                              .notifier,
-                                        )
-                                        .createHomework(
-                                          cohortId: cohortController.text
-                                              .trim(),
-                                          subjectId: subjectController.text
-                                              .trim(),
-                                          sessionId: widget.sessionId,
-                                          title: titleController.text.trim(),
-                                          description:
-                                              descriptionController.text
-                                                  .trim()
-                                                  .isEmpty
-                                              ? null
-                                              : descriptionController.text
-                                                    .trim(),
-                                          startDate: DateTime.now(),
-                                          dueDate: selectedDueDate,
-                                        );
-                                    if (success && sheetContext.mounted) {
-                                      Navigator.of(sheetContext).pop();
-                                      innerRef.invalidate(
-                                        teacherHomeworkListProvider(
-                                          _selectedCohortId,
-                                        ),
-                                      );
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            tr(
-                                              AppStrings.homeworkCreatedSuccess,
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                      if (widget.fromClassFlow &&
-                                          context.mounted) {
-                                        context.go(RoutePath.navigationPages);
-                                      }
-                                    }
-                                  },
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
+      ref: ref,
+      cohortId: widget.initialCohortId,
+      cohortName: widget.initialCohortName,
+      subjectId: widget.initialSubjectId,
+      subjectName: widget.initialSubjectName,
+      sessionId: widget.sessionId,
+      initialTitle: widget.initialTitle,
+      initialDescription: widget.initialDescription,
     );
+    if (created == true && widget.fromClassFlow && context.mounted) {
+      context.pop();
+    }
   }
 
   void _openMarkSubmissionDialog(

@@ -322,9 +322,16 @@ class AppRouter {
         name: RoutePath.payment,
         path: RoutePath.payment.addBasePath,
         pageBuilder: (context, state) {
+          InvoiceModel? initialInvoice;
+          if (state.extra is InvoiceModel) {
+            initialInvoice = state.extra as InvoiceModel;
+          } else if (state.extra is Map<String, dynamic>) {
+            initialInvoice =
+                (state.extra as Map<String, dynamic>)['invoice'] as InvoiceModel?;
+          }
           return _buildPageWithAnimation(
             state: state,
-            child: TuitionPaymentScreen(),
+            child: TuitionPaymentScreen(selectedInvoice: initialInvoice),
           );
         },
       ),
@@ -459,10 +466,18 @@ class AppRouter {
         path: RoutePath.teacherClassDetail.addBasePath,
         pageBuilder: (context, state) {
           final extra = state.extra;
-          final academyClass = extra is AcademyClass ? extra : null;
+          final sessionId = extra is String
+              ? extra
+              : (extra is AcademyClass
+                  ? extra.id
+                  : state.pathParameters['id'] ??
+                      state.uri.queryParameters['id']);
           return _buildPageWithAnimation(
             state: state,
-            child: TeacherClassDetailScreen(academyClass: academyClass),
+            child: TeacherClassDetailScreen(
+              sessionId: sessionId,
+              academyClass: extra is AcademyClass ? extra : null,
+            ),
           );
         },
       ),
@@ -525,7 +540,9 @@ class AppRouter {
         pageBuilder: (context, state) {
           final extra = state.extra;
           String? initialCohortId;
+          String? initialCohortName;
           String? initialSubjectId;
+          String? initialSubjectName;
           String? sessionId;
           String? initialTitle;
           String? initialDescription;
@@ -534,7 +551,9 @@ class AppRouter {
 
           if (extra is Map<String, dynamic>) {
             initialCohortId = extra['cohortId'] as String?;
+            initialCohortName = extra['cohortName'] as String?;
             initialSubjectId = extra['subjectId'] as String?;
+            initialSubjectName = extra['subjectName'] as String?;
             sessionId = extra['sessionId'] as String?;
             initialTitle = extra['title'] as String?;
             initialDescription = extra['description'] as String?;
@@ -548,7 +567,9 @@ class AppRouter {
             state: state,
             child: TeacherHomeworkScreen(
               initialCohortId: initialCohortId,
+              initialCohortName: initialCohortName,
               initialSubjectId: initialSubjectId,
+              initialSubjectName: initialSubjectName,
               sessionId: sessionId,
               initialTitle: initialTitle,
               initialDescription: initialDescription,
@@ -562,11 +583,26 @@ class AppRouter {
         name: RoutePath.teacherReportDetail,
         path: RoutePath.teacherReportDetail.addBasePath,
         pageBuilder: (context, state) {
-          final report =
-              state.extra is TeacherReport ? state.extra as TeacherReport : null;
+          TeacherReport? report;
+          String? reportId;
+          if (state.extra is TeacherReport) {
+            report = state.extra as TeacherReport;
+            reportId = report.id;
+          } else if (state.extra is String) {
+            reportId = state.extra as String;
+          } else if (state.extra is Map) {
+            final map = state.extra as Map;
+            if (map['report'] is TeacherReport) {
+              report = map['report'] as TeacherReport;
+            }
+            reportId = (map['id'] ?? map['reportId'] ?? report?.id) as String?;
+          }
           return _buildPageWithAnimation(
             state: state,
-            child: TeacherReportDetailsScreen(report: report),
+            child: TeacherReportDetailsScreen(
+              report: report,
+              reportId: reportId,
+            ),
           );
         },
       ),

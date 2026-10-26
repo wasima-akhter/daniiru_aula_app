@@ -9,11 +9,7 @@ class PaymentReceiptScreen extends ConsumerStatefulWidget {
   final InvoiceModel? invoice;
   final ChildModel? child;
 
-  const PaymentReceiptScreen({
-    super.key,
-    this.invoice,
-    this.child,
-  });
+  const PaymentReceiptScreen({super.key, this.invoice, this.child});
 
   @override
   ConsumerState<PaymentReceiptScreen> createState() =>
@@ -61,13 +57,15 @@ class _PaymentReceiptScreenState extends ConsumerState<PaymentReceiptScreen> {
 
     final invoiceNum = inv != null
         ? (inv.receiptNumber ??
-            '#${inv.id.length > 8 ? inv.id.substring(0, 8).toUpperCase() : inv.id}')
+              '#${inv.id.length > 8 ? inv.id.substring(0, 8).toUpperCase() : inv.id}')
         : '#A360';
-    final studentName = ch?.name ?? 'Estudiante';
+    final studentName = ch?.name ?? ref.readTr(AppStrings.studentLabel);
     final studentDetails = ch != null ? '${ch.grade} • ${ch.classroom}' : '';
-    final amountFormatted =
-        inv != null ? '${inv.amount.toStringAsFixed(2)} €' : '0,00 €';
-    final dateFormatted = inv?.paidDate ??
+    final amountFormatted = inv != null
+        ? '${inv.amount.toStringAsFixed(2)} €'
+        : '0.00 €';
+    final dateFormatted =
+        inv?.paidDate ??
         DateFormat('d MMM yyyy • HH:mm').format(DateTime.now());
 
     final downloadService = ref.read(fileDownloadServiceProvider);
@@ -262,7 +260,7 @@ class _PaymentReceiptScreenState extends ConsumerState<PaymentReceiptScreen> {
                         ref.watchTr(AppStrings.invoiceLabel),
                         _activeInvoice != null
                             ? (_activeInvoice!.receiptNumber ??
-                                '#${_activeInvoice!.id.length > 8 ? _activeInvoice!.id.substring(0, 8).toUpperCase() : _activeInvoice!.id}')
+                                  '#${_activeInvoice!.id.length > 8 ? _activeInvoice!.id.substring(0, 8).toUpperCase() : _activeInvoice!.id}')
                             : '#A360',
                       ),
                       SizedBox(height: 6.h),
@@ -279,7 +277,9 @@ class _PaymentReceiptScreenState extends ConsumerState<PaymentReceiptScreen> {
                       _previewRow(
                         ref.watchTr(AppStrings.date),
                         _activeInvoice?.paidDate ??
-                            DateFormat('d MMM yyyy • HH:mm').format(DateTime.now()),
+                            DateFormat(
+                              'd MMM yyyy • HH:mm',
+                            ).format(DateTime.now()),
                       ),
                       SizedBox(height: 6.h),
                       _previewRow(
@@ -305,8 +305,8 @@ class _PaymentReceiptScreenState extends ConsumerState<PaymentReceiptScreen> {
                           ),
                           Text(
                             _activeInvoice != null
-                                ? '${_activeInvoice!.amount.toStringAsFixed(2).replaceAll('.', ',')} € EUR'
-                                : '0,00 € EUR',
+                                ? '${_activeInvoice!.amount.toStringAsFixed(2)} € EUR'
+                                : '0.00 € EUR',
                             style: TxtStyle.titleLarge(
                               color: AppColors.primaryDark,
                               fontSize: 16.sp,
@@ -454,8 +454,8 @@ class _PaymentReceiptScreenState extends ConsumerState<PaymentReceiptScreen> {
                 children: [
                   Text(
                     _activeInvoice != null
-                        ? '${_activeInvoice!.amount.toStringAsFixed(2).replaceAll('.', ',')} €'
-                        : '0,00 €',
+                        ? '${_activeInvoice!.amount.toStringAsFixed(2)} €'
+                        : '0.00 €',
                     style: TxtStyle.titleLarge(
                       color: AppColors.primaryDark,
                       fontSize: 26.sp,
@@ -518,7 +518,13 @@ class _PaymentReceiptScreenState extends ConsumerState<PaymentReceiptScreen> {
       elevation: 0,
       centerTitle: true,
       leading: IconButton(
-        onPressed: () => context.go(RoutePath.parentHome.addBasePath),
+        onPressed: () {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go(RoutePath.navigationPages);
+          }
+        },
         icon: Icon(
           Icons.close,
           color: AppColors.subtitleTextColor,
@@ -590,7 +596,7 @@ class _PaymentReceiptScreenState extends ConsumerState<PaymentReceiptScreen> {
             ref.watchTr(AppStrings.invoiceLabel),
             _activeInvoice != null
                 ? (_activeInvoice!.receiptNumber ??
-                    '#${_activeInvoice!.id.length > 8 ? _activeInvoice!.id.substring(0, 8).toUpperCase() : _activeInvoice!.id}')
+                      '#${_activeInvoice!.id.length > 8 ? _activeInvoice!.id.substring(0, 8).toUpperCase() : _activeInvoice!.id}')
                 : '#A360',
           ),
           _receiptDivider(),
@@ -880,7 +886,13 @@ class _PaymentReceiptScreenState extends ConsumerState<PaymentReceiptScreen> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () => context.go(RoutePath.navigationPages),
+        onPressed: () {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go(RoutePath.navigationPages);
+          }
+        },
         style: ElevatedButton.styleFrom(
           elevation: 0,
           backgroundColor: AppColors.primaryDark,

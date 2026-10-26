@@ -29,18 +29,18 @@ class TeacherClassesScreen extends ConsumerWidget {
         title: ref.watchTr(AppStrings.navClasses),
         showBack: false,
         actions: [
-          IconButton(
-            tooltip: ref.watchTr(AppStrings.homeworkTitle),
-            icon: Icon(
-              Icons.assignment_outlined,
-              color: AppColors.primaryDark,
-              size: 24.sp,
-            ),
-            onPressed: () {
-              context.push(RoutePath.teacherHomework.addBasePath);
-            },
-          ),
-          SizedBox(width: 8.w),
+          // IconButton(
+          //   tooltip: ref.watchTr(AppStrings.homeworkTitle),
+          //   icon: Icon(
+          //     Icons.assignment_outlined,
+          //     color: AppColors.primaryDark,
+          //     size: 24.sp,
+          //   ),
+          //   onPressed: () {
+          //     context.push(RoutePath.teacherHomework);
+          //   },
+          // ),
+          // SizedBox(width: 8.w),
         ],
       ),
       body: RefreshIndicator(
@@ -51,143 +51,134 @@ class TeacherClassesScreen extends ConsumerWidget {
         child: state.isLoading
             ? const Center(child: CircularProgressIndicator())
             : state.error != null
-                ? Center(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 24.w),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.error_outline_rounded,
-                            color: AppColors.error,
-                            size: 48.sp,
-                          ),
-                          SizedBox(height: 12.h),
-                          Text(
-                            ref.watchTr(AppStrings.loadClassesError),
-                            style: TxtStyle.titleLarge(
-                              fontSize: 18.sp,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          SizedBox(height: 8.h),
-                          Text(
-                            AppErrorResolver.resolve(
-                              state.error!,
-                              languageCode:
-                                  ref.watch(languageProvider).valueOrNull?.languageCode ??
-                                  LanguageNotifier.activeLanguageCode,
-                            ).displayMessage,
-                            textAlign: TextAlign.center,
-                            style: TxtStyle.bodyMedium(
-                              color: AppColors.subtitleTextColor,
-                              fontSize: 13.sp,
-                            ),
-                          ),
-                          SizedBox(height: 16.h),
-                          AulaPrimaryButton(
-                            text: ref.watchTr(AppStrings.chatRetry),
-                            onTap: () => controller.loadClasses(),
-                          ),
-                        ],
+            ? Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24.w),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.error_outline_rounded,
+                        color: AppColors.error,
+                        size: 48.sp,
                       ),
-                    ),
-                  )
-                : CustomScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(
-                      parent: BouncingScrollPhysics(),
-                    ),
-                    slivers: [
-                      SliverToBoxAdapter(child: _pageHeader(ref)),
-
-                      /// Sticky tabs.
-                      SliverPersistentHeader(
-                        pinned: true,
-                        delegate: StickyHeaderDelegate(
-                          minHeight: 59.h,
-                          maxHeight: 59.h,
-                          child: _tabs(ref, state, controller),
+                      SizedBox(height: 12.h),
+                      Text(
+                        ref.watchTr(AppStrings.loadClassesError),
+                        style: TxtStyle.titleLarge(
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-
-                      if (visibleClasses.isEmpty)
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              24.w,
-                              60.h,
-                              24.w,
-                              30.h,
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 64.w,
-                                  height: 64.w,
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.blueSoft,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.calendar_today_outlined,
-                                    color: AppColors.primaryDark,
-                                    size: 30.sp,
-                                  ),
-                                ),
-                                SizedBox(height: 16.h),
-                                Text(
-                                  state.selectedTab == ClassTab.today
-                                      ? ref.watchTr(AppStrings.noClassesToday)
-                                      : ref.watchTr(AppStrings.noUpcomingClasses),
-                                  textAlign: TextAlign.center,
-                                  style: TxtStyle.titleLarge(
-                                    fontSize: 17.sp,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                SizedBox(height: 8.h),
-                                Text(
-                                  state.selectedTab == ClassTab.today
-                                      ? ref.watchTr(AppStrings.noClassesTodayDesc)
-                                      : ref.watchTr(AppStrings.noUpcomingClassesDesc),
-                                  textAlign: TextAlign.center,
-                                  style: TxtStyle.bodyMedium(
-                                    color: AppColors.subtitleTextColor,
-                                    fontSize: 13.5.sp,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                      else
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              16.w,
-                              14.h,
-                              16.w,
-                              30.h,
-                            ),
-                            child: Column(
-                              children: [
-                                ...visibleClasses.map(
-                                  (academyClass) => Padding(
-                                    padding: EdgeInsets.only(bottom: 1.h),
-                                    child: _classCard(
-                                      context,
-                                      ref,
-                                      academyClass,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                      SizedBox(height: 8.h),
+                      Text(
+                        AppErrorResolver.resolve(
+                          state.error!,
+                          languageCode:
+                              ref
+                                  .watch(languageProvider)
+                                  .valueOrNull
+                                  ?.languageCode ??
+                              LanguageNotifier.activeLanguageCode,
+                        ).displayMessage,
+                        textAlign: TextAlign.center,
+                        style: TxtStyle.bodyMedium(
+                          color: AppColors.subtitleTextColor,
+                          fontSize: 13.sp,
                         ),
+                      ),
+                      SizedBox(height: 16.h),
+                      AulaPrimaryButton(
+                        text: ref.watchTr(AppStrings.chatRetry),
+                        onTap: () => controller.loadClasses(),
+                      ),
                     ],
                   ),
+                ),
+              )
+            : CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                slivers: [
+                  SliverToBoxAdapter(child: _pageHeader(ref)),
+
+                  /// Sticky tabs.
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: StickyHeaderDelegate(
+                      minHeight: 59.h,
+                      maxHeight: 59.h,
+                      child: _tabs(ref, state, controller),
+                    ),
+                  ),
+
+                  if (visibleClasses.isEmpty)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(24.w, 60.h, 24.w, 30.h),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 64.w,
+                              height: 64.w,
+                              decoration: const BoxDecoration(
+                                color: AppColors.blueSoft,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.calendar_today_outlined,
+                                color: AppColors.primaryDark,
+                                size: 30.sp,
+                              ),
+                            ),
+                            SizedBox(height: 16.h),
+                            Text(
+                              state.selectedTab == ClassTab.today
+                                  ? ref.watchTr(AppStrings.noClassesToday)
+                                  : ref.watchTr(AppStrings.noUpcomingClasses),
+                              textAlign: TextAlign.center,
+                              style: TxtStyle.titleLarge(
+                                fontSize: 17.sp,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            SizedBox(height: 8.h),
+                            Text(
+                              state.selectedTab == ClassTab.today
+                                  ? ref.watchTr(AppStrings.noClassesTodayDesc)
+                                  : ref.watchTr(
+                                      AppStrings.noUpcomingClassesDesc,
+                                    ),
+                              textAlign: TextAlign.center,
+                              style: TxtStyle.bodyMedium(
+                                color: AppColors.subtitleTextColor,
+                                fontSize: 13.5.sp,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 30.h),
+                        child: Column(
+                          children: [
+                            ...visibleClasses.map(
+                              (academyClass) => Padding(
+                                padding: EdgeInsets.only(bottom: 1.h),
+                                child: _classCard(context, ref, academyClass),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
       ),
     );
   }
@@ -327,7 +318,10 @@ class TeacherClassesScreen extends ConsumerWidget {
   ) {
     return GestureDetector(
       onTap: () {
-        context.push(RoutePath.teacherClassDetail, extra: academyClass);
+        context.push(
+          RoutePath.teacherClassDetail,
+          extra: academyClass.id.isNotEmpty ? academyClass.id : academyClass,
+        );
       },
       child: Container(
         padding: EdgeInsets.symmetric(vertical: 14.h),

@@ -17,15 +17,24 @@ class CreateHomeworkRequestDto {
     required this.dueDate,
   });
 
+  static String _formatIsoDateTime(String input) {
+    final parsed = DateTime.tryParse(input);
+    if (parsed != null) {
+      return parsed.toUtc().toIso8601String();
+    }
+    return input;
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'cohortId': cohortId,
       'subjectId': subjectId,
-      if (sessionId != null) 'sessionId': sessionId,
+      if (sessionId != null && sessionId!.isNotEmpty) 'sessionId': sessionId,
       'title': title,
-      if (description != null) 'description': description,
-      'startDate': startDate,
-      'dueDate': dueDate,
+      if (description != null && description!.isNotEmpty)
+        'description': description,
+      'startDate': _formatIsoDateTime(startDate),
+      'dueDate': _formatIsoDateTime(dueDate),
     };
   }
 }

@@ -30,6 +30,7 @@ abstract class TeacherRepository {
   // REAL OPENAPI BACKEND ENDPOINTS
   // ==========================================
   Future<List<ClassSessionDto>> getTeacherSessions({DateTime? date});
+  Future<ClassSessionDto> getSessionDetail(String sessionId);
   Future<ClassSessionDto> startSession(String sessionId);
   Future<int> takeSessionAttendance(String sessionId, TakeAttendancePayloadDto payload);
   Future<ClassSessionDto> endSessionAndSubmitReport(String sessionId, EndSessionPayloadDto payload);

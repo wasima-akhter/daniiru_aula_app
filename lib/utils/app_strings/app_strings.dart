@@ -450,6 +450,31 @@ class AppStrings {
   static const String studentLabel = 'student_label';
   static const String invoiceLabel = 'invoice_label';
   static const String methodLabel = 'method_label';
+  static const String totalPendingPayment = 'total_pending_payment';
+  static const String paymentsUpToDate = 'payments_up_to_date';
+  static const String noDebts = 'no_debts';
+  static const String pendingCountLabel = 'pending_count_label';
+  static const String pendingPluralCountLabel = 'pending_plural_count_label';
+  static const String paidTab = 'paid_tab';
+  static const String statusPaid = 'status_paid';
+  static const String statusPending = 'status_pending';
+  static const String paidDatePrefix = 'paid_date_prefix';
+  static const String dueDatePrefix = 'due_date_prefix';
+  static const String payFee = 'pay_fee';
+  static const String noInvoicesFound = 'no_invoices_found';
+  static const String noInvoicesFoundDesc = 'no_invoices_found_desc';
+  static const String viewPaymentHistory = 'view_payment_history';
+  static const String backToInvoices = 'back_to_invoices';
+  static const String cancelAndReturn = 'cancel_and_return';
+  static const String stripeNotConfigured = 'stripe_not_configured';
+  static const String paymentCancelled = 'payment_cancelled';
+  static const String paymentDeclined = 'payment_declined';
+  static const String invoiceAlreadyPaid = 'invoice_already_paid';
+  static const String paymentInitFailed = 'payment_init_failed';
+  static const String paymentFailed = 'payment_failed';
+  static const String paymentNetworkError = 'payment_network_error';
+  static const String paymentUnsupportedPlatform = 'payment_unsupported_platform';
+  static const String paymentProcessing = 'payment_processing';
 
   // ── Chat & Communication (Fixed UI) ──────────────────────────────────────
   static const String chatTutoringTab = 'chat_tutoring_tab';
@@ -538,6 +563,7 @@ class AppStrings {
   static const String oneOnOne = 'one_on_one';
   static const String filed = 'filed';
   static const String submitted = 'submitted';
+  static const String reviewed = 'reviewed';
   static const String needsCheckIn = 'needs_check_in';
   static const String attendanceRecordTitle = 'attendance_record_title';
   static const String attendanceAndParticipationTitle =
@@ -889,5 +915,21 @@ class AppStrings {
   static const String submissionsCountLabel = 'submissions_count_label';
   static const String gradeBtn = 'grade_btn';
   static const String soonLabel = 'soon_label';
+
+  // ── Teacher Session Checkers ───────────────────────────────────────────
+  static const String sessionChecklistTitle = 'session_checklist_title';
+  static const String attendanceActivityTitle = 'attendance_activity_title';
+  static const String attendancePendingDesc = 'attendance_pending_desc';
+  static const String homeworkActivityTitle = 'homework_activity_title';
+  static const String homeworkAssignedSubtitle = 'homework_assigned_subtitle';
+  static const String reportActivityTitle = 'report_activity_title';
+  static const String reportPendingDesc = 'report_pending_desc';
+  static const String activityCompletedStatus = 'activity_completed_status';
+  static const String activityPendingStatus = 'activity_pending_status';
+  static const String submitReportBtn = 'submit_report_btn';
+  static const String allActivitiesCompleted = 'all_activities_completed';
+  static const String pendingActivitiesAlert = 'pending_activities_alert';
+  static const String filterByDate = 'filter_by_date';
+  static const String selectDate = 'select_date';
 }
 

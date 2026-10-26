@@ -3,6 +3,7 @@ import 'package:aula360/features/teacher_all/helper/teacher_models.dart';
 
 abstract class TeacherClassesRepository {
   Future<List<ClassSessionDto>> getSessions({DateTime? date});
+  Future<ClassSessionDto> getSessionDetail(String sessionId);
   Future<ClassSessionDto> startSession(String sessionId);
   Future<List<AcademyClass>> getTodayClasses();
   Future<List<AcademyClass>> getUpcomingClasses();

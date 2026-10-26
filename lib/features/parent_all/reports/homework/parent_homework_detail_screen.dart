@@ -27,8 +27,8 @@ class HomeworkDetailsScreen extends ConsumerWidget {
                   _teacherCard(ref, homework),
                   SizedBox(height: 15.h),
                   _instructions(ref, homework),
-                  SizedBox(height: 15.h),
-                  _attachmentSection(ref),
+                  //  SizedBox(height: 15.h),
+                  //   _attachmentSection(ref),
                   SizedBox(height: 15.h),
                   _submissionInfo(ref, homework),
                 ]),
@@ -88,9 +88,9 @@ class HomeworkDetailsScreen extends ConsumerWidget {
   Widget _teacherCard(WidgetRef ref, HomeworkModel homework) {
     final initials = homework.teacher.trim().isNotEmpty
         ? homework.teacher
-            .trim()
-            .substring(0, homework.teacher.trim().length >= 2 ? 2 : 1)
-            .toUpperCase()
+              .trim()
+              .substring(0, homework.teacher.trim().length >= 2 ? 2 : 1)
+              .toUpperCase()
         : 'P';
     return AulaCard(
       padding: EdgeInsets.all(14.w),

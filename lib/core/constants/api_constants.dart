@@ -67,6 +67,8 @@ abstract final class ApiConstants {
   static const String teacherStudents = '/teacher/students';
   static String teacherStudentDetail(String id) => '/teacher/students/$id';
   static String teacherStudentNotes(String id) => '/teacher/students/$id/notes';
+  static const String teacherReports = '/teacher/reports';
+  static String teacherReportDetail(String id) => '/teacher/reports/$id';
 
   // ==============================
   // Parent Endpoints

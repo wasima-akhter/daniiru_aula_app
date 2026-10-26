@@ -3,6 +3,7 @@
 /// ===============================================================
 library;
 
+import '../reports/data/dtos/teacher_report_dto.dart';
 import 'teacher_enums.dart';
 
 class TeacherProfileData {
@@ -24,7 +25,7 @@ class TeacherProfileData {
     required this.phone,
     this.department = 'Matemáticas y Física',
     this.designation = 'Faculty',
-    this.office = 'Aula 2 / Despacho 4',
+    this.office = '',
     this.bio =
         'Docente titular de matemáticas especializado en bachillerato, álgebra y preparación académica.',
     this.language = 'Español',
@@ -73,6 +74,8 @@ class AcademyClass {
   final int students;
   final ClassStatus status;
   final String rawStatus;
+  final String? cohortId;
+  final String? subjectId;
 
   const AcademyClass({
     this.id = '',
@@ -85,7 +88,39 @@ class AcademyClass {
     required this.students,
     required this.status,
     this.rawStatus = 'SCHEDULED',
+    this.cohortId,
+    this.subjectId,
   });
+
+  AcademyClass copyWith({
+    String? id,
+    String? scheduleId,
+    String? time,
+    String? title,
+    String? subtitle,
+    String? room,
+    String? group,
+    int? students,
+    ClassStatus? status,
+    String? rawStatus,
+    String? cohortId,
+    String? subjectId,
+  }) {
+    return AcademyClass(
+      id: id ?? this.id,
+      scheduleId: scheduleId ?? this.scheduleId,
+      time: time ?? this.time,
+      title: title ?? this.title,
+      subtitle: subtitle ?? this.subtitle,
+      room: room ?? this.room,
+      group: group ?? this.group,
+      students: students ?? this.students,
+      status: status ?? this.status,
+      rawStatus: rawStatus ?? this.rawStatus,
+      cohortId: cohortId ?? this.cohortId,
+      subjectId: subjectId ?? this.subjectId,
+    );
+  }
 }
 
 /// ===============================================================
@@ -277,6 +312,12 @@ class TeacherStudent {
 }
 
 class TeacherReport {
+  final String? id;
+  final String? sessionId;
+  final String? cohortId;
+  final String? cohortName;
+  final String? subjectId;
+  final String? subjectName;
   final ReportCategory category;
   final StudentGroup group;
   final String? grade;
@@ -286,10 +327,31 @@ class TeacherReport {
   final String date;
   final String time;
   final ReportStatus status;
+  final String rawStatus;
   final String? studentName;
   final String? studentId;
+  final String? contentCovered;
+  final String? homeworkAssigned;
+  final String? attitudeRating;
+  final String? workEffortRating;
+  final String? observations;
+  final String? submittedAt;
+  final String? reviewedAt;
+  final String? reviewNote;
+  final String? startTime;
+  final String? endTime;
+  final String? entryTime;
+  final String? exitTime;
+  final List<TeacherReportStudentAttendanceDto> attendances;
+  final TeacherReportAttendanceSummaryDto? attendanceSummary;
 
   const TeacherReport({
+    this.id,
+    this.sessionId,
+    this.cohortId,
+    this.cohortName,
+    this.subjectId,
+    this.subjectName,
     required this.category,
     required this.group,
     this.grade,
@@ -299,9 +361,94 @@ class TeacherReport {
     required this.date,
     required this.time,
     required this.status,
+    this.rawStatus = 'SUBMITTED',
     this.studentName,
     this.studentId,
+    this.contentCovered,
+    this.homeworkAssigned,
+    this.attitudeRating,
+    this.workEffortRating,
+    this.observations,
+    this.submittedAt,
+    this.reviewedAt,
+    this.reviewNote,
+    this.startTime,
+    this.endTime,
+    this.entryTime,
+    this.exitTime,
+    this.attendances = const [],
+    this.attendanceSummary,
   });
+
+  TeacherReport copyWith({
+    String? id,
+    String? sessionId,
+    String? cohortId,
+    String? cohortName,
+    String? subjectId,
+    String? subjectName,
+    ReportCategory? category,
+    StudentGroup? group,
+    String? grade,
+    String? room,
+    String? title,
+    String? subtitle,
+    String? date,
+    String? time,
+    ReportStatus? status,
+    String? rawStatus,
+    String? studentName,
+    String? studentId,
+    String? contentCovered,
+    String? homeworkAssigned,
+    String? attitudeRating,
+    String? workEffortRating,
+    String? observations,
+    String? submittedAt,
+    String? reviewedAt,
+    String? reviewNote,
+    String? startTime,
+    String? endTime,
+    String? entryTime,
+    String? exitTime,
+    List<TeacherReportStudentAttendanceDto>? attendances,
+    TeacherReportAttendanceSummaryDto? attendanceSummary,
+  }) {
+    return TeacherReport(
+      id: id ?? this.id,
+      sessionId: sessionId ?? this.sessionId,
+      cohortId: cohortId ?? this.cohortId,
+      cohortName: cohortName ?? this.cohortName,
+      subjectId: subjectId ?? this.subjectId,
+      subjectName: subjectName ?? this.subjectName,
+      category: category ?? this.category,
+      group: group ?? this.group,
+      grade: grade ?? this.grade,
+      room: room ?? this.room,
+      title: title ?? this.title,
+      subtitle: subtitle ?? this.subtitle,
+      date: date ?? this.date,
+      time: time ?? this.time,
+      status: status ?? this.status,
+      rawStatus: rawStatus ?? this.rawStatus,
+      studentName: studentName ?? this.studentName,
+      studentId: studentId ?? this.studentId,
+      contentCovered: contentCovered ?? this.contentCovered,
+      homeworkAssigned: homeworkAssigned ?? this.homeworkAssigned,
+      attitudeRating: attitudeRating ?? this.attitudeRating,
+      workEffortRating: workEffortRating ?? this.workEffortRating,
+      observations: observations ?? this.observations,
+      submittedAt: submittedAt ?? this.submittedAt,
+      reviewedAt: reviewedAt ?? this.reviewedAt,
+      reviewNote: reviewNote ?? this.reviewNote,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      entryTime: entryTime ?? this.entryTime,
+      exitTime: exitTime ?? this.exitTime,
+      attendances: attendances ?? this.attendances,
+      attendanceSummary: attendanceSummary ?? this.attendanceSummary,
+    );
+  }
 }
 
 final List<TeacherStudent> students = const [

@@ -1,5 +1,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+
 import '../../../core/services/notification/push_notification_service.dart';
 import '../../auth/presentation/providers/auth_providers.dart';
 import '../../chat/presentation/controllers/chat_controller.dart';
@@ -27,50 +29,56 @@ class TeacherProfileScreen extends ConsumerWidget {
         ref.watchTr(AppStrings.childProfile),
         showBackButton: false,
       ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Test Push & FCM Diagnostics',
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        child: const Icon(Icons.notifications_active),
-        onPressed: () async {
-          final pushService = ref.read(pushNotificationServiceProvider);
-          final hasPerm = await pushService.isPermissionGranted();
-          final token = await pushService.getCachedOrFetchToken();
+      floatingActionButton: kDebugMode
+          ? FloatingActionButton(
+              tooltip: 'Test Push & FCM Diagnostics',
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              child: const Icon(Icons.notifications_active),
+              onPressed: () async {
+                final pushService = ref.read(pushNotificationServiceProvider);
+                final hasPerm = await pushService.isPermissionGranted();
+                final token = await pushService.getCachedOrFetchToken();
 
-          String syncStatus = 'Pending...';
-          String profileStatus = 'Pending...';
+                String syncStatus = 'Pending...';
+                String profileStatus = 'Pending...';
 
-          try {
-            if (token != null && token.isNotEmpty) {
-              await ref.read(checkSessionUseCaseProvider).call(fcmToken: token);
-              syncStatus = 'Token synced with backend session (POST /api/v1/auth/check)';
-            } else {
-              syncStatus = 'Token is null or empty';
-            }
-          } catch (e) {
-            syncStatus = 'Sync error: $e';
-          }
+                try {
+                  if (token != null && token.isNotEmpty) {
+                    await ref
+                        .read(checkSessionUseCaseProvider)
+                        .call(fcmToken: token);
+                    syncStatus =
+                        'Token synced with backend session (POST /api/v1/auth/check)';
+                  } else {
+                    syncStatus = 'Token is null or empty';
+                  }
+                } catch (e) {
+                  syncStatus = 'Sync error: $e';
+                }
 
-          try {
-            await ref
-                .read(teacherProfileControllerProvider.notifier)
-                .loadProfile(force: true);
-            profileStatus = 'Profile loaded (GET /api/v1/profile/teacher)';
-          } catch (e) {
-            profileStatus = 'Profile error: $e';
-          }
+                try {
+                  await ref
+                      .read(teacherProfileControllerProvider.notifier)
+                      .loadProfile(force: true);
+                  profileStatus =
+                      'Profile loaded (GET /api/v1/profile/teacher)';
+                } catch (e) {
+                  profileStatus = 'Profile error: $e';
+                }
 
-          if (!context.mounted) return;
-          _showPushDiagnosticsSheet(
-            context,
-            ref,
-            hasPermission: hasPerm,
-            token: token ?? '',
-            syncStatus: syncStatus,
-            profileStatus: profileStatus,
-          );
-        },
-      ),
+                if (!context.mounted) return;
+                _showPushDiagnosticsSheet(
+                  context,
+                  ref,
+                  hasPermission: hasPerm,
+                  token: token ?? '',
+                  syncStatus: syncStatus,
+                  profileStatus: profileStatus,
+                );
+              },
+            )
+          : null,
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : SafeArea(
@@ -585,7 +593,9 @@ class TeacherProfileScreen extends ConsumerWidget {
                       SizedBox(height: 8.h),
                       ElevatedButton.icon(
                         onPressed: () async {
-                          final push = ref.read(pushNotificationServiceProvider);
+                          final push = ref.read(
+                            pushNotificationServiceProvider,
+                          );
                           final res = await push.requestPermissions();
                           final granted =
                               res?.authorizationStatus ==
@@ -641,7 +651,9 @@ class TeacherProfileScreen extends ConsumerWidget {
                               Clipboard.setData(ClipboardData(text: token));
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('FCM Token copied to clipboard!'),
+                                  content: Text(
+                                    'FCM Token copied to clipboard!',
+                                  ),
                                   duration: Duration(seconds: 2),
                                 ),
                               );
@@ -683,7 +695,11 @@ class TeacherProfileScreen extends ConsumerWidget {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.info_outline, color: AppColors.primary, size: 18.sp),
+                              Icon(
+                                Icons.info_outline,
+                                color: AppColors.primary,
+                                size: 18.sp,
+                              ),
                               SizedBox(width: 6.w),
                               Text(
                                 'How to Test Real Push:',
@@ -719,7 +735,8 @@ class TeacherProfileScreen extends ConsumerWidget {
   }
 
   Widget _statusRow(IconData icon, String label, String value) {
-    final isOk = !value.toLowerCase().contains('error') &&
+    final isOk =
+        !value.toLowerCase().contains('error') &&
         !value.toLowerCase().contains('null');
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

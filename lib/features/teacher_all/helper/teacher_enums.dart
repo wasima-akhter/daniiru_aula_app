@@ -198,7 +198,8 @@ enum ReportCategory { classReport, studentReport }
 
 enum ReportStatus {
   filed,
-  submitted;
+  submitted,
+  reviewed;
 
   String get stringKey {
     switch (this) {
@@ -206,6 +207,8 @@ enum ReportStatus {
         return AppStrings.filed;
       case ReportStatus.submitted:
         return AppStrings.submitted;
+      case ReportStatus.reviewed:
+        return AppStrings.reviewed;
     }
   }
 

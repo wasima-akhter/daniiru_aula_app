@@ -1,3 +1,5 @@
+import 'package:aula360/core/helper/text_utils/string_extension.dart';
+
 import '../../parent_all/helper/parent_home_helper.dart';
 import '../../share/export/screen_export.dart';
 import '../helper/teacher_enums.dart';
@@ -18,6 +20,7 @@ class TeacherStudentsScreen extends ConsumerStatefulWidget {
 
 class _TeacherStudentsScreenState extends ConsumerState<TeacherStudentsScreen> {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
   AulaPagedScrollListener? _pagedListener;
 
   @override
@@ -34,6 +37,7 @@ class _TeacherStudentsScreenState extends ConsumerState<TeacherStudentsScreen> {
   void dispose() {
     _pagedListener?.dispose();
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -49,63 +53,105 @@ class _TeacherStudentsScreenState extends ConsumerState<TeacherStudentsScreen> {
         title: ref.watchTr(AppStrings.myStudentsTitle),
         showBack: false,
       ),
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : state.error != null
-              ? _errorView(ref, state.error!, controller)
-              : RefreshIndicator(
-                  onRefresh: controller.refresh,
-                  child: Column(
-                    children: [
-                      _searchSection(ref, controller),
-                      _filterSection(ref, state, controller),
-                      Expanded(
-                        child: filteredStudents.isEmpty
-                            ? _emptyView(ref, controller)
-                            : ListView(
-                                controller: _scrollController,
-                                physics: const AlwaysScrollableScrollPhysics(
-                                  parent: BouncingScrollPhysics(),
-                                ),
-                                padding:
-                                    EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 30.h),
-                                children: [
-                                  _rosterHeader(ref, state.students),
-                                  SizedBox(height: 7.h),
-                                  _studentList(context, ref, filteredStudents),
-                                  AulaPagedFooter(
-                                    isLoadingMore: state.isLoadingMore,
-                                    loadMoreError: state.loadMoreError,
-                                    onRetry: controller.loadMore,
-                                    indicatorColor: AppColors.primaryDark,
-                                  ),
-                                ],
+      body: Column(
+        children: [
+          _searchSection(ref, state, controller),
+          // _filterSection(ref, state, controller),
+          Expanded(
+            child: state.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : state.error != null
+                ? _errorView(ref, state.error!, controller)
+                : RefreshIndicator(
+                    onRefresh: controller.refresh,
+                    child: filteredStudents.isEmpty
+                        ? _emptyView(ref, state, controller)
+                        : ListView(
+                            controller: _scrollController,
+                            physics: const AlwaysScrollableScrollPhysics(
+                              parent: BouncingScrollPhysics(),
+                            ),
+                            padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 30.h),
+                            children: [
+                              _rosterHeader(ref, state.students),
+                              SizedBox(height: 7.h),
+                              _studentList(context, ref, filteredStudents),
+                              AulaPagedFooter(
+                                isLoadingMore: state.isLoadingMore,
+                                loadMoreError: state.loadMoreError,
+                                onRetry: controller.loadMore,
+                                indicatorColor: AppColors.primaryDark,
                               ),
-                      ),
-                    ],
+                            ],
+                          ),
                   ),
-                ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _searchSection(WidgetRef ref, TeacherStudentsController controller) {
+  Widget _searchSection(
+    WidgetRef ref,
+    TeacherStudentsState state,
+    TeacherStudentsController controller,
+  ) {
+    final hasSearch =
+        state.searchQuery.isNotEmpty || _searchController.text.isNotEmpty;
+
     return Padding(
       padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 10.h),
-      child: TextField(
-        onChanged: controller.setSearchQuery,
-        decoration: InputDecoration(
-          hintText: ref.watchTr(AppStrings.searchStudentHint),
-          hintStyle: TxtStyle.bodyMedium(
-            color: AppColors.subtitleTextColor,
-            fontSize: 16.sp,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10.r),
+          border: Border.all(
+            color: hasSearch
+                ? AppColors.primaryDark
+                : AppColors.backgroundsLinesColor,
+            width: hasSearch ? 1.2 : 1.0,
           ),
-          prefixIcon: Icon(
-            Icons.search_rounded,
-            size: 17.sp,
-            color: AppColors.subtitleTextColor,
+        ),
+        child: TextField(
+          controller: _searchController,
+          onChanged: controller.setSearchQuery,
+          textInputAction: TextInputAction.search,
+          onSubmitted: controller.searchImmediately,
+          style: TxtStyle.bodyMedium(color: AppColors.text, fontSize: 15.sp),
+          decoration: InputDecoration(
+            hintText: ref.watchTr(AppStrings.searchStudentHint),
+            hintStyle: TxtStyle.bodyMedium(
+              color: AppColors.subtitleTextColor,
+              fontSize: 15.sp,
+            ),
+            prefixIcon: Icon(
+              Icons.search_rounded,
+              size: 20.sp,
+              color: hasSearch
+                  ? AppColors.primaryDark
+                  : AppColors.subtitleTextColor,
+            ),
+            suffixIcon: hasSearch
+                ? IconButton(
+                    icon: Icon(
+                      Icons.close_rounded,
+                      size: 18.sp,
+                      color: AppColors.subtitleTextColor,
+                    ),
+                    onPressed: () {
+                      _searchController.clear();
+                      controller.clearSearch();
+                    },
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  )
+                : null,
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 12.w,
+              vertical: 12.h,
+            ),
           ),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 12.h),
         ),
       ),
     );
@@ -286,7 +332,7 @@ class _TeacherStudentsScreenState extends ConsumerState<TeacherStudentsScreen> {
                     children: [
                       Flexible(
                         child: Text(
-                          student.name,
+                          student.name.capitalizeWords(),
                           overflow: TextOverflow.ellipsis,
                           style: TxtStyle.titleLarge(
                             color: AppColors.text,
@@ -295,14 +341,14 @@ class _TeacherStudentsScreenState extends ConsumerState<TeacherStudentsScreen> {
                           ),
                         ),
                       ),
-                      SizedBox(width: 6.w),
-                      Text(
-                        student.id,
-                        style: TxtStyle.bodyMedium(
-                          color: AppColors.subtitleTextColor,
-                          fontSize: 16.sp,
-                        ),
-                      ),
+                      // SizedBox(width: 6.w),
+                      // Text(
+                      //   student.name,
+                      //   style: TxtStyle.bodyMedium(
+                      //     color: AppColors.subtitleTextColor,
+                      //     fontSize: 16.sp,
+                      //   ),
+                      // ),
                     ],
                   ),
                   SizedBox(height: 3.h),
@@ -481,9 +527,12 @@ class _TeacherStudentsScreenState extends ConsumerState<TeacherStudentsScreen> {
 
   Widget _emptyView(
     WidgetRef ref,
+    TeacherStudentsState state,
     TeacherStudentsController controller,
   ) {
     final tr = ref.watchTr;
+    final isSearching = state.isSearching;
+
     return Center(
       child: Padding(
         padding: EdgeInsets.all(24.w),
@@ -491,7 +540,9 @@ class _TeacherStudentsScreenState extends ConsumerState<TeacherStudentsScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.people_outline_rounded,
+              isSearching
+                  ? Icons.search_off_rounded
+                  : Icons.people_outline_rounded,
               size: 48.sp,
               color: AppColors.subtitleTextColor,
             ),
@@ -513,6 +564,30 @@ class _TeacherStudentsScreenState extends ConsumerState<TeacherStudentsScreen> {
                 color: AppColors.subtitleTextColor,
               ),
             ),
+            if (isSearching) ...[
+              SizedBox(height: 16.h),
+              OutlinedButton.icon(
+                onPressed: () {
+                  _searchController.clear();
+                  controller.clearSearch();
+                },
+                icon: const Icon(Icons.close_rounded, size: 16),
+                label: Text(
+                  ref.watchTr(AppStrings.allTab),
+                  style: TxtStyle.bodyMedium(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primaryDark,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primaryDark,
+                  side: const BorderSide(color: AppColors.primaryDark),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:aula360/core/network/api_client.dart';
+import 'package:aula360/features/teacher_all/classes/data/datasources/teacher_classes_remote_data_source.dart';
+import 'package:aula360/features/teacher_all/classes/data/repositories/teacher_classes_repository_impl.dart';
 import 'package:aula360/features/teacher_all/data/datasources/teacher_remote_data_source.dart';
 import 'package:aula360/features/teacher_all/data/dtos/attendance_dtos.dart';
 import 'package:aula360/features/teacher_all/data/dtos/class_session_dto.dart';
@@ -93,6 +95,73 @@ void main() {
       expect(dto.cohortName, 'Grupo A Bachillerato');
       expect(dto.classroomRoomNumber, 'Aula 2');
       expect(dto.status, 'ONGOING');
+    });
+
+    test('ClassSessionDto parses full session detail response with roster and report', () {
+      final json = {
+        'id': '123e4567-e89b-12d3-a456-426614174000',
+        'scheduleId': '123e4567-e89b-12d3-a456-426614174001',
+        'sessionDate': '2026-11-02T00:00:00.000Z',
+        'startTime': '09:00',
+        'endTime': '10:30',
+        'status': 'SCHEDULED',
+        'entryTime': null,
+        'exitTime': null,
+        'subjectName': 'Advanced Mathematics',
+        'cohortId': '123e4567-e89b-12d3-a456-426614174002',
+        'cohortName': 'Grade 10 - Alpha',
+        'teacherName': 'Dr. John Doe',
+        'classroomRoomNumber': '101-A',
+        'hasReport': true,
+        'hasHomework': false,
+        'hasAttendance': true,
+        'students': [
+          {
+            'id': 'stu-1',
+            'fullName': 'Alice Johnson',
+            'enrollmentNumber': 'STU-2026-0001',
+            'avatarUrl': 'https://example.com/avatar.jpg',
+            'attendanceStatus': 'PRESENT',
+          }
+        ],
+        'report': {
+          'id': 'rep-1',
+          'sessionId': '123e4567-e89b-12d3-a456-426614174001',
+          'contentCovered': 'Chapter 4: Quadratic Equations',
+          'homeworkAssigned': 'Exercise 4.2 questions 1-15',
+          'attitudeRating': 'SATISFACTORY',
+          'workEffortRating': 'ON_TRACK',
+          'observations': 'Students engaged well.',
+          'status': 'SUBMITTED',
+          'submittedAt': '2026-10-25T14:30:00.000Z',
+        },
+        'homework': [
+          {
+            'id': 'hw-1',
+            'title': 'Algebra Homework Chapter 4',
+            'dueDate': '2026-10-25T23:59:59.000Z',
+          }
+        ],
+      };
+
+      final dto = ClassSessionDto.fromJson(json);
+      expect(dto.id, '123e4567-e89b-12d3-a456-426614174000');
+      expect(dto.hasReport, isTrue);
+      expect(dto.hasAttendance, isTrue);
+      expect(dto.hasHomework, isFalse);
+      expect(dto.students.length, 1);
+      expect(dto.students.first.fullName, 'Alice Johnson');
+      expect(dto.students.first.attendanceStatus, 'PRESENT');
+      expect(dto.students.first.initials, 'AJ');
+      expect(dto.report?['contentCovered'], 'Chapter 4: Quadratic Equations');
+      expect(dto.homework?.length, 1);
+      expect(dto.formattedTime, '09:00 - 10:30');
+
+      final academyClass = dto.toAcademyClass();
+      expect(academyClass.id, '123e4567-e89b-12d3-a456-426614174000');
+      expect(academyClass.title, 'Advanced Mathematics');
+      expect(academyClass.room, '101-A');
+      expect(academyClass.students, 1);
     });
 
     test('TakeAttendancePayloadDto serializes items array', () {
@@ -208,6 +277,30 @@ void main() {
       await dataSource.getSessions(date: testDate);
       expect(mockClient.lastGetPath, '/teacher/sessions');
       expect(mockClient.lastGetParams?['date'], '2026-10-22T00:00:00.000Z');
+    });
+
+    test('1c. getSessionDetail calls GET /teacher/sessions/:id', () async {
+      mockClient.responseData = {
+        'success': true,
+        'data': {
+          'id': '123e4567-e89b-12d3-a456-426614174000',
+          'scheduleId': 'sched-1',
+          'sessionDate': '2026-11-02T00:00:00.000Z',
+          'startTime': '09:00',
+          'endTime': '10:30',
+          'status': 'SCHEDULED',
+          'subjectName': 'Advanced Mathematics',
+          'cohortName': 'Grade 10 - Alpha',
+          'teacherName': 'Dr. John Doe',
+          'classroomRoomNumber': '101-A',
+          'students': [],
+        },
+      };
+
+      final session = await dataSource.getSessionDetail('123e4567-e89b-12d3-a456-426614174000');
+      expect(mockClient.lastGetPath, '/teacher/sessions/123e4567-e89b-12d3-a456-426614174000');
+      expect(session.id, '123e4567-e89b-12d3-a456-426614174000');
+      expect(session.subjectName, 'Advanced Mathematics');
     });
 
     test('2. startSession calls POST /teacher/sessions/:id/start', () async {
@@ -447,6 +540,55 @@ void main() {
       expect(schedule.first.scheduleId, 'sched-30');
       expect(schedule.first.rawStatus, 'SCHEDULED');
       expect(schedule.first.title, 'Biología');
+    });
+
+    test('getSessionDetail forwards to remoteDataSource', () async {
+      mockClient.responseData = {
+        'success': true,
+        'data': {
+          'id': 'sess-detail-1',
+          'scheduleId': 'sched-1',
+          'sessionDate': '2026-11-02T00:00:00.000Z',
+          'startTime': '09:00',
+          'endTime': '10:30',
+          'status': 'SCHEDULED',
+          'subjectName': 'Química',
+          'cohortName': '10-A',
+          'teacherName': 'Prof. Garcia',
+          'classroomRoomNumber': 'Lab 1',
+          'students': [],
+        },
+      };
+
+      final session = await repository.getSessionDetail('sess-detail-1');
+      expect(mockClient.lastGetPath, '/teacher/sessions/sess-detail-1');
+      expect(session.id, 'sess-detail-1');
+      expect(session.subjectName, 'Química');
+    });
+
+    test('TeacherClassesRepositoryImpl.getSessionDetail forwards to remoteDataSource', () async {
+      final classesRepo = TeacherClassesRepositoryImpl(TeacherClassesRemoteDataSourceImpl(mockClient));
+      mockClient.responseData = {
+        'success': true,
+        'data': {
+          'id': 'sess-classes-1',
+          'scheduleId': 'sched-1',
+          'sessionDate': '2026-11-02T00:00:00.000Z',
+          'startTime': '09:00',
+          'endTime': '10:30',
+          'status': 'SCHEDULED',
+          'subjectName': 'Física',
+          'cohortName': '11-B',
+          'teacherName': 'Prof. Lopez',
+          'classroomRoomNumber': 'Aula 2',
+          'students': [],
+        },
+      };
+
+      final session = await classesRepo.getSessionDetail('sess-classes-1');
+      expect(mockClient.lastGetPath, '/teacher/sessions/sess-classes-1');
+      expect(session.id, 'sess-classes-1');
+      expect(session.subjectName, 'Física');
     });
   });
 }

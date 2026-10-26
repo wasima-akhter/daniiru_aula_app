@@ -111,7 +111,10 @@ class _HomeworkScreenState extends ConsumerState<HomeworkScreen> {
                             AppErrorResolver.resolve(
                               state.error!,
                               languageCode:
-                                  ref.watch(languageProvider).valueOrNull?.languageCode ??
+                                  ref
+                                      .watch(languageProvider)
+                                      .valueOrNull
+                                      ?.languageCode ??
                                   LanguageNotifier.activeLanguageCode,
                             ).displayMessage,
                             textAlign: TextAlign.center,
@@ -248,13 +251,19 @@ class _HomeworkScreenState extends ConsumerState<HomeworkScreen> {
         ),
       );
     }
-    return Row(
-      children: [
-        for (int i = 0; i < state.students.length; i++) ...[
-          Expanded(child: _studentCard(state, controller, i)),
-          if (i != state.students.length - 1) SizedBox(width: 9.w),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (int i = 0; i < state.students.length; i++) ...[
+            SizedBox(
+              width: 1.sw * 0.3,
+              child: _studentCard(state, controller, i),
+            ),
+            if (i != state.students.length - 1) SizedBox(width: 9.w),
+          ],
         ],
-      ],
+      ),
     );
   }
 
@@ -271,57 +280,59 @@ class _HomeworkScreenState extends ConsumerState<HomeworkScreen> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
-        height: 72.h,
-        padding: EdgeInsets.all(10.w),
+        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 12.h),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: selected
+              ? AppColors.primary.withValues(alpha: 0.05)
+              : Colors.white,
           borderRadius: BorderRadius.circular(12.r),
           border: Border.all(
             color: selected
                 ? AppColors.primary
                 : AppColors.backgroundsLinesColor,
-            width: selected ? 1.6 : 1,
+            width: selected ? 1.5 : 1,
           ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: .08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : null,
         ),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            UserAvatar(initials: student.initials, size: 36),
-            SizedBox(width: 8.w),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    student.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TxtStyle.titleLarge(
-                      color: AppColors.text,
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w800,
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                UserAvatar(initials: student.initials, size: 38),
+                if (selected)
+                  Positioned(
+                    right: -4,
+                    bottom: -2,
+                    child: Icon(
+                      Icons.check_circle,
+                      color: AppColors.primary,
+                      size: 16.sp,
                     ),
                   ),
-                  SizedBox(height: 3.h),
-                  Text(
-                    student.grade,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TxtStyle.titleLarge(
-                      color: AppColors.secondaryText,
-                      fontSize: 13.sp,
-                    ),
-                  ),
-                ],
+              ],
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              student.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TxtStyle.titleLarge(
+                color: AppColors.text,
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: 4.h),
+            Text(
+              student.grade,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TxtStyle.titleLarge(
+                color: AppColors.secondaryText,
+                fontSize: 11.sp,
               ),
             ),
           ],

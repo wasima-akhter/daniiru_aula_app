@@ -13,6 +13,8 @@ import 'package:aula360/features/teacher_all/homework/presentation/providers/tea
 
 export 'package:aula360/features/teacher_all/homework/presentation/providers/teacher_homework_providers.dart'
     show teacherHomeworkListProvider;
+export 'package:aula360/features/teacher_all/classes/presentation/providers/teacher_classes_providers.dart'
+    show teacherSessionDetailProvider;
 
 /// Fetches teacher daily sessions for a given date (defaults to today)
 final teacherSessionsProvider =

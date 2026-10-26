@@ -26,7 +26,7 @@ class ParentInvoiceDto {
   factory ParentInvoiceDto.fromJson(Map<String, dynamic> json) {
     return ParentInvoiceDto(
       id: json['id'] as String? ?? '',
-      feeTitle: json['feeTitle'] as String? ?? 'Matrícula escolar',
+      feeTitle: json['feeTitle'] as String? ?? json['title'] as String? ?? 'Matrícula escolar',
       studentName: json['studentName'] as String? ?? '',
       amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
       currency: json['currency'] as String? ?? 'EUR',
@@ -44,16 +44,27 @@ class ParentInvoiceDto {
     final formattedDue = dueDt != null ? DateFormat('d MMM yyyy').format(dueDt) : dueDate;
     final isPaid = status.toUpperCase() == 'PAID';
     final formattedPaid = paidDt != null ? DateFormat('d MMM yyyy').format(paidDt) : null;
+    final displayTitle = feeTitle.isNotEmpty ? feeTitle : 'Cuota escolar';
+    final displayConcept = studentName.isNotEmpty
+        ? '$displayTitle ($studentName)'
+        : displayTitle;
+    final recNum = isPaid
+        ? 'REC-${id.length >= 6 ? id.substring(0, 6).toUpperCase() : id.toUpperCase()}'
+        : null;
 
     return InvoiceModel(
       id: id,
-      concept: '$feeTitle ($studentName)',
+      concept: displayConcept,
       monthYear: monthYear,
       amount: amount,
       dueDate: formattedDue,
       isPaid: isPaid,
       paidDate: formattedPaid,
-      receiptNumber: isPaid ? 'REC-${id.substring(0, 6).toUpperCase()}' : null,
+      receiptNumber: recNum,
+      status: status,
+      studentName: studentName,
+      feeTitle: displayTitle,
+      currency: currency,
     );
   }
 }

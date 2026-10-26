@@ -7,6 +7,9 @@ import 'package:aula360/features/teacher_all/helper/teacher_enums.dart';
 import 'package:aula360/features/teacher_all/students/data/datasources/teacher_students_remote_data_source.dart';
 import 'package:aula360/features/teacher_all/students/data/dtos/teacher_students_dtos.dart';
 import 'package:aula360/features/teacher_all/students/data/repositories/teacher_students_repository_impl.dart';
+import 'package:aula360/features/teacher_all/students/presentation/controllers/teacher_students_controller.dart';
+import 'package:aula360/features/teacher_all/students/presentation/providers/teacher_students_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class MockApiClient extends ApiClient {
   MockApiClient() : super(Dio());
@@ -336,6 +339,75 @@ void main() {
       );
       expect(note.id, 'note-xyz');
       expect(note.content, 'Homework completed on time.');
+    });
+  });
+
+  group('TeacherStudentsController Search & Clear Capability', () {
+    late MockApiClient mockClient;
+    late ProviderContainer container;
+
+    setUp(() {
+      mockClient = MockApiClient();
+      final remoteSource = TeacherStudentsRemoteDataSourceImpl(mockClient);
+      final repo = TeacherStudentsRepositoryImpl(remoteSource);
+
+      container = ProviderContainer(
+        overrides: [
+          teacherStudentsRepositoryProvider.overrideWithValue(repo),
+        ],
+      );
+    });
+
+    tearDown(() {
+      container.dispose();
+    });
+
+    test('searchImmediately fetches students with search param', () async {
+      mockClient.responseData = {
+        'success': true,
+        'data': [
+          {
+            'id': 'stu-alice',
+            'fullName': 'Alice Johnson',
+            'enrollmentNumber': 'STU-001',
+            'gradeLevel': 'Grade 10',
+            'avatarUrl': null,
+            'attendancePercentage': 95,
+          }
+        ],
+      };
+
+      final controller =
+          container.read(teacherStudentsControllerProvider.notifier);
+      await Future<void>.delayed(Duration.zero);
+
+      await controller.searchImmediately('Alice');
+
+      final state = container.read(teacherStudentsControllerProvider);
+      expect(mockClient.lastGetPath, '/teacher/students');
+      expect(mockClient.lastGetParams?['search'], 'Alice');
+      expect(state.searchQuery, 'Alice');
+      expect(state.filteredStudents.length, 1);
+      expect(state.filteredStudents.first.name, 'Alice Johnson');
+    });
+
+    test('clearSearch clears query and re-fetches without search param', () async {
+      mockClient.responseData = {
+        'success': true,
+        'data': [],
+      };
+
+      final controller =
+          container.read(teacherStudentsControllerProvider.notifier);
+      await Future<void>.delayed(Duration.zero);
+
+      await controller.searchImmediately('Alice');
+      expect(mockClient.lastGetParams?['search'], 'Alice');
+
+      await controller.clearSearch();
+      final state = container.read(teacherStudentsControllerProvider);
+      expect(mockClient.lastGetParams?['search'], isNull);
+      expect(state.searchQuery, '');
     });
   });
 }

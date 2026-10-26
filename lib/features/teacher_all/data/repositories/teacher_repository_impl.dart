@@ -72,9 +72,11 @@ class TeacherRepositoryImpl implements TeacherRepository {
           subtitle: s.cohortName,
           room: s.classroomRoomNumber,
           group: s.cohortName,
-          students: 24,
+          students: s.students.isNotEmpty ? s.students.length : 24,
           status: status,
           rawStatus: s.status,
+          cohortId: s.cohortId,
+          subjectId: s.subjectId,
         );
       }).toList();
     }
@@ -95,9 +97,11 @@ class TeacherRepositoryImpl implements TeacherRepository {
           subtitle: s.cohortName,
           room: s.classroomRoomNumber,
           group: s.cohortName,
-          students: 24,
+          students: s.students.isNotEmpty ? s.students.length : 24,
           status: ClassStatus.scheduled,
           rawStatus: s.status,
+          cohortId: s.cohortId,
+          subjectId: s.subjectId,
         );
       }).toList();
     }
@@ -296,6 +300,14 @@ class TeacherRepositoryImpl implements TeacherRepository {
       return remoteDataSource!.getSessions(date: date);
     }
     return const [];
+  }
+
+  @override
+  Future<ClassSessionDto> getSessionDetail(String sessionId) async {
+    if (remoteDataSource != null) {
+      return remoteDataSource!.getSessionDetail(sessionId);
+    }
+    throw UnsupportedError('Remote data source not available');
   }
 
   @override

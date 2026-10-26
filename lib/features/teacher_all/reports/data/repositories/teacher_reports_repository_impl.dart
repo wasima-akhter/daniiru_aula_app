@@ -10,34 +10,50 @@ class TeacherReportsRepositoryImpl implements TeacherReportsRepository {
   TeacherReportsRepositoryImpl([this._remoteDataSource]);
 
   @override
-  Future<List<TeacherReport>> getReports() async {
-    final list = <TeacherReport>[..._submittedReports];
+  Future<List<TeacherReport>> getReports({
+    int page = 1,
+    int limit = 20,
+    String? status,
+    String? cohortId,
+  }) async {
     final remote = _remoteDataSource;
     if (remote != null) {
       try {
-        final sessions = await remote.getSessions();
-        for (final s in sessions) {
-          if (s.status == 'COMPLETED') {
-            final dateStr = s.sessionDate.length >= 10
-                ? s.sessionDate.substring(0, 10)
-                : s.sessionDate;
-            list.add(
-              TeacherReport(
-                category: ReportCategory.classReport,
-                group: StudentGroup.groupA,
-                room: s.classroomRoomNumber,
-                title: s.subjectName,
-                subtitle: s.cohortName,
-                date: dateStr,
-                time: '${s.startTime} - ${s.endTime}',
-                status: ReportStatus.submitted,
-              ),
-            );
-          }
-        }
+        final dtoList = await remote.getTeacherReports(
+          page: page,
+          limit: limit,
+          status: status,
+          cohortId: cohortId,
+        );
+        final mapped = dtoList.map((d) => d.toModel()).toList();
+        return [...mapped, ..._submittedReports];
       } catch (_) {}
     }
-    return list;
+    return [..._submittedReports];
+  }
+
+  @override
+  Future<TeacherReport> getReportDetail(String id) async {
+    final remote = _remoteDataSource;
+    if (remote != null) {
+      final detailDto = await remote.getTeacherReportDetail(id);
+      return detailDto.toModel();
+    }
+    final match = _submittedReports.firstWhere(
+      (r) => r.id == id,
+      orElse: () => _submittedReports.isNotEmpty
+          ? _submittedReports.first
+          : const TeacherReport(
+              category: ReportCategory.classReport,
+              group: StudentGroup.groupA,
+              title: 'Class Report',
+              subtitle: 'Cohort',
+              date: '',
+              time: '',
+              status: ReportStatus.submitted,
+            ),
+    );
+    return match;
   }
 
   @override

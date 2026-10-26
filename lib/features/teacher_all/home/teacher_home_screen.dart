@@ -6,7 +6,6 @@ import '../../chat/presentation/controllers/chat_controller.dart';
 import '../../parent_all/presentation/controllers/parent_notifications_controller.dart';
 import '../../share/export/screen_export.dart';
 import '../../share/widgets/button/app_logo.dart';
-import '../helper/teacher_enums.dart';
 import '../helper/teacher_models.dart';
 import 'presentation/controllers/teacher_home_controller.dart';
 
@@ -515,21 +514,7 @@ class TeacherHomeScreen extends ConsumerWidget {
   /// =============================================================
 
   void _openClass(BuildContext context, HomeScheduleItem item) {
-    final academyClass = AcademyClass(
-      id: item.id,
-      scheduleId: item.scheduleId,
-      time: '${item.startTime} - ${item.endTime}',
-      title: item.title,
-      subtitle: item.subtitle,
-      room: item.room,
-      group: item.group,
-      students: item.students,
-      status: item.type == HomeClassType.next
-          ? ClassStatus.next
-          : ClassStatus.scheduled,
-      rawStatus: item.rawStatus,
-    );
-    context.push(RoutePath.teacherClassDetail, extra: academyClass);
+    context.push(RoutePath.teacherClassDetail, extra: item.id);
   }
 }
 

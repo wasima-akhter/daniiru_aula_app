@@ -5,6 +5,8 @@ import 'package:aula360/features/teacher_all/classes/data/datasources/teacher_cl
 import 'package:aula360/features/teacher_all/classes/data/repositories/teacher_classes_repository_impl.dart';
 import 'package:aula360/features/teacher_all/classes/domain/repositories/teacher_classes_repository.dart';
 
+import 'package:aula360/features/teacher_all/classes/data/dtos/class_session_dto.dart';
+
 final teacherClassesRemoteDataSourceProvider =
     Provider<TeacherClassesRemoteDataSource>((ref) {
   final client = ref.watch(apiClientProvider);
@@ -15,4 +17,10 @@ final teacherClassesRepositoryProvider =
     Provider<TeacherClassesRepository>((ref) {
   final remote = ref.watch(teacherClassesRemoteDataSourceProvider);
   return TeacherClassesRepositoryImpl(remote);
+});
+
+final teacherSessionDetailProvider =
+    FutureProvider.family<ClassSessionDto, String>((ref, sessionId) async {
+  final repository = ref.watch(teacherClassesRepositoryProvider);
+  return repository.getSessionDetail(sessionId);
 });

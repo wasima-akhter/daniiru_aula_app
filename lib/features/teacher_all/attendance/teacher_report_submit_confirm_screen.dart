@@ -2,6 +2,7 @@ import 'package:intl/intl.dart';
 
 import '../../share/export/screen_export.dart';
 import '../classes/presentation/controllers/teacher_classes_controller.dart';
+import '../classes/presentation/providers/teacher_classes_providers.dart';
 import '../helper/teacher_models.dart';
 
 /// ===============================================================
@@ -127,22 +128,56 @@ class TeacherReportSubmittedScreen extends ConsumerWidget {
                     SizedBox(
                       width: double.infinity,
                       child: AulaPrimaryButton(
-                        onTap: () {
+                        onTapAsync: () async {
+                          final targetSessionId = sessionId ?? activeClass?.id;
+                          String? resolvedCohortId = activeClass?.cohortId;
+                          String? resolvedSubjectId = activeClass?.subjectId;
+                          String resolvedCohortName =
+                              activeClass?.group.isNotEmpty == true
+                                  ? activeClass!.group
+                                  : (activeClass?.subtitle ?? '');
+                          String resolvedSubjectName =
+                              activeClass?.title ?? '';
+
+                          if (targetSessionId != null &&
+                              targetSessionId.isNotEmpty) {
+                            try {
+                              final sessionDetail = await ref
+                                  .read(teacherClassesRepositoryProvider)
+                                  .getSessionDetail(targetSessionId);
+                              if (sessionDetail.cohortId != null &&
+                                  sessionDetail.cohortId!.isNotEmpty) {
+                                resolvedCohortId = sessionDetail.cohortId;
+                              }
+                              if (sessionDetail.subjectId != null &&
+                                  sessionDetail.subjectId!.isNotEmpty) {
+                                resolvedSubjectId = sessionDetail.subjectId;
+                              }
+                              if (sessionDetail.cohortName.isNotEmpty) {
+                                resolvedCohortName = sessionDetail.cohortName;
+                              }
+                              if (sessionDetail.subjectName.isNotEmpty) {
+                                resolvedSubjectName = sessionDetail.subjectName;
+                              }
+                            } catch (e) {
+                              debugPrint(
+                                'Failed to fetch session detail for homework: $e',
+                              );
+                            }
+                          }
+
+                          if (!context.mounted) return;
+
                           context.push(
                             RoutePath.teacherHomework,
                             extra: {
-                              'sessionId': sessionId ?? activeClass?.id,
-                              'cohortId': activeClass != null &&
-                                      activeClass.group.isNotEmpty
-                                  ? activeClass.group
-                                  : 'Cohort-1',
-                              'subjectId': activeClass != null &&
-                                      activeClass.title.isNotEmpty
-                                  ? activeClass.title
-                                  : 'Subject-1',
-                              'title': activeClass != null &&
-                                      activeClass.title.isNotEmpty
-                                  ? '${activeClass.title} - ${ref.watchTr(AppStrings.homeworkTitle)}'
+                              'sessionId': targetSessionId,
+                              'cohortId': resolvedCohortId,
+                              'cohortName': resolvedCohortName,
+                              'subjectId': resolvedSubjectId,
+                              'subjectName': resolvedSubjectName,
+                              'title': resolvedSubjectName.isNotEmpty
+                                  ? '$resolvedSubjectName - ${ref.watchTr(AppStrings.homeworkTitle)}'
                                   : ref.watchTr(AppStrings.newHomeworkTitle),
                               'description': homeworkText,
                               'autoOpenCreate': true,

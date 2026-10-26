@@ -15,6 +15,11 @@ class TeacherClassesRepositoryImpl implements TeacherClassesRepository {
   }
 
   @override
+  Future<ClassSessionDto> getSessionDetail(String sessionId) {
+    return _remoteDataSource.getSessionDetail(sessionId);
+  }
+
+  @override
   Future<ClassSessionDto> startSession(String sessionId) {
     return _remoteDataSource.startSession(sessionId);
   }
@@ -35,9 +40,11 @@ class TeacherClassesRepositoryImpl implements TeacherClassesRepository {
         subtitle: s.cohortName,
         room: s.classroomRoomNumber,
         group: s.cohortName,
-        students: 24,
+        students: s.students.isNotEmpty ? s.students.length : 24,
         status: status,
         rawStatus: s.status,
+        cohortId: s.cohortId,
+        subjectId: s.subjectId,
       );
     }).toList();
   }
@@ -57,9 +64,11 @@ class TeacherClassesRepositoryImpl implements TeacherClassesRepository {
           subtitle: s.cohortName,
           room: s.classroomRoomNumber,
           group: s.cohortName,
-          students: 24,
+          students: s.students.isNotEmpty ? s.students.length : 24,
           status: ClassStatus.scheduled,
           rawStatus: s.status,
+          cohortId: s.cohortId,
+          subjectId: s.subjectId,
         );
       }).toList();
     }

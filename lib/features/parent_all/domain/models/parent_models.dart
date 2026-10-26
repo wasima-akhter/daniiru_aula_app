@@ -248,6 +248,10 @@ class InvoiceModel {
   final bool isPaid;
   final String? paidDate;
   final String? receiptNumber;
+  final String? status;
+  final String? studentName;
+  final String? feeTitle;
+  final String currency;
 
   const InvoiceModel({
     required this.id,
@@ -258,6 +262,10 @@ class InvoiceModel {
     required this.isPaid,
     this.paidDate,
     this.receiptNumber,
+    this.status,
+    this.studentName,
+    this.feeTitle,
+    this.currency = 'EUR',
   });
 
   InvoiceModel copyWith({
@@ -269,6 +277,10 @@ class InvoiceModel {
     bool? isPaid,
     String? paidDate,
     String? receiptNumber,
+    String? status,
+    String? studentName,
+    String? feeTitle,
+    String? currency,
   }) {
     return InvoiceModel(
       id: id ?? this.id,
@@ -279,6 +291,10 @@ class InvoiceModel {
       isPaid: isPaid ?? this.isPaid,
       paidDate: paidDate ?? this.paidDate,
       receiptNumber: receiptNumber ?? this.receiptNumber,
+      status: status ?? this.status,
+      studentName: studentName ?? this.studentName,
+      feeTitle: feeTitle ?? this.feeTitle,
+      currency: currency ?? this.currency,
     );
   }
 }

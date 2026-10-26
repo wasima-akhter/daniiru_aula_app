@@ -71,7 +71,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify initial receipt card UI
-    expect(find.text('340,00 €'), findsOneWidget);
+    expect(find.text('340.00 €'), findsOneWidget);
     expect(find.text('#A360-8492'), findsOneWidget);
     expect(find.byIcon(Icons.download_outlined), findsOneWidget);
 

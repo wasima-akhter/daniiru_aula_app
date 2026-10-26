@@ -57,9 +57,7 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
     return Scaffold(
       backgroundColor: AppColors.softBackground,
       appBar: AulaAppBar(
-        title: _isSearchOpen
-            ? ''
-            : ref.watchTr(AppStrings.allReports),
+        title: _isSearchOpen ? '' : ref.watchTr(AppStrings.allReports),
         showBack: false,
         leadingWidth: _isSearchOpen ? double.infinity : null,
         leading: _isSearchOpen
@@ -106,8 +104,7 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
                                     constraints: const BoxConstraints(),
                                   )
                                 : null,
-                            contentPadding:
-                                EdgeInsets.symmetric(vertical: 9.h),
+                            contentPadding: EdgeInsets.symmetric(vertical: 9.h),
                           ),
                         ),
                       ),
@@ -142,71 +139,80 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
                 SizedBox(width: 8.w),
               ],
       ),
-      body: state.isLoading
+      body: (state.isLoading && state.reports.isEmpty)
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (!_isSearchOpen) ...[
-                  _header(ref, state.reports.length),
-                  _searchBar(controller),
-                ],
-                _filters(ref, state.selectedFilter, controller),
-                if (isQueryActive)
-                  Padding(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
-                    child: Row(
-                      children: [
-                        Text(
-                          '${filteredReports.length} ${filteredReports.length == 1 ? ref.watchTr(AppStrings.searchResultCount) : ref.watchTr(AppStrings.searchResultsCount)}',
-                          style: TxtStyle.bodyMedium(
-                            color: AppColors.subtitleTextColor,
-                            fontSize: 13.sp,
-                            fontWeight: FontWeight.w600,
-                          ),
+          : (state.error != null && state.reports.isEmpty)
+              ? _errorState(ref, state.error!, controller)
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!_isSearchOpen) ...[
+                      _header(ref, state.reports.length),
+                      _searchBar(controller),
+                      _statusFilters(ref, state.statusFilter, controller),
+                    ],
+                    if (isQueryActive)
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                          vertical: 4.h,
                         ),
-                        const Spacer(),
-                        GestureDetector(
-                          onTap: _clearSearch,
-                          child: Text(
-                            ref.watchTr(AppStrings.allReports),
-                            style: TxtStyle.bodyMedium(
-                              color: AppColors.primary,
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                Expanded(
-                  child: filteredReports.isEmpty
-                      ? _emptySearchState(
-                          ref,
-                          isQueryActive,
-                          state.reports.isNotEmpty,
-                        )
-                      : ListView.builder(
-                          physics: const BouncingScrollPhysics(),
-                          padding:
-                              EdgeInsets.fromLTRB(16.w, 5.h, 16.w, 30.h),
-                          itemCount: filteredReports.length,
-                          itemBuilder: (context, index) {
-                            return Padding(
-                              padding: EdgeInsets.only(bottom: 9.h),
-                              child: _reportCard(
-                                context,
-                                ref,
-                                filteredReports[index],
+                        child: Row(
+                          children: [
+                            Text(
+                              '${filteredReports.length} ${filteredReports.length == 1 ? ref.watchTr(AppStrings.searchResultCount) : ref.watchTr(AppStrings.searchResultsCount)}',
+                              style: TxtStyle.bodyMedium(
+                                color: AppColors.subtitleTextColor,
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w600,
                               ),
-                            );
-                          },
+                            ),
+                            const Spacer(),
+                            GestureDetector(
+                              onTap: _clearSearch,
+                              child: Text(
+                                ref.watchTr(AppStrings.allReports),
+                                style: TxtStyle.bodyMedium(
+                                  color: AppColors.primary,
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+                      ),
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: controller.refresh,
+                        color: AppColors.primary,
+                        child: filteredReports.isEmpty
+                            ? _emptySearchState(
+                                ref,
+                                isQueryActive,
+                                state.reports.isNotEmpty,
+                              )
+                            : ListView.builder(
+                                physics: const AlwaysScrollableScrollPhysics(
+                                  parent: BouncingScrollPhysics(),
+                                ),
+                                padding: EdgeInsets.fromLTRB(16.w, 5.h, 16.w, 30.h),
+                                itemCount: filteredReports.length,
+                                itemBuilder: (context, index) {
+                                  return Padding(
+                                    padding: EdgeInsets.only(bottom: 9.h),
+                                    child: _reportCard(
+                                      context,
+                                      ref,
+                                      filteredReports[index],
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
     );
   }
 
@@ -223,10 +229,7 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
         child: TextField(
           controller: _searchController,
           onChanged: (val) => controller.setSearchQuery(val),
-          style: TxtStyle.bodyMedium(
-            color: AppColors.text,
-            fontSize: 14.sp,
-          ),
+          style: TxtStyle.bodyMedium(color: AppColors.text, fontSize: 14.sp),
           decoration: InputDecoration(
             border: InputBorder.none,
             hintText: ref.watchTr(AppStrings.searchReportsHint),
@@ -351,13 +354,18 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
                 icon: const Icon(Icons.refresh_rounded, size: 16),
                 label: Text(
                   ref.watchTr(AppStrings.allReports),
-                  style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppColors.primary),
                   foregroundColor: AppColors.primary,
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 16.w,
+                    vertical: 8.h,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8.r),
                   ),
@@ -370,28 +378,7 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
     );
   }
 
-  Widget _filters(
-    WidgetRef ref,
-    ReportFilter selectedFilter,
-    TeacherReportsController controller,
-  ) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          _reportFilter(ref, ReportFilter.all, selectedFilter, controller),
-          SizedBox(width: 6.w),
-          _reportFilter(ref, ReportFilter.groupA, selectedFilter, controller),
-          SizedBox(width: 6.w),
-          _reportFilter(ref, ReportFilter.groupB, selectedFilter, controller),
-          SizedBox(width: 6.w),
-          _reportFilter(ref, ReportFilter.oneOnOne, selectedFilter, controller),
-        ],
-      ),
-    );
-  }
+
 
   Widget _header(WidgetRef ref, int totalCount) {
     return Padding(
@@ -404,7 +391,7 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  ref.watchTr(AppStrings.recordedSessionsTitle),
+                  ref.watchTr(AppStrings.allReports),
                   style: TxtStyle.titleLarge(
                     color: AppColors.text,
                     fontSize: 22.sp,
@@ -442,37 +429,99 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
     );
   }
 
-  Widget _reportFilter(
+  Widget _statusFilters(
     WidgetRef ref,
-    ReportFilter filter,
-    ReportFilter selectedFilter,
+    String? currentFilter,
     TeacherReportsController controller,
   ) {
-    final selected = filter == selectedFilter;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
+      child: Row(
+        children: [
+          _statusPill(
+            label: ref.watchTr(AppStrings.allTab),
+            isSelected: currentFilter == null,
+            onTap: () => controller.setStatusFilter(null),
+          ),
+          SizedBox(width: 8.w),
+          _statusPill(
+            label: ref.watchTr(AppStrings.submitted),
+            isSelected: currentFilter == 'SUBMITTED',
+            onTap: () => controller.setStatusFilter('SUBMITTED'),
+          ),
+          SizedBox(width: 8.w),
+          _statusPill(
+            label: ref.watchTr(AppStrings.reviewed),
+            isSelected: currentFilter == 'REVIEWED',
+            onTap: () => controller.setStatusFilter('REVIEWED'),
+          ),
+        ],
+      ),
+    );
+  }
 
+  Widget _statusPill({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
     return InkWell(
-      borderRadius: BorderRadius.circular(6.r),
-      onTap: () {
-        controller.selectFilter(filter);
-      },
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 7.h),
+      borderRadius: BorderRadius.circular(20.r),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.white,
-          borderRadius: BorderRadius.circular(6.r),
+          color: isSelected ? AppColors.primary : Colors.white,
+          borderRadius: BorderRadius.circular(20.r),
           border: Border.all(
-            color: selected
+            color: isSelected
                 ? AppColors.primary
                 : AppColors.backgroundsLinesColor,
           ),
         ),
         child: Text(
-          ref.watchTr(filter.stringKey),
+          label,
           style: TxtStyle.titleLarge(
-            color: selected ? Colors.white : AppColors.secondaryText,
-            fontSize: 15.sp,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            color: isSelected ? Colors.white : AppColors.secondaryText,
+            fontSize: 13.sp,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _errorState(
+    WidgetRef ref,
+    String error,
+    TeacherReportsController controller,
+  ) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 24.w),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline_rounded,
+                size: 48.sp, color: Colors.redAccent),
+            SizedBox(height: 12.h),
+            Text(
+              error,
+              textAlign: TextAlign.center,
+              style: TxtStyle.bodyMedium(fontSize: 14.sp),
+            ),
+            SizedBox(height: 16.h),
+            ElevatedButton(
+              onPressed: () => controller.loadReports(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+              ),
+              child: const Text('Reintentar',
+                  style: TextStyle(color: Colors.white)),
+            ),
+          ],
         ),
       ),
     );
@@ -483,6 +532,9 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
     WidgetRef ref,
     TeacherReport report,
   ) {
+    final isReviewed = report.rawStatus.toUpperCase() == 'REVIEWED' ||
+        report.status == ReportStatus.reviewed;
+
     return InkWell(
       borderRadius: BorderRadius.circular(8.r),
       onTap: () {
@@ -505,24 +557,35 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
                     _reportLocation(ref, report),
                     style: TxtStyle.bodyMedium(
                       color: AppColors.subtitleTextColor,
-                      fontSize: 15.5.sp,
+                      fontSize: 14.5.sp,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                Text(
-                  ref.watchTr(report.status.stringKey),
-                  style: TxtStyle.bodyMedium(
-                    color: report.status == ReportStatus.submitted
-                        ? AppColors.primaryDark
-                        : const Color(0xff18b86b),
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w600,
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                  decoration: BoxDecoration(
+                    color: isReviewed
+                        ? const Color(0xFFE7FAF2)
+                        : AppColors.primaryDark.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child: Text(
+                    isReviewed
+                        ? ref.watchTr(AppStrings.reviewed)
+                        : ref.watchTr(AppStrings.submitted),
+                    style: TxtStyle.bodyMedium(
+                      color: isReviewed
+                          ? const Color(0xff18b86b)
+                          : AppColors.primaryDark,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 4.h),
+            SizedBox(height: 5.h),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -548,7 +611,7 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
               report.subtitle,
               style: TxtStyle.bodyMedium(
                 color: AppColors.subtitleTextColor,
-                fontSize: 16.sp,
+                fontSize: 15.sp,
               ),
             ),
             SizedBox(height: 8.h),
@@ -556,7 +619,7 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
               '${report.date}  •  ${report.time}',
               style: TxtStyle.bodyMedium(
                 color: AppColors.subtitleTextColor,
-                fontSize: 14.sp,
+                fontSize: 13.5.sp,
               ),
             ),
           ],
@@ -570,6 +633,10 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
       return '${report.studentName} (${report.studentId}) • ${ref.watchTr(AppStrings.aula1)}';
     }
 
-    return '${ref.watchTr(report.group.stringKey)} • ${report.grade} • ${report.room}';
+    if (report.cohortName != null && report.cohortName!.isNotEmpty) {
+      return report.cohortName!;
+    }
+
+    return '${ref.watchTr(report.group.stringKey)} • ${report.grade ?? ''} • ${report.room ?? ""}';
   }
 }

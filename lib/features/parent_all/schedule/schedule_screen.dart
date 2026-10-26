@@ -10,12 +10,15 @@ class ScheduleScreen extends ConsumerWidget {
 
   static const int _centerDayIndex = 2;
 
-  static List<Map<String, String>> _getCenteredDays(String langCode) {
-    final now = DateTime.now();
+  static List<Map<String, String>> _getCenteredDays(
+    String langCode, [
+    DateTime? anchor,
+  ]) {
+    final base = anchor ?? DateTime.now();
     final formatter = DateFormat.E(langCode);
     return List.generate(5, (index) {
-      // index 2 is centered on today (offset 0)
-      final d = now.add(Duration(days: index - _centerDayIndex));
+      // index 2 is centered on base (offset 0)
+      final d = base.add(Duration(days: index - _centerDayIndex));
       final rawDay = formatter.format(d);
       final dayLabel = rawDay.isNotEmpty
           ? rawDay[0].toUpperCase() + rawDay.substring(1).replaceAll('.', '')
@@ -39,19 +42,20 @@ class ScheduleScreen extends ConsumerWidget {
 
     final langCode =
         ref.watch(languageProvider).valueOrNull?.language.code ?? 'en';
-    final days = _getCenteredDays(langCode);
+    final days = _getCenteredDays(langCode, scheduleState.anchorDate);
     final now = DateTime.now();
     final selectedIndex = scheduleState.selectedDayIndex.clamp(
       0,
       days.length - 1,
     );
-    final selectedDayDate = DateTime.parse(days[selectedIndex]['fullDate']!);
+    final selectedDayDate = scheduleState.selectedDate;
     final isSelectedDayToday =
         selectedDayDate.day == now.day &&
         selectedDayDate.month == now.month &&
         selectedDayDate.year == now.year;
+    final hasCustomYear = selectedDayDate.year != now.year;
     final selectedDayTitle = DateFormat(
-      'EEEE, d MMM',
+      hasCustomYear ? 'EEEE, d MMM y' : 'EEEE, d MMM',
       langCode,
     ).format(selectedDayDate);
 
@@ -100,16 +104,20 @@ class ScheduleScreen extends ConsumerWidget {
                   // =================================================
                   Row(
                     children: [
-                      Text(
-                        ref.watchTr(AppStrings.studentInfoTitle).toUpperCase(),
-                        style: TxtStyle.titleLarge(
-                          color: AppColors.secondaryText,
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: .4,
+                      Expanded(
+                        child: Text(
+                          ref.watchTr(AppStrings.studentInfoTitle).toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TxtStyle.titleLarge(
+                            color: AppColors.secondaryText,
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: .4,
+                          ),
                         ),
                       ),
-                      const Spacer(),
+                      SizedBox(width: 8.w),
                       Text(
                         '${children.length} ${ref.watchTr(AppStrings.active)}',
                         style: TxtStyle.titleLarge(
@@ -154,27 +162,32 @@ class ScheduleScreen extends ConsumerWidget {
                         ],
                       ),
                     )
+                  else if (children.length == 1)
+                    _studentCard(
+                      children[0],
+                      scheduleState.selectedChildIndex == 0,
+                      () => scheduleController.selectChild(0),
+                    )
                   else
                     SizedBox(
-                      height: 78.h,
+                      height: 74.h,
                       child: SingleChildScrollView(
-                        physics: AlwaysScrollableScrollPhysics(),
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
                         child: Row(
                           children: [
-                            for (
-                              int i = 0;
-                              i < children.length && i < 2;
-                              i++
-                            ) ...[
-                              Expanded(
+                            for (int i = 0; i < children.length; i++) ...[
+                              SizedBox(
+                                width: 185.w,
+                                height: 74.h,
                                 child: _studentCard(
                                   children[i],
                                   scheduleState.selectedChildIndex == i,
                                   () => scheduleController.selectChild(i),
                                 ),
                               ),
-                              if (i == 0 && children.length > 1)
-                                SizedBox(width: 9.w),
+                              if (i < children.length - 1)
+                                SizedBox(width: 10.w),
                             ],
                           ],
                         ),
@@ -192,41 +205,143 @@ class ScheduleScreen extends ConsumerWidget {
                       children: [
                         Row(
                           children: [
-                            Text(
-                              selectedDayTitle,
-                              style: TxtStyle.titleLarge(
-                                color: AppColors.text,
-                                fontSize: 17.sp,
-                                fontWeight: FontWeight.w800,
+                            Expanded(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: InkWell(
+                                      onTap: () => _openDatePicker(
+                                        context,
+                                        ref,
+                                        selectedDayDate,
+                                      ),
+                                      borderRadius: BorderRadius.circular(6.r),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Flexible(
+                                            child: Text(
+                                              selectedDayTitle,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TxtStyle.titleLarge(
+                                                color: AppColors.text,
+                                                fontSize: 16.5.sp,
+                                                fontWeight: FontWeight.w800,
+                                              ),
+                                            ),
+                                          ),
+                                          Icon(
+                                            Icons.arrow_drop_down_rounded,
+                                            color: AppColors.secondaryText,
+                                            size: 22.sp,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  if (isSelectedDayToday) ...[
+                                    SizedBox(width: 6.w),
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 7.w,
+                                        vertical: 3.h,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFE6EDFF),
+                                        borderRadius: BorderRadius.circular(5.r),
+                                      ),
+                                      child: Text(
+                                        ref.watchTr(AppStrings.today),
+                                        style: TxtStyle.titleLarge(
+                                          color: AppColors.primary,
+                                          fontSize: 12.sp,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                  ] else ...[
+                                    SizedBox(width: 6.w),
+                                    InkWell(
+                                      onTap: () => scheduleController.resetToToday(),
+                                      borderRadius: BorderRadius.circular(5.r),
+                                      child: Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 6.w,
+                                          vertical: 3.h,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(5.r),
+                                          border: Border.all(
+                                            color: AppColors.primary.withValues(alpha: 0.3),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.today_rounded,
+                                              size: 12.sp,
+                                              color: AppColors.primary,
+                                            ),
+                                            SizedBox(width: 3.w),
+                                            Text(
+                                              ref.watchTr(AppStrings.today),
+                                              style: TxtStyle.titleLarge(
+                                                color: AppColors.primary,
+                                                fontSize: 11.5.sp,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ),
-                            if (isSelectedDayToday) ...[
-                              SizedBox(width: 7.w),
-                              Container(
+                            SizedBox(width: 8.w),
+                            InkWell(
+                              onTap: () => _openDatePicker(
+                                context,
+                                ref,
+                                selectedDayDate,
+                              ),
+                              borderRadius: BorderRadius.circular(8.r),
+                              child: Container(
                                 padding: EdgeInsets.symmetric(
-                                  horizontal: 7.w,
-                                  vertical: 3.h,
+                                  horizontal: 8.w,
+                                  vertical: 5.h,
                                 ),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFE6EDFF),
-                                  borderRadius: BorderRadius.circular(5.r),
-                                ),
-                                child: Text(
-                                  ref.watchTr(AppStrings.today),
-                                  style: TxtStyle.titleLarge(
-                                    color: AppColors.primary,
-                                    fontSize: 13.sp,
-                                    fontWeight: FontWeight.w800,
+                                  borderRadius: BorderRadius.circular(8.r),
+                                  border: Border.all(
+                                    color: AppColors.primary.withValues(alpha: 0.25),
                                   ),
                                 ),
-                              ),
-                            ],
-                            const Spacer(),
-                            Text(
-                              '${ref.watchTr(AppStrings.weekPrefix)} ${((selectedDayDate.day / 7).ceil()).clamp(1, 12)}',
-                              style: TxtStyle.titleLarge(
-                                color: AppColors.secondaryText,
-                                fontSize: 14.sp,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.calendar_month_rounded,
+                                      color: AppColors.primary,
+                                      size: 15.sp,
+                                    ),
+                                    SizedBox(width: 4.w),
+                                    Text(
+                                      ref.watchTr(AppStrings.filterByDate),
+                                      style: TxtStyle.titleLarge(
+                                        color: AppColors.primary,
+                                        fontSize: 12.sp,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
@@ -242,7 +357,10 @@ class ScheduleScreen extends ConsumerWidget {
                                   days,
                                   i,
                                   scheduleState.selectedDayIndex == i,
-                                  () => scheduleController.selectDay(i),
+                                  () => scheduleController.selectDay(
+                                    i,
+                                    DateTime.parse(days[i]['fullDate']!),
+                                  ),
                                 ),
                               ),
                           ],
@@ -310,7 +428,7 @@ class ScheduleScreen extends ConsumerWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
-        padding: EdgeInsets.all(11.w),
+        padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 10.h),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12.r),
@@ -699,7 +817,8 @@ class ScheduleScreen extends ConsumerWidget {
   }
 
   Widget _errorCard(WidgetRef ref, String error, VoidCallback onRetry) {
-    final langCode = ref.watch(languageProvider).valueOrNull?.languageCode ??
+    final langCode =
+        ref.watch(languageProvider).valueOrNull?.languageCode ??
         LanguageNotifier.activeLanguageCode;
     final resolved = AppErrorResolver.resolve(error, languageCode: langCode);
 
@@ -736,5 +855,37 @@ class ScheduleScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _openDatePicker(
+    BuildContext context,
+    WidgetRef ref,
+    DateTime initialDate,
+  ) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(2020, 1, 1),
+      lastDate: DateTime(2035, 12, 31),
+      helpText: ref.readTr(AppStrings.selectDate),
+      cancelText: ref.readTr(AppStrings.cancelBtn),
+      confirmText: ref.readTr(AppStrings.saveBtn),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primary,
+              onPrimary: Colors.white,
+              onSurface: AppColors.text,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      ref.read(parentScheduleControllerProvider.notifier).selectCustomDate(picked);
+    }
   }
 }

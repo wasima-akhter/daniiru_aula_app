@@ -58,8 +58,8 @@ class TeacherHomeworkController extends Notifier<TeacherHomeworkActionState> {
         sessionId: sessionId,
         title: title,
         description: description,
-        startDate: startDate.toIso8601String(),
-        dueDate: dueDate.toIso8601String(),
+        startDate: startDate.toUtc().toIso8601String(),
+        dueDate: dueDate.toUtc().toIso8601String(),
       );
       await _repository.createHomework(payload);
       ref.invalidate(teacherHomeworkListControllerProvider);

@@ -1,11 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/config/stripe_config.dart';
+import '../../../../core/network/api_exception.dart';
+import '../../../../core/services/stripe/stripe_payment_service.dart';
 import '../../data/repositories/parent_repository_impl.dart';
 import '../../domain/models/parent_models.dart';
 import '../../domain/repositories/parent_repository.dart';
 
+export '../../../../core/config/stripe_config.dart';
+export '../../../../core/services/stripe/stripe_payment_service.dart';
+
+enum InvoiceFilterTab { all, pending, paid }
+
 class ParentPaymentState {
   final List<InvoiceModel> invoices;
   final String selectedPaymentMethod;
+  final InvoiceFilterTab selectedTab;
   final bool isProcessing;
   final bool isLoading;
   final bool isLoadingMore;
@@ -17,6 +26,7 @@ class ParentPaymentState {
   const ParentPaymentState({
     this.invoices = const [],
     this.selectedPaymentMethod = 'card',
+    this.selectedTab = InvoiceFilterTab.all,
     this.isProcessing = false,
     this.isLoading = false,
     this.isLoadingMore = false,
@@ -31,9 +41,24 @@ class ParentPaymentState {
   List<InvoiceModel> get paidInvoices =>
       invoices.where((i) => i.isPaid).toList();
 
+  List<InvoiceModel> get filteredInvoices {
+    switch (selectedTab) {
+      case InvoiceFilterTab.pending:
+        return pendingInvoices;
+      case InvoiceFilterTab.paid:
+        return paidInvoices;
+      case InvoiceFilterTab.all:
+        return invoices;
+    }
+  }
+
+  double get totalPendingAmount =>
+      pendingInvoices.fold(0.0, (sum, i) => sum + i.amount);
+
   ParentPaymentState copyWith({
     List<InvoiceModel>? invoices,
     String? selectedPaymentMethod,
+    InvoiceFilterTab? selectedTab,
     bool? isProcessing,
     bool? isLoading,
     bool? isLoadingMore,
@@ -47,6 +72,7 @@ class ParentPaymentState {
       invoices: invoices ?? this.invoices,
       selectedPaymentMethod:
           selectedPaymentMethod ?? this.selectedPaymentMethod,
+      selectedTab: selectedTab ?? this.selectedTab,
       isProcessing: isProcessing ?? this.isProcessing,
       isLoading: isLoading ?? this.isLoading,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
@@ -134,21 +160,110 @@ class ParentPaymentController extends Notifier<ParentPaymentState> {
     state = state.copyWith(selectedPaymentMethod: method);
   }
 
-  Future<bool> processPayment(String invoiceId) async {
+  void selectTab(InvoiceFilterTab tab) {
+    state = state.copyWith(selectedTab: tab);
+  }
+
+  Future<void> refresh({String? status}) => loadInvoices(status: status);
+
+  /// Initiates payment for an invoice via Stripe PaymentSheet safely with edge cases.
+  Future<StripePaymentResult> payInvoiceWithStripe(InvoiceModel invoice) async {
+    // Edge case 1: Stripe public key not configured yet
+    if (!StripeConfig.isConfigured) {
+      return StripePaymentResult.notConfigured();
+    }
+
+    // Edge case 2: Invoice is already marked as paid
+    if (invoice.isPaid) {
+      return StripePaymentResult.alreadyPaid();
+    }
+
     state = state.copyWith(isProcessing: true, error: null);
+
     try {
-      await _repository.payInvoice(invoiceId, state.selectedPaymentMethod);
-      final updated = await _repository.getInvoices(page: 1, limit: _pageSize);
-      state = state.copyWith(
-        invoices: updated.items,
-        isProcessing: false,
-        currentPage: 1,
-        hasMore: updated.hasMore,
+      // 1. Request clientSecret from backend
+      final clientSecret = await _repository.payInvoice(
+        invoice.id,
+        state.selectedPaymentMethod,
       );
-      return true;
+
+      if (clientSecret == null || clientSecret.trim().isEmpty) {
+        state = state.copyWith(isProcessing: false);
+        return StripePaymentResult.failed(
+          message: 'Empty client secret returned from server',
+        );
+      }
+
+      // 2. Present native Stripe Payment Sheet
+      final stripeService = ref.read(stripePaymentServiceProvider);
+      final result = await stripeService.presentPaymentSheet(
+        clientSecret: clientSecret,
+        merchantDisplayName: StripeConfig.merchantDisplayName,
+      );
+
+      // 3. Handle payment result
+      if (result.isSuccess) {
+        // Optimistically mark invoice as paid in local state
+        final updated = state.invoices.map((inv) {
+          if (inv.id == invoice.id) {
+            return inv.copyWith(
+              isPaid: true,
+              paidDate: 'Hoy',
+              receiptNumber:
+                  'REC-${DateTime.now().millisecondsSinceEpoch % 100000}',
+            );
+          }
+          return inv;
+        }).toList();
+
+        state = state.copyWith(invoices: updated, isProcessing: false);
+
+        // Synchronize with server
+        try {
+          final res = await _repository.getInvoices(page: 1, limit: _pageSize);
+          state = state.copyWith(
+            invoices: res.items,
+            currentPage: 1,
+            hasMore: res.hasMore,
+          );
+        } catch (_) {}
+
+        return result;
+      }
+
+      state = state.copyWith(isProcessing: false);
+      return result;
+    } on ApiException catch (e) {
+      state = state.copyWith(isProcessing: false);
+      final rawLower = e.rawMessage.toLowerCase();
+      if (e.statusCode == 400 &&
+          (rawLower.contains('already paid') ||
+              rawLower.contains('ya está pagada') ||
+              rawLower.contains('not pending'))) {
+        refresh();
+        return StripePaymentResult.alreadyPaid(message: e.rawMessage);
+      }
+      return StripePaymentResult.failed(message: e.message);
     } catch (e) {
       state = state.copyWith(isProcessing: false, error: e.toString());
-      return false;
+      return StripePaymentResult.failed(message: e.toString());
     }
+  }
+
+  /// Backward-compatible payment processor method.
+  Future<bool> processPayment(String invoiceId) async {
+    final invoice = state.invoices.firstWhere(
+      (i) => i.id == invoiceId,
+      orElse: () => InvoiceModel(
+        id: invoiceId,
+        concept: '',
+        monthYear: '',
+        amount: 0,
+        dueDate: '',
+        isPaid: false,
+      ),
+    );
+    final result = await payInvoiceWithStripe(invoice);
+    return result.isSuccess;
   }
 }

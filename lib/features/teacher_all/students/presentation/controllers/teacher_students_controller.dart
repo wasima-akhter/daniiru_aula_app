@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:aula360/features/teacher_all/helper/teacher_enums.dart';
@@ -28,6 +30,8 @@ class TeacherStudentsState {
     this.loadMoreError,
   });
 
+  bool get isSearching => searchQuery.trim().isNotEmpty;
+
   List<TeacherStudent> get filteredStudents {
     return students.where((student) {
       final matchesGroup = switch (selectedFilter) {
@@ -35,11 +39,15 @@ class TeacherStudentsState {
         StudentGroupFilter.groupA => student.group == StudentGroup.groupA,
         StudentGroupFilter.groupB => student.group == StudentGroup.groupB,
       };
+      final q = searchQuery.trim().toLowerCase();
       final matchesSearch =
-          searchQuery.isEmpty ||
-          student.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
-          student.id.toLowerCase().contains(searchQuery.toLowerCase()) ||
-          student.room.toLowerCase().contains(searchQuery.toLowerCase());
+          q.isEmpty ||
+          student.name.toLowerCase().contains(q) ||
+          student.id.toLowerCase().contains(q) ||
+          student.room.toLowerCase().contains(q) ||
+          student.desk.toLowerCase().contains(q) ||
+          (student.enrollmentNumber?.toLowerCase().contains(q) ?? false) ||
+          (student.gradeLevel?.toLowerCase().contains(q) ?? false);
       return matchesGroup && matchesSearch;
     }).toList();
   }
@@ -79,11 +87,16 @@ final teacherStudentsControllerProvider =
 
 class TeacherStudentsController extends Notifier<TeacherStudentsState> {
   static const int _pageSize = 20;
+  Timer? _searchDebounce;
+
   TeacherStudentsRepository get _repository =>
       ref.read(teacherStudentsRepositoryProvider);
 
   @override
   TeacherStudentsState build() {
+    ref.onDispose(() {
+      _searchDebounce?.cancel();
+    });
     Future.microtask(() => loadStudents());
     return const TeacherStudentsState(isLoading: true);
   }
@@ -152,9 +165,9 @@ class TeacherStudentsController extends Notifier<TeacherStudentsState> {
   }
 
   Future<void> refresh() async {
+    final query = state.searchQuery.trim();
     await loadStudents(
-      search:
-          state.searchQuery.trim().isEmpty ? null : state.searchQuery.trim(),
+      search: query.isEmpty ? null : query,
     );
   }
 
@@ -164,5 +177,23 @@ class TeacherStudentsController extends Notifier<TeacherStudentsState> {
 
   void setSearchQuery(String query) {
     state = state.copyWith(searchQuery: query);
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      final trimmed = query.trim();
+      loadStudents(search: trimmed.isEmpty ? null : trimmed);
+    });
+  }
+
+  Future<void> searchImmediately(String query) async {
+    _searchDebounce?.cancel();
+    final trimmed = query.trim();
+    state = state.copyWith(searchQuery: query);
+    await loadStudents(search: trimmed.isEmpty ? null : trimmed);
+  }
+
+  Future<void> clearSearch() async {
+    _searchDebounce?.cancel();
+    state = state.copyWith(searchQuery: '');
+    await loadStudents(search: null);
   }
 }

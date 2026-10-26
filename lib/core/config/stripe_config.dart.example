@@ -1,0 +1,27 @@
+/// Example template for Stripe configuration.
+/// Copy this file to `lib/core/config/stripe_config.dart` and assign your key:
+class StripeConfig {
+  /// Stripe Publishable (Public) Key.
+  /// 
+  /// Assign your key here:
+  /// e.g. `publishableKey = 'pk_test_51...';`
+  /// or pass `--dart-define=STRIPE_PUBLISHABLE_KEY=pk_test_...`
+  static String publishableKey = const String.fromEnvironment(
+    'STRIPE_PUBLISHABLE_KEY',
+    defaultValue: '', // <-- PASTE YOUR STRIPE PUBLIC KEY HERE
+  );
+
+  /// Merchant display name shown inside the Stripe PaymentSheet.
+  static const String merchantDisplayName = 'Aula 360';
+
+  /// Country code for the merchant account.
+  static const String merchantCountryCode = 'ES';
+
+  /// Default currency for invoice payments.
+  static const String defaultCurrency = 'EUR';
+
+  /// Checks if a non-empty publishable key has been set.
+  static bool get isConfigured =>
+      publishableKey.trim().isNotEmpty &&
+      !publishableKey.contains('PASTE_YOUR_STRIPE_PUBLIC_KEY');
+}

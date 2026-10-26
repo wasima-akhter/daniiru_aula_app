@@ -5,6 +5,7 @@ import '../dtos/attendance_dtos.dart';
 import '../dtos/class_session_dto.dart';
 import '../dtos/end_session_dtos.dart';
 import '../dtos/teacher_homework_dto.dart';
+import '../../reports/data/dtos/teacher_report_dto.dart';
 
 abstract class TeacherRemoteDataSource {
   Future<List<ClassSessionDto>> getSessions({DateTime? date});
@@ -19,6 +20,13 @@ abstract class TeacherRemoteDataSource {
     required String studentId,
     required MarkHomeworkSubmissionRequestDto request,
   });
+  Future<List<TeacherReportDto>> getTeacherReports({
+    int page = 1,
+    int limit = 20,
+    String? status,
+    String? cohortId,
+  });
+  Future<TeacherReportDetailDto> getTeacherReportDetail(String id);
 }
 
 class TeacherRemoteDataSourceImpl implements TeacherRemoteDataSource {
@@ -256,6 +264,84 @@ class TeacherRemoteDataSourceImpl implements TeacherRemoteDataSource {
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException(message: 'Failed to mark homework submission: $e', statusCode: 500);
+    }
+  }
+
+  @override
+  Future<List<TeacherReportDto>> getTeacherReports({
+    int page = 1,
+    int limit = 20,
+    String? status,
+    String? cohortId,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'page': page,
+        'limit': limit,
+      };
+      if (status != null && status.isNotEmpty) {
+        queryParams['status'] = status;
+      }
+      if (cohortId != null && cohortId.isNotEmpty) {
+        queryParams['cohortId'] = cohortId;
+      }
+
+      final response = await _client.get(
+        ApiConstants.teacherReports,
+        queryParameters: queryParams,
+      );
+
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        final list = data['data'];
+        if (list is List) {
+          return list
+              .whereType<Map<String, dynamic>>()
+              .map(TeacherReportDto.fromJson)
+              .toList();
+        }
+      } else if (data is List) {
+        return data
+            .whereType<Map<String, dynamic>>()
+            .map(TeacherReportDto.fromJson)
+            .toList();
+      }
+
+      return const [];
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException(
+        message: 'Failed to fetch teacher reports: $e',
+        statusCode: 500,
+      );
+    }
+  }
+
+  @override
+  Future<TeacherReportDetailDto> getTeacherReportDetail(String id) async {
+    try {
+      final response = await _client.get(
+        ApiConstants.teacherReportDetail(id),
+      );
+
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        final item = data['data'] ?? data;
+        if (item is Map<String, dynamic>) {
+          return TeacherReportDetailDto.fromJson(item);
+        }
+      }
+
+      throw ApiException(
+        message: 'Invalid teacher report detail payload format',
+        statusCode: 500,
+      );
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException(
+        message: 'Failed to fetch teacher report detail: $e',
+        statusCode: 500,
+      );
     }
   }
 }

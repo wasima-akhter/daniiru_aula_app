@@ -266,23 +266,31 @@ class FileDownloadService {
     CancelToken? cancelToken,
   }) async {
     final effectiveFaculty = facultyName ?? 'Docente Aula 360';
+    final isReviewed = report.rawStatus.toUpperCase() == 'REVIEWED' ||
+        report.status == ReportStatus.reviewed ||
+        report.status == ReportStatus.filed;
     final reportModel = ReportModel(
       dateLabel: report.date,
       subject: report.title,
       teacher: effectiveFaculty,
       time: report.time,
       category: report.grade ??
-          (report.category == ReportCategory.classReport
-              ? 'Informe de Clase'
-              : 'Informe Individual'),
-      status: report.status == ReportStatus.filed ? 'Archivado' : 'Entregado',
-      note: report.subtitle,
+          (report.cohortName != null && report.cohortName!.isNotEmpty
+              ? report.cohortName!
+              : (report.category == ReportCategory.classReport
+                  ? 'Informe de Clase'
+                  : 'Informe Individual')),
+      status: isReviewed ? 'Revisado' : 'Entregado',
+      note: (report.contentCovered != null && report.contentCovered!.isNotEmpty)
+          ? report.contentCovered!
+          : report.subtitle,
       initials: effectiveFaculty.length >= 2
           ? effectiveFaculty.substring(0, 2).toUpperCase()
           : 'DC',
     );
-    final groupClass =
-        '${report.group.name} • ${report.grade ?? ""} • ${report.room ?? "Aula"}';
+    final groupClass = report.cohortName != null && report.cohortName!.isNotEmpty
+        ? report.cohortName!
+        : '${report.group.name} • ${report.grade ?? ""} • ${report.room ?? "Aula"}';
 
     return downloadReport(
       report: reportModel,
