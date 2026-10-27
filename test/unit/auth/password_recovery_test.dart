@@ -72,7 +72,7 @@ class MockAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> resendOtp({String? email}) async {
+  Future<void> resendOtp({String? email, String? otpPageToken}) async {
     lastResendEmail = email;
     if (shouldThrow) {
       throw ApiException(message: errorMessage ?? 'User not found', statusCode: 404);
@@ -117,6 +117,7 @@ class MockAuthRepository implements AuthRepository {
     required String otp,
     required String deviceIdentifier,
     String? fcmToken,
+    String? otpPageToken,
   }) {
     throw UnimplementedError();
   }

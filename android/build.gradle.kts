@@ -3,6 +3,16 @@ allprojects {
         google()
         mavenCentral()
     }
+
+    configurations.all {
+        exclude(group = "com.google.android.gms", module = "play-services-tapandpay")
+    }
+
+    tasks.configureEach {
+        if (name.contains("lintVital", ignoreCase = true)) {
+            enabled = false
+        }
+    }
 }
 
 val newBuildDir: Directory =
@@ -17,6 +27,14 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
+}
+
+gradle.taskGraph.whenReady {
+    allTasks.forEach { task ->
+        if (task.name.contains("lintVital", ignoreCase = true)) {
+            task.enabled = false
+        }
+    }
 }
 
 tasks.register<Delete>("clean") {

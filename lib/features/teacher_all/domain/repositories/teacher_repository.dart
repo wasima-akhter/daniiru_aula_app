@@ -4,6 +4,8 @@ import '../../data/dtos/end_session_dtos.dart';
 import '../../data/dtos/teacher_homework_dto.dart';
 import '../../helper/teacher_enums.dart';
 import '../../helper/teacher_models.dart';
+import '../../../parent_all/data/dtos/announcement_dto.dart';
+import '../../../share/widgets/paginator/paginator.dart';
 
 abstract class TeacherRepository {
   // Existing UI bridge methods
@@ -40,5 +42,9 @@ abstract class TeacherRepository {
     required String homeworkId,
     required String studentId,
     required MarkHomeworkSubmissionRequestDto request,
+  });
+  Future<PaginatedResult<AnnouncementDto>> getAnnouncements({
+    int page = 1,
+    int limit = 10,
   });
 }

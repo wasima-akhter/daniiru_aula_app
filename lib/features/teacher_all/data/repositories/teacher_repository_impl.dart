@@ -17,6 +17,8 @@ import '../dtos/teacher_homework_dto.dart';
 
 import '../../students/data/datasources/teacher_students_remote_data_source.dart';
 import '../../students/presentation/providers/teacher_students_providers.dart';
+import '../../../parent_all/data/dtos/announcement_dto.dart';
+import '../../../share/widgets/paginator/paginator.dart';
 
 final teacherRemoteDataSourceProvider = Provider<TeacherRemoteDataSource>((ref) {
   final client = ref.watch(apiClientProvider);
@@ -378,4 +380,19 @@ class TeacherRepositoryImpl implements TeacherRepository {
     }
     throw UnsupportedError('Remote data source not available');
   }
+
+  @override
+  Future<PaginatedResult<AnnouncementDto>> getAnnouncements({
+    int page = 1,
+    int limit = 10,
+  }) async {
+    if (remoteDataSource != null) {
+      return remoteDataSource!.getAnnouncements(
+        page: page,
+        limit: limit,
+      );
+    }
+    return const PaginatedResult<AnnouncementDto>(data: [], meta: null);
+  }
 }
+

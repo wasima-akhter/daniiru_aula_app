@@ -100,6 +100,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         break;
 
       case LoginOutcome.otpVerificationRequired:
+        final authState = ref.read(authControllerProvider);
         ApiSnackbar.show(
           ref.tr(AppStrings.otpResendSuccess),
           type: SnackbarType.success,
@@ -110,6 +111,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             email: emailController.text.trim(),
             purpose: OtpPurpose.signup,
             role: OtpRole.parent,
+            otpPageToken: authState.otpPageToken,
           ),
         );
         break;

@@ -314,6 +314,10 @@ class AppStrings {
   static const String fullLegalName = 'full_legal_name';
   static const String titleDepartment = 'title_department';
   static const String titleDepartmentHint = 'title_department_hint';
+  static const String teacherDepartment = 'teacher_department';
+  static const String teacherDepartmentHint = 'teacher_department_hint';
+  static const String teacherDesignation = 'teacher_designation';
+  static const String teacherDesignationHint = 'teacher_designation_hint';
   static const String subjectsDisciplines = 'subjects_disciplines';
   static const String addSubject = 'add_subject';
   static const String addSubjectTitle = 'add_subject_title';

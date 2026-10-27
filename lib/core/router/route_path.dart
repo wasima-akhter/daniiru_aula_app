@@ -62,6 +62,7 @@ class RoutePath {
   //
   static const String teacherReportDetail = 'teacherReportDetail';
   static const String teacherStudentDetail = 'teacherStudentDetail';
+  static const String teacherAnnouncements = 'teacherAnnouncements';
   //
 
   // Profile and Settings Screens

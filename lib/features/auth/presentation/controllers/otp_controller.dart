@@ -88,14 +88,20 @@ class OtpController extends Notifier<OtpState> {
     String target,
     OtpPurpose purpose, {
     String? recoveryToken,
+    String? otpPageToken,
   }) async {
     if (!state.canResend || state.isResending) return false;
     state = state.copyWith(isResending: true);
     try {
       if (purpose == OtpPurpose.signup) {
-        await ref
+        final success = await ref
             .read(authControllerProvider.notifier)
-            .resendOtp(email: target);
+            .resendOtp(email: target, otpPageToken: otpPageToken);
+        if (!success) {
+          final authState = ref.read(authControllerProvider);
+          state = state.copyWith(error: authState.errorMessage);
+          return false;
+        }
       } else {
         final token = recoveryToken ??
             ref.read(passwordRecoveryControllerProvider).token;
@@ -123,6 +129,7 @@ class OtpController extends Notifier<OtpState> {
     OtpPurpose purpose, {
     String? email,
     String? recoveryToken,
+    String? otpPageToken,
   }) async {
     if (state.otp.trim().isEmpty) {
       state = state.copyWith(error: 'otp_required');
@@ -133,7 +140,11 @@ class OtpController extends Notifier<OtpState> {
       if (purpose == OtpPurpose.signup) {
         final success = await ref
             .read(authControllerProvider.notifier)
-            .verifyOtp(otp: state.otp.trim(), email: email);
+            .verifyOtp(
+              otp: state.otp.trim(),
+              email: email,
+              otpPageToken: otpPageToken,
+            );
         state = state.copyWith(isVerifying: false);
         return success;
       } else {

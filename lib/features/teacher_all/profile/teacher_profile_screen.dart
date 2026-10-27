@@ -408,7 +408,7 @@ class TeacherProfileScreen extends ConsumerWidget {
                   ref.watchTr(AppStrings.announcementsSubtitle),
                   () {
                     Navigator.pop(bottomSheetContext);
-                    _showMessage(ref.watchTr(AppStrings.announcementsTitle));
+                    context.push(RoutePath.teacherAnnouncements);
                   },
                 ),
               ],

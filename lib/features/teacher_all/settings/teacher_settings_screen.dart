@@ -1,10 +1,11 @@
-import '../../share/export/screen_export.dart';
 import 'package:aula360/core/services/biometric/biometric_provider.dart';
 import 'package:aula360/core/services/notification/push_notification_service.dart';
 import 'package:aula360/features/parent_all/presentation/controllers/parent_settings_controller.dart'
     show TogglePushResult;
-import 'presentation/controllers/teacher_settings_controller.dart';
+
+import '../../share/export/screen_export.dart';
 import 'language_picker.dart';
+import 'presentation/controllers/teacher_settings_controller.dart';
 
 /// ===============================================================
 /// TEACHER SETTINGS SCREEN
@@ -49,7 +50,8 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen>
       final controller = ref.read(teacherSettingsControllerProvider.notifier);
       final result = await controller.togglePush(true);
       if (result == TogglePushResult.enabled && mounted) {
-        final isSpanish = ref.read(languageProvider).valueOrNull?.language ==
+        final isSpanish =
+            ref.read(languageProvider).valueOrNull?.language ==
             AppLanguage.spanish;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -289,38 +291,38 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen>
             value: state.emailNotifications,
             onChanged: (value) => controller.toggleEmail(value),
           ),
-          _divider(),
-          _switchRow(
-            icon: Icons.notifications_active_outlined,
-            title: tr(AppStrings.settingsNotifClassReminders),
-            subtitle: tr(AppStrings.settingsNotifClassRemindersSub),
-            value: state.classReminders,
-            onChanged: (value) {
-              controller.toggleClassReminders(value);
-              _showMessage(
-                context,
-                value
-                    ? tr(AppStrings.settingsClassRemindersEnabled)
-                    : tr(AppStrings.settingsClassRemindersDisabled),
-              );
-            },
-          ),
-          _divider(),
-          _switchRow(
-            icon: Icons.description_outlined,
-            title: tr(AppStrings.settingsNotifPostClass),
-            subtitle: tr(AppStrings.settingsNotifPostClassSub),
-            value: state.studentReportsAlert,
-            onChanged: (value) {
-              controller.toggleStudentReportsAlert(value);
-              _showMessage(
-                context,
-                value
-                    ? tr(AppStrings.settingsPostClassEnabled)
-                    : tr(AppStrings.settingsPostClassDisabled),
-              );
-            },
-          ),
+          // _divider(),
+          // _switchRow(
+          //   icon: Icons.notifications_active_outlined,
+          //   title: tr(AppStrings.settingsNotifClassReminders),
+          //   subtitle: tr(AppStrings.settingsNotifClassRemindersSub),
+          //   value: state.classReminders,
+          //   onChanged: (value) {
+          //     controller.toggleClassReminders(value);
+          //     _showMessage(
+          //       context,
+          //       value
+          //           ? tr(AppStrings.settingsClassRemindersEnabled)
+          //           : tr(AppStrings.settingsClassRemindersDisabled),
+          //     );
+          //   },
+          // ),
+          // _divider(),
+          // _switchRow(
+          //   icon: Icons.description_outlined,
+          //   title: tr(AppStrings.settingsNotifPostClass),
+          //   subtitle: tr(AppStrings.settingsNotifPostClassSub),
+          //   value: state.studentReportsAlert,
+          //   onChanged: (value) {
+          //     controller.toggleStudentReportsAlert(value);
+          //     _showMessage(
+          //       context,
+          //       value
+          //           ? tr(AppStrings.settingsPostClassEnabled)
+          //           : tr(AppStrings.settingsPostClassDisabled),
+          //     );
+          //   },
+          // ),
         ],
       ),
     );
@@ -421,15 +423,17 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen>
         ref.read(languageProvider).valueOrNull?.language == AppLanguage.spanish;
     final biometricIcon =
         biometricState.sensorLabel.toLowerCase().contains('face')
-            ? Icons.face_rounded
-            : Icons.fingerprint;
+        ? Icons.face_rounded
+        : Icons.fingerprint;
     final biometricSubtitle = !biometricState.isSupported
         ? (isSpanish
-            ? 'No disponible en este dispositivo'
-            : 'Not supported on this device')
+              ? 'No disponible en este dispositivo'
+              : 'Not supported on this device')
         : (biometricState.isEnabled
-            ? (isSpanish ? 'Acceso rápido habilitado' : 'Quick access enabled')
-            : tr(AppStrings.settingsSecurityBiometricSub));
+              ? (isSpanish
+                    ? 'Acceso rápido habilitado'
+                    : 'Quick access enabled')
+              : tr(AppStrings.settingsSecurityBiometricSub));
 
     return _card(
       child: Column(

@@ -63,8 +63,11 @@ class AuthRepositoryImpl implements AuthRepository {
     required String otp,
     required String deviceIdentifier,
     String? fcmToken,
+    String? otpPageToken,
   }) async {
-    final otpPageToken = await _storageService.getOtpPageToken();
+    final token = (otpPageToken != null && otpPageToken.isNotEmpty)
+        ? otpPageToken
+        : await _storageService.getOtpPageToken();
     final request = VerifyOtpRequestDto(
       otp: otp,
       deviceIdentifier: deviceIdentifier,
@@ -73,7 +76,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
     var session = await _remoteDataSource.verifyOtp(
       request: request,
-      otpPageToken: otpPageToken,
+      otpPageToken: token,
     );
 
     // Decode email from accessToken if user.email is empty
@@ -104,10 +107,12 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> resendOtp({String? email}) async {
-    final otpPageToken = await _storageService.getOtpPageToken();
+  Future<void> resendOtp({String? email, String? otpPageToken}) async {
+    final token = (otpPageToken != null && otpPageToken.isNotEmpty)
+        ? otpPageToken
+        : await _storageService.getOtpPageToken();
     final newToken = await _remoteDataSource.resendOtp(
-      otpPageToken: otpPageToken,
+      otpPageToken: token,
       email: email,
     );
     if (newToken != null && newToken.isNotEmpty) {

@@ -105,12 +105,14 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     if (!mounted) return;
 
     if (success) {
+      final authState = ref.read(authControllerProvider);
       context.go(
         RoutePath.activeOtpScreen,
         extra: OtpArgs(
           email: emailController.text.trim(),
           purpose: OtpPurpose.signup,
           role: OtpRole.parent,
+          otpPageToken: authState.otpPageToken,
         ),
       );
     } else {

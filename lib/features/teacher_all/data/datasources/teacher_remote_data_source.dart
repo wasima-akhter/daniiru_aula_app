@@ -6,6 +6,9 @@ import '../dtos/class_session_dto.dart';
 import '../dtos/end_session_dtos.dart';
 import '../dtos/teacher_homework_dto.dart';
 import '../../reports/data/dtos/teacher_report_dto.dart';
+import '../../../parent_all/data/dtos/announcement_dto.dart';
+import '../../../share/model/pagination_meta_model.dart';
+import '../../../share/widgets/paginator/paginator.dart';
 
 abstract class TeacherRemoteDataSource {
   Future<List<ClassSessionDto>> getSessions({DateTime? date});
@@ -27,6 +30,10 @@ abstract class TeacherRemoteDataSource {
     String? cohortId,
   });
   Future<TeacherReportDetailDto> getTeacherReportDetail(String id);
+  Future<PaginatedResult<AnnouncementDto>> getAnnouncements({
+    int page = 1,
+    int limit = 10,
+  });
 }
 
 class TeacherRemoteDataSourceImpl implements TeacherRemoteDataSource {
@@ -344,4 +351,46 @@ class TeacherRemoteDataSourceImpl implements TeacherRemoteDataSource {
       );
     }
   }
+
+  @override
+  Future<PaginatedResult<AnnouncementDto>> getAnnouncements({
+    int page = 1,
+    int limit = 10,
+  }) async {
+    try {
+      final response = await _client.get(
+        ApiConstants.announcements,
+        queryParameters: {'page': page, 'limit': limit},
+      );
+      final data = response.data;
+      PaginationMeta? meta;
+      List<AnnouncementDto> list = [];
+
+      if (data is Map<String, dynamic>) {
+        if (data['meta'] is Map<String, dynamic>) {
+          meta = PaginationMeta.fromJson(data['meta'] as Map<String, dynamic>);
+        }
+        final rawList = data['data'];
+        if (rawList is List) {
+          list = rawList
+              .whereType<Map<String, dynamic>>()
+              .map(AnnouncementDto.fromJson)
+              .toList();
+        }
+      } else if (data is List) {
+        list = data
+            .whereType<Map<String, dynamic>>()
+            .map(AnnouncementDto.fromJson)
+            .toList();
+      }
+      return PaginatedResult<AnnouncementDto>(data: list, meta: meta);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException(
+        message: 'Failed to fetch announcements: $e',
+        statusCode: 500,
+      );
+    }
+  }
 }
+

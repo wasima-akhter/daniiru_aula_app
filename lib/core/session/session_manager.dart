@@ -79,6 +79,11 @@ class SessionManager {
     _lastSessionExpiryHandledAt = now;
 
     try {
+      // If user is already on an unauthenticated screen (e.g. login, splash, OTP verify), don't force navigate or clear credentials
+      if (_isAlreadyOnAuthScreen()) {
+        return;
+      }
+
       // 1. Determine user role before clearing to navigate to the appropriate login screen
       final cachedRole = storageService.getUserRole();
       final isTeacher =
@@ -94,11 +99,6 @@ class SessionManager {
         } catch (e) {
           debugPrint('SessionManager: Error executing auth reset callback: $e');
         }
-      }
-
-      // If user is already on an unauthenticated screen (e.g. login, splash), don't force navigate
-      if (_isAlreadyOnAuthScreen()) {
-        return;
       }
 
       // 4. Resolve localized session expired message

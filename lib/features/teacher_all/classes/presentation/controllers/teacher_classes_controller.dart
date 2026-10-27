@@ -51,7 +51,13 @@ final teacherClassesControllerProvider =
     );
 
 class TeacherClassesController extends Notifier<TeacherClassesState> {
-  TeacherClassesRepository get _repository => ref.read(teacherClassesRepositoryProvider);
+  TeacherClassesRepository? get _repository {
+    try {
+      return ref.read(teacherClassesRepositoryProvider);
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   TeacherClassesState build() {
@@ -62,8 +68,13 @@ class TeacherClassesController extends Notifier<TeacherClassesState> {
   Future<void> loadClasses() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final today = await _repository.getTodayClasses();
-      final upcoming = await _repository.getUpcomingClasses();
+      final repo = _repository;
+      if (repo == null) {
+        state = state.copyWith(isLoading: false);
+        return;
+      }
+      final today = await repo.getTodayClasses();
+      final upcoming = await repo.getUpcomingClasses();
       state = state.copyWith(
         todayClasses: today,
         upcomingClasses: upcoming,
@@ -81,7 +92,7 @@ class TeacherClassesController extends Notifier<TeacherClassesState> {
   Future<bool> startSession(String sessionId) async {
     state = state.copyWith(isStartingSession: true, actionError: null);
     try {
-      await _repository.startSession(sessionId);
+      await _repository?.startSession(sessionId);
       await loadClasses();
       state = state.copyWith(isStartingSession: false);
       return true;

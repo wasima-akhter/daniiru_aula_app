@@ -425,7 +425,9 @@ class _TeacherHomeworkScreenState extends ConsumerState<TeacherHomeworkScreen> {
       initialDescription: widget.initialDescription,
     );
     if (created == true && widget.fromClassFlow && context.mounted) {
-      context.pop();
+      if (widget.sessionId == null || widget.sessionId!.isEmpty) {
+        context.pop();
+      }
     }
   }
 

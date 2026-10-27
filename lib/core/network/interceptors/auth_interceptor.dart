@@ -96,16 +96,19 @@ class AuthInterceptor extends Interceptor {
     final statusCode = err.response?.statusCode;
     final path = err.requestOptions.path;
 
-    // Check if error represents an expired or invalidated session (401 Unauthorized)
-    final isAuthError =
-        (statusCode == 401) ||
-        (err.response?.data is Map &&
-            (err.response!.data['errorType'] == 'TOKEN_EXPIRED' ||
-                err.response!.data['errorType'] == 'UNAUTHORIZED' ||
-                err.response!.data['errorType'] == 'TOKEN_BLACKLISTED' ||
-                err.response!.data['errorType'] == 'SESSION_EXPIRED'));
+    final errorType = err.response?.data is Map
+        ? err.response!.data['errorType']?.toString()
+        : null;
 
-    // Trigger session expiry only for authenticated routes (not login, signup, recovery, etc.)
+    // Check if error represents an expired or invalidated session (401 Unauthorized)
+    // Note: INVALID_OTP is simply a wrong code entry, never a session expiry.
+    final isAuthError = (statusCode == 401 && errorType != 'INVALID_OTP') ||
+        (errorType == 'TOKEN_EXPIRED' ||
+            errorType == 'UNAUTHORIZED' ||
+            errorType == 'TOKEN_BLACKLISTED' ||
+            errorType == 'SESSION_EXPIRED');
+
+    // Trigger session expiry only for authenticated routes (not login, signup, recovery, otp verify/resend, etc.)
     if (isAuthError && !_isExcludedFromSessionExpiry(path)) {
       if (sessionManager != null) {
         await sessionManager!.handleSessionExpired();
@@ -133,6 +136,8 @@ class AuthInterceptor extends Interceptor {
     if (path.contains('/legal/')) return true;
     const excluded = <String>{
       ApiConstants.signup,
+      ApiConstants.verify,
+      ApiConstants.resend,
       ApiConstants.login,
       ApiConstants.check,
       ApiConstants.logout,

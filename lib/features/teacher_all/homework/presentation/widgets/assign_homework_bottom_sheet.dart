@@ -28,7 +28,9 @@ Future<bool?> showAssignHomeworkBottomSheet({
 }) async {
   String? resolvedCohortId = isUuid(cohortId) ? cohortId : null;
   String? resolvedSubjectId = isUuid(subjectId) ? subjectId : null;
-  final String? resolvedSessionId = isUuid(sessionId) ? sessionId : null;
+  final String? resolvedSessionId = isUuid(sessionId)
+      ? sessionId
+      : (sessionId != null && sessionId.isNotEmpty ? sessionId : null);
 
   String resolvedCohortName = (cohortName != null && cohortName.isNotEmpty)
       ? cohortName
@@ -65,10 +67,15 @@ Future<bool?> showAssignHomeworkBottomSheet({
   }
 
   // 2. Search teacher classes (today & upcoming)
-  final classesState = ref.read(teacherClassesControllerProvider);
+  TeacherClassesState? classesState;
+  try {
+    classesState = ref.read(teacherClassesControllerProvider);
+  } catch (_) {
+    classesState = null;
+  }
   final allClasses = [
-    ...classesState.todayClasses,
-    ...classesState.upcomingClasses,
+    if (classesState != null) ...classesState.todayClasses,
+    if (classesState != null) ...classesState.upcomingClasses,
   ];
 
   if (resolvedSessionId != null) {
@@ -432,7 +439,11 @@ Future<bool?> showAssignHomeworkBottomSheet({
                                   }
 
                                   final effectiveSessionId =
-                                      isUuid(resolvedSessionId) ? resolvedSessionId : null;
+                                      isUuid(resolvedSessionId)
+                                          ? resolvedSessionId
+                                          : (sessionId != null && sessionId.isNotEmpty
+                                              ? sessionId
+                                              : null);
 
                                   final success = await innerRef
                                       .read(teacherHomeworkControllerProvider.notifier)
@@ -449,23 +460,61 @@ Future<bool?> showAssignHomeworkBottomSheet({
                                       );
 
                                   if (success && sheetContext.mounted) {
+                                    // 1. Close bottom sheet
                                     Navigator.of(sheetContext).pop(true);
-                                    innerRef.invalidate(teacherHomeworkListProvider(resolvedCohortId));
-                                    innerRef.invalidate(teacherHomeworkListProvider(null));
-                                    if (effectiveSessionId != null) {
-                                      innerRef.invalidate(teacherSessionDetailProvider(effectiveSessionId));
-                                    }
-                                    innerRef.read(teacherClassesControllerProvider.notifier).loadClasses();
-                                    innerRef.read(teacherHomeControllerProvider.notifier).loadHomeData();
 
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        backgroundColor: AppColors.emeraldGreenColor,
-                                        content: Text(
-                                          tr(AppStrings.homeworkCreatedSuccess),
+                                    // 2. Refresh class session details and related lists
+                                    if (resolvedCohortId != null) {
+                                      ref.invalidate(teacherHomeworkListProvider(resolvedCohortId));
+                                    }
+                                    ref.invalidate(teacherHomeworkListProvider(null));
+
+                                    if (effectiveSessionId != null && effectiveSessionId.isNotEmpty) {
+                                      ref.invalidate(teacherSessionDetailProvider(effectiveSessionId));
+                                      try {
+                                        await ref.read(teacherSessionDetailProvider(effectiveSessionId).future);
+                                      } catch (e) {
+                                        debugPrint('Error refreshing class session details: $e');
+                                      }
+                                    }
+                                    ref.invalidate(teacherClassesControllerProvider);
+                                    ref.invalidate(teacherHomeControllerProvider);
+
+                                    // 3. Show feedback snackbar
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          backgroundColor: AppColors.emeraldGreenColor,
+                                          content: Text(
+                                            tr(AppStrings.homeworkCreatedSuccess),
+                                          ),
                                         ),
-                                      ),
-                                    );
+                                      );
+                                    }
+
+                                    // 4. Redirect back to class details
+                                    if (context.mounted &&
+                                        effectiveSessionId != null &&
+                                        effectiveSessionId.isNotEmpty) {
+                                      String? currentRoute;
+                                      try {
+                                        final state = GoRouterState.of(context);
+                                        currentRoute = state.name ?? state.uri.path;
+                                      } catch (_) {
+                                        currentRoute = null;
+                                      }
+                                      final isAlreadyOnClassDetail = currentRoute != null &&
+                                          (currentRoute == RoutePath.teacherClassDetail ||
+                                              currentRoute.contains(RoutePath.teacherClassDetail));
+                                      if (!isAlreadyOnClassDetail) {
+                                        try {
+                                          context.push(
+                                            RoutePath.teacherClassDetail,
+                                            extra: effectiveSessionId,
+                                          );
+                                        } catch (_) {}
+                                      }
+                                    }
                                   } else if (!success && sheetContext.mounted) {
                                     final err = innerRef.read(teacherHomeworkControllerProvider).error;
                                     if (err != null && err.isNotEmpty) {

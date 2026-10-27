@@ -157,12 +157,14 @@ class AulaCard extends StatelessWidget {
 // ================================================================
 
 class UserAvatar extends StatelessWidget {
+  final String? avatarUrl;
   final String initials;
   final double size;
   final Color? backgroundColor;
 
   const UserAvatar({
     super.key,
+    this.avatarUrl,
     required this.initials,
     this.size = 42,
     this.backgroundColor,
@@ -170,6 +172,38 @@ class UserAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final validUrl = avatarUrl != null &&
+        avatarUrl!.trim().isNotEmpty &&
+        (Uri.tryParse(avatarUrl!.trim())?.hasScheme ?? false);
+
+    if (validUrl) {
+      return Container(
+        width: size.w,
+        height: size.w,
+        decoration: BoxDecoration(
+          color: backgroundColor ?? const Color(0xFFE9EEFF),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: AppColors.blueSoft.withValues(alpha: 0.8),
+            width: 1.5,
+          ),
+        ),
+        child: ClipOval(
+          child: Image.network(
+            avatarUrl!.trim(),
+            width: size.w,
+            height: size.w,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _buildFallback(),
+          ),
+        ),
+      );
+    }
+
+    return _buildFallback();
+  }
+
+  Widget _buildFallback() {
     return Container(
       width: size.w,
       height: size.w,

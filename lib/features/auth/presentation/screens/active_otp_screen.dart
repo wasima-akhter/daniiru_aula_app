@@ -17,12 +17,14 @@ class OtpArgs {
   final OtpPurpose purpose;
   final OtpRole role;
   final String? recoveryToken;
+  final String? otpPageToken;
 
   const OtpArgs({
     this.email,
     required this.purpose,
     required this.role,
     this.recoveryToken,
+    this.otpPageToken,
   });
 }
 
@@ -140,6 +142,7 @@ class _ActiveOtpScreenState extends ConsumerState<ActiveOtpScreen> {
           purpose,
           email: email,
           recoveryToken: widget.args.recoveryToken,
+          otpPageToken: widget.args.otpPageToken,
         );
 
     if (!mounted) return;
@@ -180,6 +183,7 @@ class _ActiveOtpScreenState extends ConsumerState<ActiveOtpScreen> {
           email ?? 'user@aula360.com',
           purpose,
           recoveryToken: widget.args.recoveryToken,
+          otpPageToken: widget.args.otpPageToken,
         );
     if (!mounted) return;
     if (success) {
@@ -189,15 +193,26 @@ class _ActiveOtpScreenState extends ConsumerState<ActiveOtpScreen> {
         type: SnackbarType.success,
       );
     } else {
+      final currentLangCode =
+          ref.read(languageProvider).valueOrNull?.languageCode ?? 'en';
       if (purpose == OtpPurpose.forgotPassword) {
         final recoveryState = ref.read(passwordRecoveryControllerProvider);
-        final currentLangCode =
-            ref.read(languageProvider).valueOrNull?.languageCode ?? 'en';
         final resolved = AppErrorResolver.resolve(
           recoveryState.userMessage ?? recoveryState.error,
           languageCode: currentLangCode,
         );
         ApiSnackbar.showUserMessage(resolved);
+      } else {
+        final authState = ref.read(authControllerProvider);
+        if (authState.userMessage != null) {
+          ApiSnackbar.showUserMessage(authState.userMessage!);
+        } else {
+          final resolved = AppErrorResolver.resolve(
+            authState.errorMessage ?? 'resend_failed',
+            languageCode: currentLangCode,
+          );
+          ApiSnackbar.showUserMessage(resolved);
+        }
       }
     }
   }

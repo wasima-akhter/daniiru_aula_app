@@ -33,11 +33,10 @@ class _EditTeacherProfileScreenState
   late final TextEditingController emailController;
   late final TextEditingController phoneController;
   late final TextEditingController departmentController;
-  late final TextEditingController officeController;
+  late final TextEditingController designationController;
   late final TextEditingController bioController;
 
   File? _profileImage;
-  String language = 'Español';
 
   @override
   void initState() {
@@ -67,10 +66,8 @@ class _EditTeacherProfileScreenState
     }
 
     departmentController = TextEditingController(text: profile.department);
-    officeController = TextEditingController(text: profile.office);
+    designationController = TextEditingController(text: profile.designation);
     bioController = TextEditingController(text: profile.bio);
-    final activeLang = ref.read(languageProvider).valueOrNull?.language;
-    language = activeLang == AppLanguage.spanish ? 'Español' : 'English (US)';
   }
 
   @override
@@ -79,7 +76,7 @@ class _EditTeacherProfileScreenState
     emailController.dispose();
     phoneController.dispose();
     departmentController.dispose();
-    officeController.dispose();
+    designationController.dispose();
     bioController.dispose();
     super.dispose();
   }
@@ -185,20 +182,18 @@ class _EditTeacherProfileScreenState
                 ),
                 SizedBox(height: 10.h),
                 _field(
-                  label: ref.watchTr(AppStrings.deptSubjectLabel),
+                  label: ref.watchTr(AppStrings.teacherDepartment),
                   controller: departmentController,
                   icon: Icons.school_outlined,
                   requiredField: true,
                 ),
                 _field(
-                  label: ref.watchTr(AppStrings.officeRoomLabel),
-                  controller: officeController,
-                  icon: Icons.meeting_room_outlined,
+                  label: ref.watchTr(AppStrings.teacherDesignation),
+                  controller: designationController,
+                  icon: Icons.badge_outlined,
                   requiredField: true,
                 ),
                 _bioField(),
-                SizedBox(height: 10.h),
-                _languageDropdown(),
                 SizedBox(height: 20.h),
                 _saveButton(state.isSaving),
               ],
@@ -215,10 +210,11 @@ class _EditTeacherProfileScreenState
 
   Widget _profilePhotoCard() {
     final badgeText = ref.watchTr(AppStrings.verified);
-
-    // hasId
-    //     ? '${ref.watchTr(AppStrings.teacherId)}: ${teacherId.startsWith('#') ? teacherId : '#$teacherId'}'
-    //     : ref.watchTr(AppStrings.teacherId);
+    final profile = ref.watch(teacherProfileControllerProvider).profile;
+    final hasAvatar = profile.profileImagePath?.isNotEmpty == true;
+    final avatarUrl = hasAvatar
+        ? profile.profileImagePath!
+        : 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=500';
 
     return Container(
       width: double.infinity,
@@ -248,8 +244,7 @@ class _EditTeacherProfileScreenState
                     child: _profileImage != null
                         ? Image.file(_profileImage!, fit: BoxFit.cover)
                         : CustomNetworkImage(
-                            imageUrl:
-                                'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=500',
+                            imageUrl: avatarUrl,
                             width: 80.w,
                             height: 80.w,
                             boxShape: BoxShape.circle,
@@ -339,11 +334,12 @@ class _EditTeacherProfileScreenState
   }
 
   void _previewProfilePhoto() {
+    final profile = ref.read(teacherProfileControllerProvider).profile;
     ImageViewerService.open(
       context,
       imageFile: _profileImage,
-      imageUrl: _profileImage == null
-          ? 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=500'
+      imageUrl: _profileImage == null && profile.profileImagePath?.isNotEmpty == true
+          ? profile.profileImagePath
           : null,
       title: nameController.text.isNotEmpty
           ? nameController.text
@@ -517,37 +513,6 @@ class _EditTeacherProfileScreenState
   }
 
   // ===============================================================
-  // LANGUAGE
-  // ===============================================================
-
-  Widget _languageDropdown() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _fieldLabel(ref.watchTr(AppStrings.preferredLanguage)),
-        SizedBox(height: 5.h),
-        DropdownButtonFormField<String>(
-          initialValue: language,
-          decoration: _inputDecoration(icon: Icons.translate),
-          items: const [
-            DropdownMenuItem(value: 'Español', child: Text('Español')),
-            DropdownMenuItem(
-              value: 'English (US)',
-              child: Text('English (US)'),
-            ),
-          ],
-          onChanged: (value) {
-            if (value == null) return;
-            setState(() {
-              language = value;
-            });
-          },
-        ),
-      ],
-    );
-  }
-
-  // ===============================================================
   // SAVE
   // ===============================================================
 
@@ -595,16 +560,17 @@ class _EditTeacherProfileScreenState
 
     final sanitizedPhone = AulaValidation.sanitizePhone(phoneToValidate);
 
+    final currentProfile = ref.read(teacherProfileControllerProvider).profile;
     final updatedProfile = TeacherProfileData(
-      id: ref.read(teacherProfileControllerProvider).profile.id,
+      id: currentProfile.id,
       name: nameController.text.trim(),
       email: emailController.text.trim(),
       phone: sanitizedPhone,
       department: departmentController.text.trim(),
-      office: officeController.text.trim(),
+      designation: designationController.text.trim(),
       bio: bioController.text.trim(),
-      language: language,
-      profileImagePath: _profileImage?.path,
+      language: currentProfile.language,
+      profileImagePath: _profileImage?.path ?? currentProfile.profileImagePath,
     );
 
     final success = await ref
@@ -614,12 +580,6 @@ class _EditTeacherProfileScreenState
     if (!mounted) return;
 
     if (success) {
-      if (language.contains('English')) {
-        ref.read(languageProvider.notifier).changeLanguage(AppLanguage.english);
-      } else if (language.contains('Español')) {
-        ref.read(languageProvider.notifier).changeLanguage(AppLanguage.spanish);
-      }
-
       ApiSnackbar.show(
         ref.tr(AppStrings.profileUpdatedSuccess),
         type: SnackbarType.success,

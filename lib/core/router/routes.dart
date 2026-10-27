@@ -46,6 +46,7 @@ import '../../features/parent_all/teacher_info/teacher_info_screen.dart';
 import '../../features/teacher_all/attendance/teacher_attendance_screen.dart';
 import '../../features/teacher_all/classes/teacher_class_detail_screen.dart';
 import '../../features/teacher_all/homework/teacher_homework_screen.dart';
+import '../../features/teacher_all/announcements/presentation/screens/teacher_announcements_screen.dart';
 import '../../features/teacher_all/profile/teacher_edit_profile_screen.dart';
 import '../../features/teacher_all/settings/change_password_screen.dart';
 import '../../features/teacher_all/settings/teacher_settings_screen.dart';
@@ -640,6 +641,16 @@ class AppRouter {
           return _buildPageWithAnimation(
             state: state,
             child: TeacherStudentDetailsScreen(studentId: studentId),
+          );
+        },
+      ),
+      GoRoute(
+        name: RoutePath.teacherAnnouncements,
+        path: RoutePath.teacherAnnouncements.addBasePath,
+        pageBuilder: (context, state) {
+          return _buildPageWithAnimation(
+            state: state,
+            child: const TeacherAnnouncementsScreen(),
           );
         },
       ),

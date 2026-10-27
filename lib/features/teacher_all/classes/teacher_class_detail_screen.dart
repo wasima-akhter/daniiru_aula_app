@@ -1105,6 +1105,9 @@ class TeacherClassDetailScreen extends ConsumerWidget {
               );
               if (created == true) {
                 ref.invalidate(teacherSessionDetailProvider(session.id));
+                try {
+                  await ref.read(teacherSessionDetailProvider(session.id).future);
+                } catch (_) {}
                 ref
                     .read(teacherClassesControllerProvider.notifier)
                     .loadClasses();

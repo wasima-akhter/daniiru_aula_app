@@ -32,11 +32,13 @@ class VerifyOtpUseCase {
     required String otp,
     required String deviceIdentifier,
     String? fcmToken,
+    String? otpPageToken,
   }) {
     return _repository.verifyOtp(
       otp: otp,
       deviceIdentifier: deviceIdentifier,
       fcmToken: fcmToken,
+      otpPageToken: otpPageToken,
     );
   }
 }
@@ -45,8 +47,8 @@ class ResendOtpUseCase {
   final AuthRepository _repository;
   const ResendOtpUseCase(this._repository);
 
-  Future<void> call({String? email}) {
-    return _repository.resendOtp(email: email);
+  Future<void> call({String? email, String? otpPageToken}) {
+    return _repository.resendOtp(email: email, otpPageToken: otpPageToken);
   }
 }
 

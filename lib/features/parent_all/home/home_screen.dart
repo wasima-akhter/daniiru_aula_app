@@ -9,6 +9,7 @@ import '../presentation/controllers/parent_attendance_controller.dart';
 import '../presentation/controllers/parent_children_controller.dart';
 import '../presentation/controllers/parent_home_controller.dart';
 import '../presentation/controllers/parent_notifications_controller.dart';
+import '../presentation/controllers/parent_profile_controller.dart';
 import '../presentation/controllers/parent_schedule_controller.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -353,10 +354,17 @@ class HomeScreen extends ConsumerWidget {
     final attendanceState = ref.watch(parentAttendanceControllerProvider);
 
     final currentUser = ref.watch(authControllerProvider).user;
+    final parentProfile = ref.watch(parentProfileControllerProvider);
     final parentName = currentUser?.fullName.isNotEmpty == true
         ? currentUser!.fullName
-        : ref.watchTr(AppStrings.roleParentTitle);
+        : (parentProfile.name.isNotEmpty == true
+            ? parentProfile.name
+            : ref.watchTr(AppStrings.roleParentTitle));
     final userInitials = _extractInitials(parentName);
+    final parentAvatarUrl = (parentProfile.avatarUrl != null &&
+            parentProfile.avatarUrl!.trim().isNotEmpty)
+        ? parentProfile.avatarUrl
+        : currentUser?.avatarUrl;
 
     final langCode =
         ref.watch(languageProvider).valueOrNull?.language.code ?? 'en';
@@ -442,7 +450,18 @@ class HomeScreen extends ConsumerWidget {
           ),
           Padding(
             padding: EdgeInsets.only(left: 2.w, right: 15.w),
-            child: UserAvatar(initials: userInitials, size: 38),
+            child: GestureDetector(
+              onTap: () {
+                ref
+                    .read(navigationProvider.notifier)
+                    .goToParentProfile(context);
+              },
+              child: UserAvatar(
+                avatarUrl: parentAvatarUrl,
+                initials: userInitials,
+                size: 38,
+              ),
+            ),
           ),
         ],
       ),

@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../../core/utils/formatters/app_input_formatters.dart';
+import '../../../../core/utils/validators.dart';
 import '../../../../utils/enum/app_enum.dart';
 import '../../../share/export/screen_export.dart';
 import '../../../share/widgets/button/app_logo.dart';
 import '../../../share/widgets/button/custom_back_button.dart';
 import '../../../share/widgets/text_field/custom_text_field.dart';
-import '../../../../core/utils/formatters/app_input_formatters.dart';
-import '../../../../core/utils/validators.dart';
 import '../controllers/auth_controller.dart';
 import '../screens/active_otp_screen.dart';
 
@@ -76,17 +76,11 @@ class _TeacherSignUpScreenState extends ConsumerState<TeacherSignUpScreen> {
       phoneToValidate = '+34$phoneToValidate';
     }
 
-    if (!AulaValidation.phone(
-      phoneToValidate,
-      languageCode: langCode,
-    )) {
+    if (!AulaValidation.phone(phoneToValidate, languageCode: langCode)) {
       return;
     }
 
-    if (!AulaValidation.email(
-      emailController.text,
-      languageCode: langCode,
-    )) {
+    if (!AulaValidation.email(emailController.text, languageCode: langCode)) {
       return;
     }
 
@@ -122,12 +116,14 @@ class _TeacherSignUpScreenState extends ConsumerState<TeacherSignUpScreen> {
     if (!mounted) return;
 
     if (success) {
+      final authState = ref.read(authControllerProvider);
       context.go(
         RoutePath.activeOtpScreen,
         extra: OtpArgs(
           email: emailController.text.trim(),
           purpose: OtpPurpose.signup,
           role: OtpRole.teacher,
+          otpPageToken: authState.otpPageToken,
         ),
       );
     } else {
@@ -165,7 +161,7 @@ class _TeacherSignUpScreenState extends ConsumerState<TeacherSignUpScreen> {
 
               Center(
                 child: Text(
-                  tr(AppStrings.registerAsFaculty),
+                  tr(AppStrings.emailAddressTitle),
                   style: TxtStyle.titleLarge(
                     color: AppColors.text,
                     fontSize: 29.5.sp,
@@ -208,13 +204,22 @@ class _TeacherSignUpScreenState extends ConsumerState<TeacherSignUpScreen> {
                 isPhoneField: true,
                 initialCountryCode: 'ES',
                 phoneFormKey: _phoneFormKey,
-                languageCode: ref.watch(languageProvider).valueOrNull?.languageCode,
+                languageCode: ref
+                    .watch(languageProvider)
+                    .valueOrNull
+                    ?.languageCode,
                 onPhoneChanged: (completeNumber) {
                   _completePhoneNumber = completeNumber;
                 },
                 phoneValidator: (value) {
-                  final langCode = ref.read(languageProvider).valueOrNull?.languageCode;
-                  return AulaValidation.validatePhone(value, languageCode: langCode);
+                  final langCode = ref
+                      .read(languageProvider)
+                      .valueOrNull
+                      ?.languageCode;
+                  return AulaValidation.validatePhone(
+                    value,
+                    languageCode: langCode,
+                  );
                 },
               ),
 

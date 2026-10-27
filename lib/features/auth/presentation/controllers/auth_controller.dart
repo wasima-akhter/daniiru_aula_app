@@ -385,7 +385,11 @@ class AuthController extends Notifier<AuthState> {
   }
 
   /// Verify signup OTP.
-  Future<bool> verifyOtp({required String otp, String? email}) async {
+  Future<bool> verifyOtp({
+    required String otp,
+    String? email,
+    String? otpPageToken,
+  }) async {
     state = state.copyWith(
       isLoading: true,
       errorMessage: null,
@@ -408,6 +412,7 @@ class AuthController extends Notifier<AuthState> {
             otp: otp,
             deviceIdentifier: deviceIdentifier,
             fcmToken: fcmToken,
+            otpPageToken: otpPageToken ?? state.otpPageToken,
           );
 
       ref.read(userRoleProvider.notifier).setRole(session.user.role);
@@ -436,9 +441,12 @@ class AuthController extends Notifier<AuthState> {
   }
 
   /// Resends the signup OTP verification email.
-  Future<bool> resendOtp({String? email}) async {
+  Future<bool> resendOtp({String? email, String? otpPageToken}) async {
     try {
-      await ref.read(resendOtpUseCaseProvider).call(email: email);
+      await ref.read(resendOtpUseCaseProvider).call(
+            email: email,
+            otpPageToken: otpPageToken ?? state.otpPageToken,
+          );
       return true;
     } catch (e) {
       final userMsg = _resolveError(e);

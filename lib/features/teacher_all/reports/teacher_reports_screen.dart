@@ -221,11 +221,7 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
       padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 8.h),
       child: Container(
         height: 42.h,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(9.r),
-          border: Border.all(color: AppColors.backgroundsLinesColor),
-        ),
+      
         child: TextField(
           controller: _searchController,
           onChanged: (val) => controller.setSearchQuery(val),

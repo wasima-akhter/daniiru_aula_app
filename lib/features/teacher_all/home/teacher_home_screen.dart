@@ -7,6 +7,7 @@ import '../../parent_all/presentation/controllers/parent_notifications_controlle
 import '../../share/export/screen_export.dart';
 import '../../share/widgets/button/app_logo.dart';
 import '../helper/teacher_models.dart';
+import '../profile/presentation/controllers/teacher_profile_controller.dart';
 import 'presentation/controllers/teacher_home_controller.dart';
 
 /// ===============================================================
@@ -31,10 +32,17 @@ class TeacherHomeScreen extends ConsumerWidget {
     final schedule = state.schedule;
 
     final currentUser = ref.watch(authControllerProvider).user;
+    final teacherProfile = ref.watch(teacherProfileControllerProvider).profile;
     final teacherName = currentUser?.fullName.isNotEmpty == true
         ? currentUser!.fullName
-        : 'Educator';
+        : (teacherProfile.name.isNotEmpty == true
+            ? teacherProfile.name
+            : 'Educator');
     final userInitials = _extractInitials(teacherName);
+    final teacherAvatarUrl = (teacherProfile.profileImagePath != null &&
+            teacherProfile.profileImagePath!.trim().isNotEmpty)
+        ? teacherProfile.profileImagePath
+        : currentUser?.avatarUrl;
 
     return Scaffold(
       backgroundColor: AppColors.softBackground,
@@ -124,7 +132,18 @@ class TeacherHomeScreen extends ConsumerWidget {
           ),
           Padding(
             padding: EdgeInsets.only(left: 2.w, right: 15.w),
-            child: UserAvatar(initials: userInitials, size: 38),
+            child: GestureDetector(
+              onTap: () {
+                ref
+                    .read(navigationProvider.notifier)
+                    .goToTeacherProfile(context);
+              },
+              child: UserAvatar(
+                avatarUrl: teacherAvatarUrl,
+                initials: userInitials,
+                size: 38,
+              ),
+            ),
           ),
         ],
       ),
