@@ -36,10 +36,11 @@ class TeacherHomeScreen extends ConsumerWidget {
     final teacherName = currentUser?.fullName.isNotEmpty == true
         ? currentUser!.fullName
         : (teacherProfile.name.isNotEmpty == true
-            ? teacherProfile.name
-            : 'Educator');
+              ? teacherProfile.name
+              : 'Educator');
     final userInitials = _extractInitials(teacherName);
-    final teacherAvatarUrl = (teacherProfile.profileImagePath != null &&
+    final teacherAvatarUrl =
+        (teacherProfile.profileImagePath != null &&
             teacherProfile.profileImagePath!.trim().isNotEmpty)
         ? teacherProfile.profileImagePath
         : currentUser?.avatarUrl;
@@ -179,7 +180,10 @@ class TeacherHomeScreen extends ConsumerWidget {
                         AppErrorResolver.resolve(
                           state.error!,
                           languageCode:
-                              ref.watch(languageProvider).valueOrNull?.languageCode ??
+                              ref
+                                  .watch(languageProvider)
+                                  .valueOrNull
+                                  ?.languageCode ??
                               LanguageNotifier.activeLanguageCode,
                         ).displayMessage,
                         textAlign: TextAlign.center,
@@ -386,16 +390,20 @@ class TeacherHomeScreen extends ConsumerWidget {
                       shape: BoxShape.circle,
                     ),
                   ),
-                Text(
-                  '$tagText • ${nextClass.startTime} – ${nextClass.endTime}',
-                  style: TxtStyle.titleLarge(
-                    color: AppColors.primaryDark,
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: .35,
+                Flexible(
+                  child: Text(
+                    '$tagText • ${nextClass.startTime} – ${nextClass.endTime}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TxtStyle.titleLarge(
+                      color: AppColors.primaryDark,
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: .35,
+                    ),
                   ),
                 ),
-                const Spacer(),
+                SizedBox(width: 6.w),
                 Icon(
                   Icons.arrow_forward_ios_rounded,
                   color: AppColors.subtitleTextColor,
@@ -406,6 +414,8 @@ class TeacherHomeScreen extends ConsumerWidget {
             SizedBox(height: 8.h),
             Text(
               nextClass.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: TxtStyle.titleLarge(
                 color: AppColors.text,
                 fontSize: 22.sp,
@@ -416,6 +426,8 @@ class TeacherHomeScreen extends ConsumerWidget {
             SizedBox(height: 5.h),
             Text(
               '${nextClass.room} • ${nextClass.group} • ${nextClass.students} ${ref.watchTr(AppStrings.studentsCount)}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TxtStyle.titleLarge(
                 color: AppColors.subtitleTextColor,
                 fontSize: 16.sp,
@@ -528,6 +540,8 @@ class TeacherHomeScreen extends ConsumerWidget {
                   SizedBox(height: 6.h),
                   Text(
                     item.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TxtStyle.titleLarge(
                       color: isCancelled
                           ? AppColors.subtitleTextColor
@@ -540,6 +554,8 @@ class TeacherHomeScreen extends ConsumerWidget {
                   Text(
                     '${item.room} • ${item.group} • '
                     '${item.students} ${ref.watchTr(AppStrings.studentsCount)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TxtStyle.labelLarge(
                       color: AppColors.subtitleTextColor,
                       fontSize: 15.5.sp,
@@ -613,10 +629,7 @@ class TeacherHomeScreen extends ConsumerWidget {
             width: 5.w,
             height: 5.w,
             margin: EdgeInsets.only(right: 4.w),
-            decoration: BoxDecoration(
-              color: textColor,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: textColor, shape: BoxShape.circle),
           ),
           Text(
             label.toUpperCase(),

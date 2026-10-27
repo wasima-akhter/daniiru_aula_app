@@ -1,10 +1,9 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:aula360/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:aula360/features/teacher_all/classes/domain/repositories/teacher_classes_repository.dart';
 import 'package:aula360/features/teacher_all/classes/presentation/providers/teacher_classes_providers.dart';
 import 'package:aula360/features/teacher_all/helper/teacher_enums.dart';
 import 'package:aula360/features/teacher_all/helper/teacher_models.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 int parseTimeToMinutes(String timeStr) {
   try {
@@ -96,11 +95,12 @@ class TeacherHomeState {
 
 final teacherHomeControllerProvider =
     NotifierProvider<TeacherHomeController, TeacherHomeState>(
-  TeacherHomeController.new,
-);
+      TeacherHomeController.new,
+    );
 
 class TeacherHomeController extends Notifier<TeacherHomeState> {
-  TeacherClassesRepository get _classesRepository => ref.read(teacherClassesRepositoryProvider);
+  TeacherClassesRepository get _classesRepository =>
+      ref.read(teacherClassesRepositoryProvider);
 
   @override
   TeacherHomeState build() {
@@ -122,7 +122,9 @@ class TeacherHomeController extends Notifier<TeacherHomeState> {
   Future<void> loadHomeData() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final sessions = await _classesRepository.getSessions(date: DateTime.now());
+      final sessions = await _classesRepository.getSessions(
+        date: DateTime.now(),
+      );
       if (sessions.isNotEmpty) {
         final sortedSessions = List.of(sessions)
           ..sort((a, b) {
@@ -143,15 +145,17 @@ class TeacherHomeController extends Notifier<TeacherHomeState> {
             room: s.classroomRoomNumber,
             group: s.cohortName,
             students: 24,
-            type: isOngoing
-                ? HomeClassType.next
-                : HomeClassType.scheduled,
+            type: isOngoing ? HomeClassType.next : HomeClassType.scheduled,
             rawStatus: s.status,
           );
         }).toList();
         state = state.copyWith(schedule: items, isLoading: false, error: null);
       } else {
-        state = state.copyWith(schedule: const [], isLoading: false, error: null);
+        state = state.copyWith(
+          schedule: const [],
+          isLoading: false,
+          error: null,
+        );
       }
     } catch (e) {
       state = state.copyWith(
