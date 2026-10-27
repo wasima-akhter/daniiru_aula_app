@@ -227,7 +227,9 @@
   "select_relationship": "Select relationship",
   "residential_address": "Residential Address",
   "residential_address_hint": "e.g. 742 Evergreen Terrace, Springfield",
-  "btn_complete_profile": "Complete Profile",
+   "btn_complete_profile": "Complete Profile",
+  "occupation": "Occupation",
+  "occupation_hint": "e.g. Software Engineer, Architect",
   "btn_save_changes": "Save Changes",
   "navigates_to_parent_dashboard": "Navigates to Parent Dashboard",
   "relationship_mother": "Mother",
@@ -490,6 +492,8 @@
   "academy_messages_subtitle": "View administration messages",
   "announcements_title": "Announcements & Broadcasts",
   "announcements_subtitle": "View general academy announcements",
+  "no_announcements": "No announcements available",
+  "no_announcements_desc": "Notices and broadcast messages from the academy will appear here.",
   "family_communication_title": "Family Communication",
   "family_communication_subtitle": "Manage messages with parents and guardians",
   "next_class": "Next Class",
@@ -811,5 +815,9 @@
   "take_attendance": "Take Attendance",
   "post_class_report_title": "Post Class Report",
   "end_class_title": "End Class",
-  "students_count": "students"
+  "students_count": "students",
+  "status_ongoing": "Ongoing",
+  "status_scheduled": "Scheduled",
+  "status_completed": "Completed",
+  "status_cancelled": "Cancelled"
 }

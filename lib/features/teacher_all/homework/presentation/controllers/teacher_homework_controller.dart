@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:aula360/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:aula360/features/teacher_all/homework/data/dtos/teacher_homework_dto.dart';
 import 'package:aula360/features/teacher_all/homework/domain/repositories/teacher_homework_repository.dart';
 import 'package:aula360/features/teacher_all/homework/presentation/providers/teacher_homework_providers.dart';
@@ -162,6 +163,16 @@ class TeacherHomeworkListController extends Notifier<TeacherHomeworkListState> {
 
   @override
   TeacherHomeworkListState build() {
+    ref.listen<AuthState>(authControllerProvider, (previous, next) {
+      if (previous?.user?.id != next.user?.id) {
+        if (next.user != null) {
+          state = const TeacherHomeworkListState(isLoading: true);
+          Future.microtask(() => loadInitial());
+        } else {
+          state = const TeacherHomeworkListState();
+        }
+      }
+    });
     Future.microtask(() => loadInitial());
     return const TeacherHomeworkListState(isLoading: true);
   }

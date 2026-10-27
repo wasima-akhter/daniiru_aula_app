@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:aula360/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:aula360/features/teacher_all/helper/teacher_enums.dart';
 import 'package:aula360/features/teacher_all/helper/teacher_models.dart';
 import 'package:aula360/features/teacher_all/students/domain/repositories/teacher_students_repository.dart';
@@ -96,6 +97,16 @@ class TeacherStudentsController extends Notifier<TeacherStudentsState> {
   TeacherStudentsState build() {
     ref.onDispose(() {
       _searchDebounce?.cancel();
+    });
+    ref.listen<AuthState>(authControllerProvider, (previous, next) {
+      if (previous?.user?.id != next.user?.id) {
+        if (next.user != null) {
+          state = const TeacherStudentsState(isLoading: true);
+          Future.microtask(() => loadStudents());
+        } else {
+          state = const TeacherStudentsState();
+        }
+      }
     });
     Future.microtask(() => loadStudents());
     return const TeacherStudentsState(isLoading: true);

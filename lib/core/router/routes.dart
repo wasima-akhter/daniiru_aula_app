@@ -47,6 +47,7 @@ import '../../features/teacher_all/attendance/teacher_attendance_screen.dart';
 import '../../features/teacher_all/classes/teacher_class_detail_screen.dart';
 import '../../features/teacher_all/homework/teacher_homework_screen.dart';
 import '../../features/teacher_all/announcements/presentation/screens/teacher_announcements_screen.dart';
+import '../../features/parent_all/announcements/presentation/screens/parent_announcements_screen.dart';
 import '../../features/teacher_all/profile/teacher_edit_profile_screen.dart';
 import '../../features/teacher_all/settings/change_password_screen.dart';
 import '../../features/teacher_all/settings/teacher_settings_screen.dart';
@@ -651,6 +652,16 @@ class AppRouter {
           return _buildPageWithAnimation(
             state: state,
             child: const TeacherAnnouncementsScreen(),
+          );
+        },
+      ),
+      GoRoute(
+        name: RoutePath.parentAnnouncements,
+        path: RoutePath.parentAnnouncements.addBasePath,
+        pageBuilder: (context, state) {
+          return _buildPageWithAnimation(
+            state: state,
+            child: const ParentAnnouncementsScreen(),
           );
         },
       ),

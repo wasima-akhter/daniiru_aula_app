@@ -121,11 +121,11 @@ class HomeworkDetailsScreen extends ConsumerWidget {
               ],
             ),
           ),
-          Icon(
-            Icons.chat_bubble_outline_rounded,
-            color: AppColors.secondaryText,
-            size: 19.sp,
-          ),
+          // Icon(
+          //   Icons.chat_bubble_outline_rounded,
+          //   color: AppColors.secondaryText,
+          //   size: 19.sp,
+          // ),
         ],
       ),
     );

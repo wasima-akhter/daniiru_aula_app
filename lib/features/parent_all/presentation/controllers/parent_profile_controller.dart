@@ -85,10 +85,38 @@ class ParentProfileController extends Notifier<ParentProfileState> {
 
   @override
   ParentProfileState build() {
-    // Read the user once for initial seeding so we do NOT create an invalidation loop with authControllerProvider
-    final authUser = ref.read(authControllerProvider).user;
     final currentLang =
         ref.watch(languageProvider).valueOrNull?.language.label ?? 'English';
+
+    ref.listen<AuthState>(authControllerProvider, (previous, next) {
+      if (previous?.user?.id != next.user?.id) {
+        _hasFetched = false;
+        _isFetching = false;
+        final nextUser = next.user;
+        if (nextUser != null) {
+          state = ParentProfileState(
+            userId: nextUser.id,
+            name: nextUser.fullName.isNotEmpty
+                ? nextUser.fullName
+                : 'Parent User',
+            email: nextUser.email,
+            phone: nextUser.phone ?? '',
+            address: nextUser.address ?? '',
+            occupation: nextUser.occupation ?? '',
+            relationWithChild: nextUser.relationWithChild ?? '',
+            language: currentLang,
+            avatarUrl: nextUser.avatarUrl,
+            isLoading: false,
+          );
+          Future.microtask(() => fetchProfile(force: true));
+        } else {
+          state = const ParentProfileState();
+        }
+      }
+    });
+
+    // Read the user once for initial seeding so we do NOT create an invalidation loop with authControllerProvider
+    final authUser = ref.read(authControllerProvider).user;
 
     final initial = ParentProfileState(
       userId: authUser?.id ?? '',
@@ -125,8 +153,10 @@ class ParentProfileController extends Notifier<ParentProfileState> {
     state = state.copyWith(isLoading: true, error: null, userMessage: null);
     try {
       final profile = await ref.read(getParentProfileUseCaseProvider).call();
+      if (!ref.mounted) return;
       _applyProfile(profile);
     } catch (e) {
+      if (!ref.mounted) return;
       final msg = _resolveError(e);
       state = state.copyWith(
         isLoading: false,
@@ -134,7 +164,9 @@ class ParentProfileController extends Notifier<ParentProfileState> {
         userMessage: msg,
       );
     } finally {
-      _isFetching = false;
+      if (ref.mounted) {
+        _isFetching = false;
+      }
     }
   }
 

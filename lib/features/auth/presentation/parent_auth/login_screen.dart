@@ -136,14 +136,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _loginWithBiometrics() async {
     final biometricService = ref.read(biometricServiceProvider);
-    final isSpanish = ref.read(languageProvider).valueOrNull?.language ==
-        AppLanguage.spanish;
+    final isSpanish =
+        ref.read(languageProvider).valueOrNull?.language == AppLanguage.spanish;
     final reason = isSpanish
         ? 'Verifique su identidad para ingresar a Aula 360'
         : 'Verify your identity to access Aula 360';
 
-    final authenticated =
-        await biometricService.authenticate(localizedReason: reason);
+    final authenticated = await biometricService.authenticate(
+      localizedReason: reason,
+    );
     if (!authenticated || !mounted) return;
 
     final storage = ref.read(storageServiceProvider);
@@ -181,6 +182,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
+
+      floatingActionButton: kDebugMode
+          ? FloatingActionButton(
+              onPressed: () {
+                context.push(RoutePath.profileSetup);
+              },
+            )
+          : null,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(22, 18, 22, 30),
@@ -352,7 +361,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   style: OutlinedButton.styleFrom(
                     minimumSize: Size(double.infinity, 50.h),
-                    side: const BorderSide(color: AppColors.primary, width: 1.5),
+                    side: const BorderSide(
+                      color: AppColors.primary,
+                      width: 1.5,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12.r),
                     ),

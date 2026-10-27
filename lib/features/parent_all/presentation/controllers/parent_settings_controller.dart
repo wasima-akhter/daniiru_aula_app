@@ -6,6 +6,7 @@ import '../../../../core/errors/app_error_resolver.dart';
 import '../../../../core/service/language/language_provider.dart';
 import '../../../../core/services/notification/push_notification_service.dart';
 import '../../../../core/storage/storage_provider.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../settings/presentation/providers/settings_providers.dart';
 
@@ -79,6 +80,17 @@ class ParentSettingsController extends Notifier<ParentSettingsState> {
 
   @override
   ParentSettingsState build() {
+    ref.listen<AuthState>(authControllerProvider, (previous, next) {
+      if (previous?.user?.id != next.user?.id) {
+        _hasFetched = false;
+        _isFetching = false;
+        if (next.user != null) {
+          Future.microtask(() => fetchSettings(force: true));
+        } else {
+          state = const ParentSettingsState();
+        }
+      }
+    });
     if (!_hasFetched && !_isFetching) {
       Future.microtask(() => fetchSettings());
     }

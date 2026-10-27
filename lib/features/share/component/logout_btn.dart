@@ -1,4 +1,6 @@
+import '../../../utils/enum/app_enum.dart';
 import '../../auth/presentation/controllers/auth_controller.dart';
+import '../../nav/user_role/user_role_provider.dart';
 import '../export/screen_export.dart';
 
 class LogoutBtn extends ConsumerWidget {
@@ -103,10 +105,15 @@ class LogoutBtn extends ConsumerWidget {
                     trailing: const SizedBox.shrink(),
                     actionKey: 'logout_btn',
                     onTapAsync: () async {
+                      final currentRole = ref.read(userRoleProvider);
                       await ref.read(authControllerProvider.notifier).logout();
                       if (context.mounted) {
                         Navigator.of(dialogContext).pop();
-                        context.go(RoutePath.loginScreen);
+                        if (currentRole == UserRole.teacher) {
+                          context.go(RoutePath.teacherLoginScreen);
+                        } else {
+                          context.go(RoutePath.loginScreen);
+                        }
                       }
                     },
                   ),

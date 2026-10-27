@@ -205,7 +205,7 @@ class TeacherHomeScreen extends ConsumerWidget {
                 ),
                 slivers: [
                   SliverToBoxAdapter(
-                    child: _topSection(context, ref, schedule, teacherName),
+                    child: _topSection(context, ref, state, teacherName),
                   ),
                   SliverPersistentHeader(
                     pinned: true,
@@ -288,9 +288,11 @@ class TeacherHomeScreen extends ConsumerWidget {
   Widget _topSection(
     BuildContext context,
     WidgetRef ref,
-    List<HomeScheduleItem> schedule,
+    TeacherHomeState state,
     String teacherName,
   ) {
+    final schedule = state.schedule;
+    final nextClass = state.nextSession;
     final langCode =
         ref.watch(languageProvider).valueOrNull?.language.code ?? 'en';
     final dateStr = DateFormat(
@@ -333,8 +335,10 @@ class TeacherHomeScreen extends ConsumerWidget {
               letterSpacing: -.3,
             ),
           ),
-          SizedBox(height: 26.h),
-          if (schedule.isNotEmpty) _nextClassCard(context, ref, schedule.first),
+          if (nextClass != null) ...[
+            SizedBox(height: 26.h),
+            _nextClassCard(context, ref, nextClass),
+          ],
         ],
       ),
     );
@@ -349,6 +353,11 @@ class TeacherHomeScreen extends ConsumerWidget {
     WidgetRef ref,
     HomeScheduleItem nextClass,
   ) {
+    final isOngoing = nextClass.rawStatus.toUpperCase() == 'ONGOING';
+    final tagText = isOngoing
+        ? ref.watchTr(AppStrings.statusOngoing).toUpperCase()
+        : ref.watchTr(AppStrings.homeNextLabel).toUpperCase();
+
     return InkWell(
       borderRadius: BorderRadius.circular(8.r),
       onTap: () => _openClass(context, nextClass),
@@ -367,8 +376,18 @@ class TeacherHomeScreen extends ConsumerWidget {
           children: [
             Row(
               children: [
+                if (isOngoing)
+                  Container(
+                    width: 7.w,
+                    height: 7.w,
+                    margin: EdgeInsets.only(right: 6.w),
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
                 Text(
-                  '${ref.watchTr(AppStrings.homeNextLabel)} • ${nextClass.startTime} – ${nextClass.endTime}',
+                  '$tagText • ${nextClass.startTime} – ${nextClass.endTime}',
                   style: TxtStyle.titleLarge(
                     color: AppColors.primaryDark,
                     fontSize: 15.sp,
@@ -451,6 +470,19 @@ class TeacherHomeScreen extends ConsumerWidget {
     HomeScheduleItem item,
     int index,
   ) {
+    final isOngoing = item.rawStatus.toUpperCase() == 'ONGOING';
+    final isCompleted = item.rawStatus.toUpperCase() == 'COMPLETED';
+    final isCancelled = item.rawStatus.toUpperCase() == 'CANCELLED';
+
+    final Color timeColor;
+    if (isOngoing) {
+      timeColor = AppColors.primary;
+    } else if (isCompleted || isCancelled) {
+      timeColor = AppColors.subtitleTextColor;
+    } else {
+      timeColor = AppColors.text;
+    }
+
     return InkWell(
       onTap: () => _openClass(context, item),
       child: Container(
@@ -471,7 +503,7 @@ class TeacherHomeScreen extends ConsumerWidget {
                   Text(
                     item.startTime,
                     style: TxtStyle.titleLarge(
-                      color: index == 0 ? AppColors.primary : AppColors.text,
+                      color: timeColor,
                       fontSize: 15.sp,
                       fontWeight: FontWeight.w700,
                     ),
@@ -492,10 +524,14 @@ class TeacherHomeScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _buildStatusTag(ref, item.rawStatus),
+                  SizedBox(height: 6.h),
                   Text(
                     item.title,
                     style: TxtStyle.titleLarge(
-                      color: AppColors.text,
+                      color: isCancelled
+                          ? AppColors.subtitleTextColor
+                          : AppColors.text,
                       fontSize: 18.sp,
                       fontWeight: FontWeight.w700,
                     ),
@@ -515,7 +551,7 @@ class TeacherHomeScreen extends ConsumerWidget {
             ),
             SizedBox(width: 5.w),
             Padding(
-              padding: EdgeInsets.only(top: 6.h),
+              padding: EdgeInsets.only(top: 14.h),
               child: Icon(
                 Icons.chevron_right_rounded,
                 color: AppColors.subtitleTextColor,
@@ -524,6 +560,74 @@ class TeacherHomeScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatusTag(WidgetRef ref, String rawStatus) {
+    final status = rawStatus.toUpperCase();
+    final String label;
+    final Color bgColor;
+    final Color textColor;
+    final Color borderColor;
+
+    switch (status) {
+      case 'ONGOING':
+        label = ref.watchTr(AppStrings.statusOngoing);
+        bgColor = AppColors.blueSoft;
+        textColor = AppColors.primaryDark;
+        borderColor = AppColors.primary.withValues(alpha: 0.25);
+        break;
+      case 'COMPLETED':
+        label = ref.watchTr(AppStrings.statusCompleted);
+        bgColor = const Color(0xFFF1F5F9);
+        textColor = const Color(0xFF64748B);
+        borderColor = const Color(0xFFCBD5E1);
+        break;
+      case 'CANCELLED':
+        label = ref.watchTr(AppStrings.statusCancelled);
+        bgColor = const Color(0xFFFEF2F2);
+        textColor = const Color(0xFFDC2626);
+        borderColor = const Color(0xFFFECACA);
+        break;
+      case 'SCHEDULED':
+      default:
+        label = ref.watchTr(AppStrings.statusScheduled);
+        bgColor = const Color(0xFFF0FDF4);
+        textColor = const Color(0xFF15803D);
+        borderColor = const Color(0xFFBBF7D0);
+        break;
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.5.h),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(4.r),
+        border: Border.all(color: borderColor, width: 0.8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 5.w,
+            height: 5.w,
+            margin: EdgeInsets.only(right: 4.w),
+            decoration: BoxDecoration(
+              color: textColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+          Text(
+            label.toUpperCase(),
+            style: TxtStyle.labelSmall(
+              color: textColor,
+              fontSize: 10.5.sp,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.35,
+            ),
+          ),
+        ],
       ),
     );
   }

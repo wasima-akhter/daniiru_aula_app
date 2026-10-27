@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../data/repositories/parent_repository_impl.dart';
 import '../../domain/models/parent_models.dart';
 import '../../domain/repositories/parent_repository.dart';
@@ -64,6 +65,16 @@ class ParentNotificationsController extends Notifier<ParentNotificationsState> {
 
   @override
   ParentNotificationsState build() {
+    ref.listen<AuthState>(authControllerProvider, (previous, next) {
+      if (previous?.user?.id != next.user?.id) {
+        if (next.user != null) {
+          state = const ParentNotificationsState(isLoading: true);
+          Future.microtask(() => loadNotifications(isRefresh: true));
+        } else {
+          state = const ParentNotificationsState();
+        }
+      }
+    });
     Future.microtask(() => loadNotifications());
     return const ParentNotificationsState(isLoading: true);
   }

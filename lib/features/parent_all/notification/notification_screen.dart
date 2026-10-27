@@ -66,6 +66,15 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         ),
         centerTitle: true,
         actions: [
+          IconButton(
+            tooltip: ref.watchTr(AppStrings.announcementsTitle),
+            icon: Icon(
+              Icons.campaign_outlined,
+              color: AppColors.primaryDark,
+              size: 23.sp,
+            ),
+            onPressed: () => context.push(RoutePath.parentAnnouncements),
+          ),
           if (unreadCount > 0)
             IconButton(
               tooltip: ref.watchTr(AppStrings.markAllRead),

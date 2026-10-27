@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:aula360/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:aula360/features/teacher_all/helper/teacher_enums.dart';
 import 'package:aula360/features/teacher_all/helper/teacher_models.dart';
 import 'package:aula360/features/teacher_all/reports/domain/repositories/teacher_reports_repository.dart';
@@ -139,6 +140,16 @@ class TeacherReportsController extends Notifier<TeacherReportsState> {
 
   @override
   TeacherReportsState build() {
+    ref.listen<AuthState>(authControllerProvider, (previous, next) {
+      if (previous?.user?.id != next.user?.id) {
+        if (next.user != null) {
+          state = const TeacherReportsState(isLoading: true);
+          Future.microtask(() => loadReports());
+        } else {
+          state = const TeacherReportsState();
+        }
+      }
+    });
     Future.microtask(() => loadReports());
     return const TeacherReportsState(isLoading: true);
   }

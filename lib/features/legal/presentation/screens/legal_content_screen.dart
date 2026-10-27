@@ -1,3 +1,4 @@
+import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:intl/intl.dart';
 
 import '../../../parent_all/helper/parent_home_helper.dart';
@@ -8,10 +9,7 @@ import '../controllers/legal_content_controller.dart';
 class LegalContentScreen extends ConsumerStatefulWidget {
   final LegalContentType type;
 
-  const LegalContentScreen({
-    super.key,
-    required this.type,
-  });
+  const LegalContentScreen({super.key, required this.type});
 
   @override
   ConsumerState<LegalContentScreen> createState() => _LegalContentScreenState();
@@ -35,7 +33,8 @@ class _LegalContentScreenState extends ConsumerState<LegalContentScreen> {
   @override
   Widget build(BuildContext context) {
     final map = ref.watch(legalContentControllerProvider);
-    final state = map[widget.type] ??
+    final state =
+        map[widget.type] ??
         const LegalContentState(status: LegalContentStatus.loading);
     final controller = ref.read(legalContentControllerProvider.notifier);
     final langCode =
@@ -45,10 +44,7 @@ class _LegalContentScreenState extends ConsumerState<LegalContentScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AulaAppBar(
-        title: screenTitle,
-        showBack: true,
-      ),
+      appBar: AulaAppBar(title: screenTitle, showBack: true),
       body: SafeArea(
         child: state.showFallback
             ? _buildFallbackContent(context, langCode, tr, controller)
@@ -594,8 +590,9 @@ class _LegalContentScreenState extends ConsumerState<LegalContentScreen> {
     String Function(String) tr,
     LegalContentController controller,
   ) {
-    final localizedFallbackText =
-        widget.type.localizedFallbackContent(langCode);
+    final localizedFallbackText = widget.type.localizedFallbackContent(
+      langCode,
+    );
 
     return RefreshIndicator(
       color: AppColors.primaryDark,
@@ -722,8 +719,9 @@ class _LegalContentScreenState extends ConsumerState<LegalContentScreen> {
           isEs ? 'es' : 'en',
         ).format(legalContent.updatedAt!);
       } catch (_) {
-        formattedDate =
-            DateFormat('d MMMM, yyyy').format(legalContent.updatedAt!);
+        formattedDate = DateFormat(
+          'd MMMM, yyyy',
+        ).format(legalContent.updatedAt!);
       }
     }
 
@@ -769,13 +767,21 @@ class _LegalContentScreenState extends ConsumerState<LegalContentScreen> {
               ),
               SizedBox(height: 16.h),
             ],
-            SelectableText(
-              legalContent.content,
-              style: TxtStyle.bodyMedium(
-                color: AppColors.text,
-                fontSize: 14.5.sp,
-                height: 1.65,
-              ),
+            Builder(
+              builder: (context) {
+                // Sanitize &nbsp; → regular space and clean up common HTML entities
+                String htmlContent = legalContent.content
+                    .replaceAll('&nbsp;', ' ')
+                    .replaceAll('&amp;nbsp;', ' ');
+                return HtmlWidget(
+                  htmlContent,
+                  textStyle: TxtStyle.bodyMedium(
+                    color: AppColors.text,
+                    fontSize: 14.5.sp,
+                    height: 1.65,
+                  ),
+                );
+              },
             ),
             SizedBox(height: 36.h),
           ],

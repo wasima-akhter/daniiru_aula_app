@@ -267,23 +267,30 @@ class ParentProfileScreen extends ConsumerWidget {
   Widget _menuCard(BuildContext context, WidgetRef ref) {
     final childrenState = ref.watch(parentChildrenControllerProvider);
     final children = childrenState.children;
-    final int count = children.isNotEmpty ? children.length : 2;
-    final String names = children.isNotEmpty
-        ? children
-            .map((c) => c.name.trim().split(' ').first)
-            .where((n) => n.isNotEmpty)
-            .join(', ')
-        : 'Lucas, Sophia';
 
-    final String enrolledText = count == 1
-        ? ref.watchTr(AppStrings.enrolledChildSingle)
-        : ref.watchTr(AppStrings.enrolledChildrenPlural);
+    final String childrenSubtitle;
+    final String? childrenBadge;
 
-    final String childrenSubtitle = names.isNotEmpty
-        ? '$count $enrolledText ($names)'
-        : '$count $enrolledText';
+    if (children.isNotEmpty) {
+      final int count = children.length;
+      final String names = children
+          .map((c) => c.name.trim().split(' ').first)
+          .where((n) => n.isNotEmpty)
+          .join(', ');
 
-    final String childrenBadge = '$count ${ref.watchTr(AppStrings.active)}';
+      final String enrolledText = count == 1
+          ? ref.watchTr(AppStrings.enrolledChildSingle)
+          : ref.watchTr(AppStrings.enrolledChildrenPlural);
+
+      childrenSubtitle = names.isNotEmpty
+          ? '$count $enrolledText ($names)'
+          : '$count $enrolledText';
+
+      childrenBadge = '$count ${ref.watchTr(AppStrings.active)}';
+    } else {
+      childrenSubtitle = ref.watchTr(AppStrings.noChildrenLinked);
+      childrenBadge = null;
+    }
 
     return Container(
       decoration: BoxDecoration(
@@ -307,20 +314,7 @@ class ParentProfileScreen extends ConsumerWidget {
             icon: Icons.chat_bubble_outline,
             title: ref.watchTr(AppStrings.communicationTitle),
             subtitle: ref.watchTr(AppStrings.communicationSubtitle),
-            onTap: () async {
-              final conv = await ref
-                  .read(chatControllerProvider.notifier)
-                  .startAdminConversation();
-              if (context.mounted) {
-                final activeConv =
-                    conv ?? ref.read(chatControllerProvider).selectedConversation;
-                if (activeConv != null) {
-                  context.push(RoutePath.chatInbox, extra: activeConv);
-                } else {
-                  context.push(RoutePath.chatList);
-                }
-              }
-            },
+            onTap: () => _openCommunication(context, ref),
           ),
           _divider(),
           _profileMenu(
@@ -422,5 +416,99 @@ class ParentProfileScreen extends ConsumerWidget {
 
   Widget _divider() {
     return Container(height: 1, color: AppColors.backgroundsLinesColor);
+  }
+
+  void _openCommunication(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18.r)),
+      ),
+      builder: (bottomSheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(18.w, 5.h, 18.w, 20.h),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _bottomAction(
+                  Icons.chat_bubble_outline,
+                  ref.watchTr(AppStrings.chatWithAdmin),
+                  ref.watchTr(AppStrings.communicationSubtitle),
+                  () async {
+                    Navigator.pop(bottomSheetContext);
+                    final conv = await ref
+                        .read(chatControllerProvider.notifier)
+                        .startAdminConversation();
+                    if (context.mounted) {
+                      final activeConv =
+                          conv ??
+                          ref.read(chatControllerProvider).selectedConversation;
+                      if (activeConv != null) {
+                        context.push(RoutePath.chatInbox, extra: activeConv);
+                      } else {
+                        context.push(RoutePath.chatList);
+                      }
+                    }
+                  },
+                ),
+                _bottomAction(
+                  Icons.campaign_outlined,
+                  ref.watchTr(AppStrings.announcementsTitle),
+                  ref.watchTr(AppStrings.announcementsSubtitle),
+                  () {
+                    Navigator.pop(bottomSheetContext);
+                    context.push(RoutePath.parentAnnouncements);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _bottomAction(
+    IconData icon,
+    String title,
+    String subtitle,
+    VoidCallback onTap,
+  ) {
+    return ListTile(
+      onTap: onTap,
+      contentPadding: EdgeInsets.zero,
+      leading: Container(
+        width: 42.w,
+        height: 42.w,
+        decoration: BoxDecoration(
+          color: AppColors.blueSoft,
+          borderRadius: BorderRadius.circular(10.r),
+        ),
+        child: Icon(icon, color: AppColors.primaryDark, size: 22.sp),
+      ),
+      title: Text(
+        title,
+        style: TxtStyle.titleMedium(
+          fontSize: 15.sp,
+          fontWeight: FontWeight.w700,
+          color: AppColors.text,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TxtStyle.bodySmall(
+          fontSize: 12.5.sp,
+          color: AppColors.subtitleTextColor,
+        ),
+      ),
+      trailing: Icon(
+        Icons.arrow_forward_ios_rounded,
+        size: 16.sp,
+        color: AppColors.subtitleTextColor,
+      ),
+    );
   }
 }

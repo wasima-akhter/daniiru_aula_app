@@ -40,6 +40,7 @@ class RoutePath {
   static const String changePassword = 'changePassword';
   static const String chatInbox = 'chatInbox';
   static const String chatList = 'chatList';
+  static const String parentAnnouncements = 'parentAnnouncements';
 
   //
   static const String editProfile = 'editProfile';

@@ -10,10 +10,10 @@ import '../../../../core/network/api_exception.dart';
 import '../../../../core/network/socket_service.dart';
 import '../../../../core/service/language/language_provider.dart';
 import '../../../../core/services/notification/push_notification_service.dart';
+import '../../../../core/session/session_invalidator.dart';
 import '../../../../core/session/session_manager.dart';
 import '../../../../core/storage/storage_provider.dart';
 import '../../../../utils/enum/app_enum.dart';
-import '../../../chat/presentation/controllers/chat_controller.dart';
 import '../../../nav/user_role/user_role_provider.dart';
 import '../../data/dtos/profile_setup_dtos.dart';
 import '../../domain/entities/auth_user.dart';
@@ -74,9 +74,9 @@ class AuthController extends Notifier<AuthState> {
   }
 
   void _onSessionExpired() {
+    clearUserSessionState(ref);
     ref.read(userRoleProvider.notifier).clearRole();
     ref.read(socketServiceProvider).disconnect();
-    ref.invalidate(chatControllerProvider);
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 
@@ -121,6 +121,7 @@ class AuthController extends Notifier<AuthState> {
         );
         return true;
       } else {
+        clearUserSessionState(ref);
         state = state.copyWith(
           status: AuthStatus.unauthenticated,
           user: null,
@@ -131,6 +132,7 @@ class AuthController extends Notifier<AuthState> {
         return false;
       }
     } catch (e) {
+      clearUserSessionState(ref);
       final userMsg = _resolveError(e);
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
@@ -241,8 +243,6 @@ class AuthController extends Notifier<AuthState> {
       }
 
       // Case 4: Fully authenticated
-      ref.invalidate(chatControllerProvider);
-      ref.read(socketServiceProvider).connect(customToken: session.accessToken);
       state = state.copyWith(
         status: AuthStatus.authenticated,
         user: session.user,
@@ -251,6 +251,8 @@ class AuthController extends Notifier<AuthState> {
         rememberMe: rememberMe,
         isLoading: false,
       );
+      clearUserSessionState(ref);
+      ref.read(socketServiceProvider).connect(customToken: session.accessToken);
       return LoginOutcome.authenticated;
     } catch (e) {
       // Check for ACCOUNT_INACTIVE error response:
@@ -426,6 +428,12 @@ class AuthController extends Notifier<AuthState> {
         accessToken: session.accessToken,
         isLoading: false,
       );
+      if (session.user.isProfileSetup) {
+        clearUserSessionState(ref);
+        ref
+            .read(socketServiceProvider)
+            .connect(customToken: session.accessToken);
+      }
       return true;
     } catch (e) {
       final userMsg = _resolveError(e);
@@ -502,6 +510,7 @@ class AuthController extends Notifier<AuthState> {
         role: UserRole.parent,
         isLoading: false,
       );
+      clearUserSessionState(ref);
       return true;
     } catch (e) {
       final userMsg = _resolveError(e);
@@ -559,6 +568,7 @@ class AuthController extends Notifier<AuthState> {
         role: UserRole.teacher,
         isLoading: false,
       );
+      clearUserSessionState(ref);
       return true;
     } catch (e) {
       final userMsg = _resolveError(e);
@@ -613,9 +623,9 @@ class AuthController extends Notifier<AuthState> {
     try {
       await ref.read(logoutUseCaseProvider).call();
     } finally {
+      clearUserSessionState(ref);
       ref.read(userRoleProvider.notifier).clearRole();
       ref.read(socketServiceProvider).disconnect();
-      ref.invalidate(chatControllerProvider);
       state = const AuthState(status: AuthStatus.unauthenticated);
     }
   }

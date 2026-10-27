@@ -298,6 +298,8 @@ class AppStrings {
   static const String residentialAddress = 'residential_address';
   static const String fieldResidentialAddress = 'residential_address';
   static const String residentialAddressHint = 'residential_address_hint';
+  static const String occupation = 'occupation';
+  static const String occupationHint = 'occupation_hint';
   static const String btnCompleteProfile = 'btn_complete_profile';
   static const String btnSaveChanges = 'btn_save_changes';
   static const String navigatesToParentDashboard =
@@ -578,6 +580,8 @@ class AppStrings {
   static const String academyMessagesSubtitle = 'academy_messages_subtitle';
   static const String announcementsTitle = 'announcements_title';
   static const String announcementsSubtitle = 'announcements_subtitle';
+  static const String noAnnouncements = 'no_announcements';
+  static const String noAnnouncementsDesc = 'no_announcements_desc';
   static const String familyCommunicationTitle = 'family_communication_title';
   static const String familyCommunicationSubtitle =
       'family_communication_subtitle';
@@ -956,5 +960,11 @@ class AppStrings {
   static const String pendingActivitiesAlert = 'pending_activities_alert';
   static const String filterByDate = 'filter_by_date';
   static const String selectDate = 'select_date';
+
+  // ── Session Status Tags ───────────────────────────────────────────────
+  static const String statusOngoing = 'status_ongoing';
+  static const String statusScheduled = 'status_scheduled';
+  static const String statusCompleted = 'status_completed';
+  static const String statusCancelled = 'status_cancelled';
 }
 

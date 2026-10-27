@@ -6,6 +6,7 @@ import 'package:aula360/core/errors/app_error_resolver.dart';
 import 'package:aula360/core/service/language/language_provider.dart';
 import 'package:aula360/core/services/notification/push_notification_service.dart';
 import 'package:aula360/core/storage/storage_provider.dart';
+import 'package:aula360/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:aula360/features/auth/presentation/providers/auth_providers.dart';
 import 'package:aula360/features/parent_all/presentation/controllers/parent_settings_controller.dart'
     show TogglePushResult;
@@ -74,6 +75,17 @@ class TeacherSettingsController extends Notifier<TeacherSettingsState> {
 
   @override
   TeacherSettingsState build() {
+    ref.listen<AuthState>(authControllerProvider, (previous, next) {
+      if (previous?.user?.id != next.user?.id) {
+        _hasFetched = false;
+        _isFetching = false;
+        if (next.user != null) {
+          Future.microtask(() => fetchSettings(force: true));
+        } else {
+          state = const TeacherSettingsState();
+        }
+      }
+    });
     if (!_hasFetched && !_isFetching) {
       Future.microtask(() => fetchSettings());
     }

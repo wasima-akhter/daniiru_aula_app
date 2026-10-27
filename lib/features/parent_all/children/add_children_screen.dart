@@ -21,11 +21,11 @@ class _AddChildScreenState extends ConsumerState<AddChildScreen> {
 
   final fullNameController = TextEditingController();
   final dobController = TextEditingController();
-  final studentIdController = TextEditingController();
+  final gradeController = TextEditingController();
+  // final studentIdController = TextEditingController();
   DateTime? _selectedDob;
   File? _selectedImage;
 
-  String gradeKey = AppStrings.primaria2;
   String genderKey = 'male';
 
   static String _extractInitials(String name) {
@@ -41,7 +41,8 @@ class _AddChildScreenState extends ConsumerState<AddChildScreen> {
   void dispose() {
     fullNameController.dispose();
     dobController.dispose();
-    studentIdController.dispose();
+    gradeController.dispose();
+    // studentIdController.dispose();
     super.dispose();
   }
 
@@ -93,9 +94,9 @@ class _AddChildScreenState extends ConsumerState<AddChildScreen> {
                   Icons.person_outline,
                 ),
                 _dateField(),
-                _gradeDropdown(),
+                _gradeTextField(),
                 _genderSelector(),
-                _optionalIdField(),
+                // _optionalIdField(),
                 _connectionNotice(),
                 SizedBox(height: 15.h),
                 _saveChildButton(),
@@ -280,11 +281,19 @@ class _AddChildScreenState extends ConsumerState<AddChildScreen> {
               ),
             ),
             IconButton(
-              icon: Icon(Icons.edit_outlined, color: AppColors.primary, size: 20.sp),
+              icon: Icon(
+                Icons.edit_outlined,
+                color: AppColors.primary,
+                size: 20.sp,
+              ),
               onPressed: _pickPhoto,
             ),
             IconButton(
-              icon: Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 20.sp),
+              icon: Icon(
+                Icons.delete_outline_rounded,
+                color: AppColors.error,
+                size: 20.sp,
+              ),
               onPressed: () => setState(() => _selectedImage = null),
             ),
           ],
@@ -415,22 +424,7 @@ class _AddChildScreenState extends ConsumerState<AddChildScreen> {
     }
   }
 
-  Widget _gradeDropdown() {
-    const gradesList = [
-      AppStrings.primaria1,
-      AppStrings.primaria2,
-      AppStrings.primaria3,
-      AppStrings.primaria4,
-      AppStrings.primaria5,
-      AppStrings.primaria6,
-      AppStrings.eso1,
-      AppStrings.eso2,
-      AppStrings.eso3,
-      AppStrings.eso4,
-      AppStrings.bachillerato1,
-      AppStrings.bachillerato2,
-    ];
-
+  Widget _gradeTextField() {
     return Padding(
       padding: EdgeInsets.only(bottom: 10.h),
       child: Column(
@@ -438,23 +432,16 @@ class _AddChildScreenState extends ConsumerState<AddChildScreen> {
         children: [
           _label(ref.watchTr(AppStrings.gradeLevel), requiredField: true),
           SizedBox(height: 5.h),
-          DropdownButtonFormField<String>(
-            initialValue: gradeKey,
-            decoration: _inputDecoration(Icons.school_outlined),
-            items: gradesList
-                .map(
-                  (key) => DropdownMenuItem(
-                    value: key,
-                    child: Text(ref.watchTr(key)),
-                  ),
-                )
-                .toList(),
-            onChanged: (value) {
-              if (value != null) {
-                setState(() => gradeKey = value);
+          TextFormField(
+            controller: gradeController,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return '${ref.watchTr(AppStrings.gradeLevel)} ${ref.watchTr(AppStrings.fieldRequired)}';
               }
+              return null;
             },
-            style: TxtStyle.titleLarge(color: AppColors.text, fontSize: 15.sp),
+            style: TxtStyle.titleLarge(color: AppColors.text, fontSize: 14.sp),
+            decoration: _inputDecoration(Icons.school_outlined),
           ),
         ],
       ),
@@ -543,12 +530,12 @@ class _AddChildScreenState extends ConsumerState<AddChildScreen> {
           ),
         ),
         SizedBox(height: 4.h),
-        TextFormField(
-          controller: studentIdController,
-          style: TxtStyle.titleLarge(color: AppColors.text, fontSize: 14.sp),
-          decoration: _inputDecoration(Icons.badge_outlined),
-        ),
-        SizedBox(height: 12.h),
+        // TextFormField(
+        //   controller: studentIdController,
+        //   style: TxtStyle.titleLarge(color: AppColors.text, fontSize: 14.sp),
+        //   decoration: _inputDecoration(Icons.badge_outlined),
+        // ),
+        // SizedBox(height: 12.h),
       ],
     );
   }
@@ -603,9 +590,7 @@ class _AddChildScreenState extends ConsumerState<AddChildScreen> {
       return;
     }
 
-    final selectedGrade =
-        ref.read(languageProvider).valueOrNull?.tr(gradeKey) ??
-        ref.watchTr(gradeKey);
+    final selectedGrade = gradeController.text.trim();
 
     final String gender;
     switch (genderKey.toLowerCase()) {
@@ -620,7 +605,7 @@ class _AddChildScreenState extends ConsumerState<AddChildScreen> {
     }
 
     final dobIso = _selectedDob?.toUtc().toIso8601String();
-    final enrollmentNumber = studentIdController.text.trim();
+    // final enrollmentNumber = studentIdController.text.trim();
 
     final success = await ref
         .read(parentChildrenControllerProvider.notifier)
@@ -629,8 +614,9 @@ class _AddChildScreenState extends ConsumerState<AddChildScreen> {
           dob: dobIso,
           gender: gender,
           grade: selectedGrade,
-          enrollmentNumber:
-              enrollmentNumber.isNotEmpty ? enrollmentNumber : null,
+          // enrollmentNumber: enrollmentNumber.isNotEmpty
+          //     ? enrollmentNumber
+          //     : null,
           avatarFile: _selectedImage,
         );
 

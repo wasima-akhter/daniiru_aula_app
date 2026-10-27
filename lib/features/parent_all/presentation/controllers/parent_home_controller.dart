@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../data/repositories/parent_repository_impl.dart';
 import '../../domain/models/parent_models.dart';
 import '../../domain/repositories/parent_repository.dart';
@@ -45,6 +46,17 @@ class ParentHomeController extends Notifier<ParentHomeState> {
 
   @override
   ParentHomeState build() {
+    ref.listen<AuthState>(authControllerProvider, (previous, next) {
+      if (previous?.user?.id != next.user?.id) {
+        if (next.user != null) {
+          state = const ParentHomeState(isLoading: true);
+          Future.microtask(() => loadDashboardData());
+        } else {
+          state = const ParentHomeState();
+        }
+      }
+    });
+
     Future.microtask(() => loadDashboardData());
     return const ParentHomeState(isLoading: true);
   }

@@ -1,6 +1,7 @@
-import '../../share/export/screen_export.dart';
 import 'package:aula360/core/services/biometric/biometric_provider.dart';
 import 'package:aula360/core/services/notification/push_notification_service.dart';
+
+import '../../share/export/screen_export.dart';
 import '../../teacher_all/settings/language_picker.dart';
 import '../presentation/controllers/parent_settings_controller.dart';
 
@@ -42,7 +43,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       final controller = ref.read(parentSettingsControllerProvider.notifier);
       final result = await controller.togglePush(true);
       if (result == TogglePushResult.enabled && mounted) {
-        final isSpanish = ref.read(languageProvider).valueOrNull?.language ==
+        final isSpanish =
+            ref.read(languageProvider).valueOrNull?.language ==
             AppLanguage.spanish;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -100,7 +102,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
               SizedBox(height: 22.h),
 
-              _sectionLabel(tr(AppStrings.legalTermsAndConditions).split(' ')[0] == 'Términos' ? 'Legal y Políticas' : 'Legal & Policies'),
+              _sectionLabel(
+                tr(AppStrings.legalTermsAndConditions).split(' ')[0] ==
+                        'Términos'
+                    ? 'Legal y Políticas'
+                    : 'Legal & Policies',
+              ),
               SizedBox(height: 8.h),
               _legalCard(context, tr),
             ],
@@ -191,15 +198,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         ref.read(languageProvider).valueOrNull?.language == AppLanguage.spanish;
     final biometricIcon =
         biometricState.sensorLabel.toLowerCase().contains('face')
-            ? Icons.face_rounded
-            : Icons.fingerprint;
+        ? Icons.face_rounded
+        : Icons.fingerprint;
     final biometricSubtitle = !biometricState.isSupported
         ? (isSpanish
-            ? 'No disponible en este dispositivo'
-            : 'Not supported on this device')
+              ? 'No disponible en este dispositivo'
+              : 'Not supported on this device')
         : (biometricState.isEnabled
-            ? (isSpanish ? 'Acceso rápido habilitado' : 'Quick access enabled')
-            : tr(AppStrings.settingsSecurityBiometricSub));
+              ? (isSpanish
+                    ? 'Acceso rápido habilitado'
+                    : 'Quick access enabled')
+              : tr(AppStrings.settingsSecurityBiometricSub));
 
     return Container(
       width: double.infinity,
@@ -250,12 +259,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   content: Text(
                     success
                         ? (val
-                            ? tr(AppStrings.settingsBiometricEnabled)
-                            : tr(AppStrings.settingsBiometricDisabled))
+                              ? tr(AppStrings.settingsBiometricEnabled)
+                              : tr(AppStrings.settingsBiometricDisabled))
                         : (ref.read(biometricControllerProvider).error ??
-                            (isSpanish
-                                ? 'Error al configurar biometría'
-                                : 'Failed to configure biometrics')),
+                              (isSpanish
+                                  ? 'Error al configurar biometría'
+                                  : 'Failed to configure biometrics')),
                     style: TxtStyle.titleLarge(
                       fontSize: 15.sp,
                       color: Colors.white,
@@ -370,14 +379,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             value: settings.emailNotifications,
             onChanged: (value) => controller.toggleEmail(value),
           ),
-          _settingsDivider(),
-          _notificationRow(
-            icon: Icons.fact_check_outlined,
-            title: tr(AppStrings.settingsNotifAttendanceAlerts),
-            subtitle: tr(AppStrings.settingsNotifAttendanceAlertsSub),
-            value: settings.attendanceAlerts,
-            onChanged: (value) => controller.toggleAttendanceAlerts(value),
-          ),
+          // _settingsDivider(),
+          // _notificationRow(
+          //   icon: Icons.fact_check_outlined,
+          //   title: tr(AppStrings.settingsNotifAttendanceAlerts),
+          //   subtitle: tr(AppStrings.settingsNotifAttendanceAlertsSub),
+          //   value: settings.attendanceAlerts,
+          //   onChanged: (value) => controller.toggleAttendanceAlerts(value),
+          // ),
         ],
       ),
     );
@@ -476,14 +485,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             icon: Icons.description_outlined,
             title: tr(AppStrings.legalTermsAndConditions),
             subtitle: tr(AppStrings.legalTermsAndConditionsSubtitle),
-            onTap: () => context.push(RoutePath.termsAndConditionsScreen.addBasePath),
+            onTap: () =>
+                context.push(RoutePath.termsAndConditionsScreen.addBasePath),
           ),
           _settingsDivider(),
           _settingsRow(
             icon: Icons.privacy_tip_outlined,
             title: tr(AppStrings.legalPrivacyPolicy),
             subtitle: tr(AppStrings.legalPrivacyPolicySubtitle),
-            onTap: () => context.push(RoutePath.privacyPolicyScreen.addBasePath),
+            onTap: () =>
+                context.push(RoutePath.privacyPolicyScreen.addBasePath),
           ),
           _settingsDivider(),
           _settingsRow(
@@ -497,7 +508,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             icon: Icons.security_outlined,
             title: tr(AppStrings.legalDataProtection),
             subtitle: tr(AppStrings.legalDataProtectionSubtitle),
-            onTap: () => context.push(RoutePath.dataProtectionScreen.addBasePath),
+            onTap: () =>
+                context.push(RoutePath.dataProtectionScreen.addBasePath),
           ),
         ],
       ),

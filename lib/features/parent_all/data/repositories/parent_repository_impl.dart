@@ -506,12 +506,10 @@ class ParentRepositoryImpl implements ParentRepository {
     int limit = 10,
   }) async {
     if (parentRemoteDataSource != null) {
-      try {
-        return await parentRemoteDataSource!.getAnnouncements(
-          page: page,
-          limit: limit,
-        );
-      } catch (_) {}
+      return await parentRemoteDataSource!.getAnnouncements(
+        page: page,
+        limit: limit,
+      );
     }
     return const PaginatedResult<AnnouncementDto>(data: [], meta: null);
   }

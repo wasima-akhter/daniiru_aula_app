@@ -60,9 +60,43 @@ class TeacherProfileController extends Notifier<TeacherProfileState> {
 
   @override
   TeacherProfileState build() {
-    final authUser = ref.read(authControllerProvider).user;
     final currentLang =
         ref.watch(languageProvider).valueOrNull?.language.label ?? 'English';
+
+    ref.listen<AuthState>(authControllerProvider, (previous, next) {
+      if (previous?.user?.id != next.user?.id) {
+        _hasFetched = false;
+        _isFetching = false;
+        final nextUser = next.user;
+        if (nextUser != null) {
+          final nextProfile = TeacherProfileData(
+            id: nextUser.id,
+            name: nextUser.fullName.isNotEmpty
+                ? nextUser.fullName
+                : 'Educator',
+            email: nextUser.email,
+            phone: nextUser.phone ?? '',
+            department: nextUser.department ?? 'Academics',
+            designation: nextUser.designation ?? 'Faculty',
+            bio: nextUser.bio ?? '',
+            language: currentLang,
+            profileImagePath: nextUser.avatarUrl,
+          );
+          state = TeacherProfileState(profile: nextProfile, isLoading: false);
+          Future.microtask(() => loadProfile(force: true));
+        } else {
+          state = const TeacherProfileState(
+            profile: TeacherProfileData(
+              name: '',
+              email: '',
+              phone: '',
+            ),
+          );
+        }
+      }
+    });
+
+    final authUser = ref.read(authControllerProvider).user;
 
     final initialProfile = TeacherProfileData(
       id: authUser?.id ?? '',
@@ -120,8 +154,10 @@ class TeacherProfileController extends Notifier<TeacherProfileState> {
       }
 
       final p = await ref.read(getTeacherProfileUseCaseProvider).call();
+      if (!ref.mounted) return;
       _applyProfile(p);
     } catch (e) {
+      if (!ref.mounted) return;
       final msg = _resolveError(e);
       state = state.copyWith(
         isLoading: false,
@@ -129,7 +165,9 @@ class TeacherProfileController extends Notifier<TeacherProfileState> {
         userMessage: msg,
       );
     } finally {
-      _isFetching = false;
+      if (ref.mounted) {
+        _isFetching = false;
+      }
     }
   }
 

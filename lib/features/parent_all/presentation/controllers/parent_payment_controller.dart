@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../../core/config/stripe_config.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/service/language/language_provider.dart';
@@ -98,6 +99,16 @@ class ParentPaymentController extends Notifier<ParentPaymentState> {
 
   @override
   ParentPaymentState build() {
+    ref.listen<AuthState>(authControllerProvider, (previous, next) {
+      if (previous?.user?.id != next.user?.id) {
+        if (next.user != null) {
+          state = const ParentPaymentState(isLoading: true);
+          Future.microtask(() => loadInvoices());
+        } else {
+          state = const ParentPaymentState();
+        }
+      }
+    });
     Future.microtask(() => loadInvoices());
     return const ParentPaymentState(isLoading: true);
   }

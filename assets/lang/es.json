@@ -230,6 +230,8 @@
   "residential_address": "Dirección de residencia",
   "residential_address_hint": "Ej. Calle Gran Vía 12, Madrid",
   "btn_complete_profile": "Completar perfil",
+  "occupation": "Profesión",
+  "occupation_hint": "ej. Ingeniero de Software, Arquitecto",
   "btn_save_changes": "Guardar Cambios",
   "navigates_to_parent_dashboard": "Redirige al panel de familias",
   "relationship_mother": "Madre",
@@ -492,6 +494,8 @@
   "academy_messages_subtitle": "Ver mensajes de la dirección",
   "announcements_title": "Anuncios y Comunicados",
   "announcements_subtitle": "Ver comunicados generales de la academia",
+  "no_announcements": "No hay anuncios disponibles",
+  "no_announcements_desc": "Los comunicados y avisos generales aparecerán aquí cuando sean publicados por la academia.",
   "family_communication_title": "Comunicación con Familias",
   "family_communication_subtitle": "Gestionar mensajes con padres y tutores",
   "next_class": "Siguiente clase",
@@ -813,5 +817,9 @@
   "take_attendance": "Tomar Asistencia",
   "post_class_report_title": "Informe Posterior a Clase",
   "end_class_title": "Finalizar Clase",
-  "students_count": "alumnos"
+  "students_count": "alumnos",
+  "status_ongoing": "En curso",
+  "status_scheduled": "Programada",
+  "status_completed": "Completada",
+  "status_cancelled": "Cancelada"
 }
