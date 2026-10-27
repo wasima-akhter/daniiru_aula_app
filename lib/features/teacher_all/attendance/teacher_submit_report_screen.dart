@@ -477,7 +477,7 @@ class _TeacherPostClassReportScreenState
         maxLines: 3,
         style: TxtStyle.bodyMedium(color: AppColors.text, fontSize: 14.5.sp),
         decoration: InputDecoration(
-          hintText: 'Observaciones adicionales o seguimiento...',
+          hintText: ref.watchTr(AppStrings.additionalObservationsHint),
           hintStyle: TxtStyle.bodyMedium(
             color: AppColors.subtitleTextColor,
             fontSize: 14.5.sp,

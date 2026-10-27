@@ -4,6 +4,7 @@ import '../models/parent_models.dart';
 import '../../data/dtos/add_child_dto.dart';
 import '../../data/dtos/announcement_dto.dart';
 import '../../data/dtos/child_progress_dto.dart';
+import '../../data/dtos/child_report_dto.dart';
 import '../../data/dtos/child_schedule_dto.dart';
 import '../../data/dtos/child_teacher_dto.dart';
 import '../../data/dtos/conversation_dto.dart';
@@ -28,6 +29,10 @@ abstract class ParentRepository {
     int page = 1,
     int limit = 20,
   });
+  Future<ChildReportDetailDto> getChildReportDetail(
+    String childId,
+    String reportId,
+  );
   Future<PaginatedResult<HomeworkModel>> getHomeworkList({
     int page = 1,
     int limit = 20,

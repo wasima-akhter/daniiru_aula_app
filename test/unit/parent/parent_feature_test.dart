@@ -5,8 +5,10 @@ import 'package:aula360/core/network/api_client.dart';
 import 'package:aula360/features/parent_all/data/datasources/parent_remote_data_source.dart';
 import 'package:aula360/features/parent_all/data/dtos/child_attendance_dto.dart';
 import 'package:aula360/features/parent_all/data/dtos/child_dto.dart';
+import 'package:aula360/features/parent_all/data/dtos/child_report_dto.dart';
 import 'package:aula360/features/parent_all/data/dtos/parent_invoice_dto.dart';
 import 'package:aula360/features/parent_all/data/repositories/parent_repository_impl.dart';
+import 'package:aula360/features/parent_all/domain/models/parent_models.dart';
 
 class ParentMockApiClient extends ApiClient {
   ParentMockApiClient() : super(Dio());
@@ -112,6 +114,31 @@ void main() {
       expect(model.id, 'inv-101');
       expect(model.isPaid, false);
       expect(model.amount, 350.00);
+    });
+
+    test('ChildReportDto translates observations (L56) and status (L67) in Spanish and English', () {
+      final json = {
+        'id': 'rep-101',
+        'date': '2026-10-26T10:00:00.000Z',
+        'subjectName': 'Matemáticas',
+        'teacherName': 'Prof. García',
+        'contentCovered': 'Álgebra lineal',
+        'observations': 'Participó activamente',
+        'attitudeRating': 'EXCELLENT',
+        'workEffortRating': 'HIGH',
+      };
+
+      final dto = ChildReportDto.fromJson(json);
+
+      // In Spanish
+      final modelEs = dto.toModel('es');
+      expect(modelEs.note, contains('Observaciones: Participó activamente'));
+      expect(modelEs.status, 'Sobresaliente');
+
+      // In English
+      final modelEn = dto.toModel('en');
+      expect(modelEn.note, contains('Observations: Participó activamente'));
+      expect(modelEn.status, 'Outstanding');
     });
   });
 
@@ -264,5 +291,33 @@ void main() {
       expect(children.first.id, 'stu-live');
       expect(children.first.name, 'Elena Rivera');
     });
+
+    test('payInvoice fallback updates paidDate to real formatted date instead of Hoy', () async {
+      const sampleInvoice = InvoiceModel(
+        id: 'inv-fallback-1',
+        concept: 'Matrícula Octubre',
+        monthYear: 'Octubre 2026',
+        amount: 250.0,
+        dueDate: '30 Oct 2026',
+        isPaid: false,
+      );
+      final fallbackRepo = ParentRepositoryImpl(
+        initialInvoices: [sampleInvoice],
+      );
+      final invoicesBefore = await fallbackRepo.getInvoices();
+      final unpaidInvoice = invoicesBefore.items.firstWhere((i) => !i.isPaid);
+
+      final secret = await fallbackRepo.payInvoice(unpaidInvoice.id);
+      expect(secret, isNotNull);
+
+      final invoicesAfter = await fallbackRepo.getInvoices();
+      final paidInvoice =
+          invoicesAfter.items.firstWhere((i) => i.id == unpaidInvoice.id);
+      expect(paidInvoice.isPaid, isTrue);
+      expect(paidInvoice.paidDate, isNot('Hoy'));
+      expect(paidInvoice.paidDate, isNotNull);
+      expect(paidInvoice.paidDate, matches(RegExp(r'\d+.*20\d\d')));
+    });
   });
 }
+

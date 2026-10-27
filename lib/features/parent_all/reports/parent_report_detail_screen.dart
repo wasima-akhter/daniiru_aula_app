@@ -1,13 +1,22 @@
 import 'package:intl/intl.dart';
 
 import '../../share/export/screen_export.dart';
+import '../data/dtos/child_report_dto.dart';
 import '../helper/parent_home_helper.dart';
+import '../presentation/controllers/parent_children_controller.dart';
 import '../presentation/controllers/parent_reports_controller.dart';
 
 class ReportDetailsScreen extends ConsumerStatefulWidget {
-  final ReportModel report;
+  final String? childId;
+  final String reportId;
+  final ReportModel? initialReport;
 
-  const ReportDetailsScreen({super.key, required this.report});
+  const ReportDetailsScreen({
+    super.key,
+    this.childId,
+    required this.reportId,
+    this.initialReport,
+  });
 
   @override
   ConsumerState<ReportDetailsScreen> createState() =>
@@ -24,18 +33,173 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final report = widget.report;
+    final childrenState = ref.watch(parentChildrenControllerProvider);
+    final effectiveChildId = widget.childId?.isNotEmpty == true
+        ? widget.childId!
+        : (childrenState.selectedChild?.id ??
+            (childrenState.children.isNotEmpty
+                ? childrenState.children.first.id
+                : ''));
+
     final reportsState = ref.watch(parentReportsControllerProvider);
-    final currentStudent = reportsState.students.isNotEmpty
+    StudentModel? currentStudent;
+    if (effectiveChildId.isNotEmpty) {
+      final childIdx =
+          childrenState.children.indexWhere((c) => c.id == effectiveChildId);
+      if (childIdx >= 0 && childIdx < reportsState.students.length) {
+        currentStudent = reportsState.students[childIdx];
+      }
+    }
+    currentStudent ??= reportsState.students.isNotEmpty
         ? reportsState.students[reportsState.selectedStudentIndex.clamp(
             0,
             reportsState.students.length - 1,
           )]
         : null;
+
     final studentName =
         currentStudent?.name ?? ref.watchTr(AppStrings.studentLabel);
     final studentClass = currentStudent?.grade ?? '';
 
+    // If reportId is empty, try extracting from initialReport
+    final effectiveReportId = widget.reportId.isNotEmpty
+        ? widget.reportId
+        : (widget.initialReport?.id ?? '');
+
+    if (effectiveChildId.isEmpty || effectiveReportId.isEmpty) {
+      if (widget.initialReport != null) {
+        final fallback = _fallbackFromReportModel(widget.initialReport!);
+        return _buildScaffold(context, fallback, studentName, studentClass);
+      }
+      return Scaffold(
+        backgroundColor: const Color(0xFFF8F7FC),
+        appBar: AulaAppBar(
+          title: ref.watchTr(AppStrings.reportDetailTitle),
+          showBack: true,
+        ),
+        body: Center(
+          child: Text(
+            ref.watchTr(AppStrings.noReportsFound),
+            style: TxtStyle.bodyMedium(
+              color: AppColors.secondaryText,
+              fontSize: 14.sp,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final detailAsync = ref.watch(
+      childReportDetailProvider(
+        ChildReportDetailParams(
+          childId: effectiveChildId,
+          reportId: effectiveReportId,
+        ),
+      ),
+    );
+
+    return detailAsync.when(
+      data: (detail) =>
+          _buildScaffold(context, detail, studentName, studentClass),
+      loading: () {
+        if (widget.initialReport != null) {
+          final fallback = _fallbackFromReportModel(widget.initialReport!);
+          return _buildScaffold(context, fallback, studentName, studentClass);
+        }
+        return Scaffold(
+          backgroundColor: const Color(0xFFF8F7FC),
+          appBar: AulaAppBar(
+            title: ref.watchTr(AppStrings.reportDetailTitle),
+            showBack: true,
+          ),
+          body: const Center(
+            child: CircularProgressIndicator(
+              color: AppColors.primary,
+            ),
+          ),
+        );
+      },
+      error: (error, stack) {
+        if (widget.initialReport != null) {
+          final fallback = _fallbackFromReportModel(widget.initialReport!);
+          return _buildScaffold(context, fallback, studentName, studentClass);
+        }
+        return Scaffold(
+          backgroundColor: const Color(0xFFF8F7FC),
+          appBar: AulaAppBar(
+            title: ref.watchTr(AppStrings.reportDetailTitle),
+            showBack: true,
+          ),
+          body: Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 48.sp,
+                    color: Colors.redAccent,
+                  ),
+                  SizedBox(height: 12.h),
+                  Text(
+                    error.toString(),
+                    textAlign: TextAlign.center,
+                    style: TxtStyle.bodyMedium(
+                      color: AppColors.secondaryText,
+                      fontSize: 14.sp,
+                    ),
+                  ),
+                  SizedBox(height: 16.h),
+                  ElevatedButton(
+                    onPressed: () {
+                      ref.invalidate(
+                        childReportDetailProvider(
+                          ChildReportDetailParams(
+                            childId: effectiveChildId,
+                            reportId: effectiveReportId,
+                          ),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                    ),
+                    child: Text(
+                      ref.watchTr(AppStrings.retry),
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  ChildReportDetailDto _fallbackFromReportModel(ReportModel r) {
+    return ChildReportDetailDto(
+      id: r.id ?? '',
+      reportDate: r.date?.toIso8601String() ?? DateTime.now().toIso8601String(),
+      subjectName: r.subject,
+      teacherName: r.teacher,
+      contentCovered: r.note,
+      observations: r.note,
+      attitudeRating: 'SATISFACTORY',
+      workEffortRating: 'ON_TRACK',
+      studentAttendanceStatus: r.status,
+      startTime: r.time,
+    );
+  }
+
+  Widget _buildScaffold(
+    BuildContext context,
+    ChildReportDetailDto detail,
+    String studentName,
+    String studentClass,
+  ) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7FC),
       appBar: AulaAppBar(
@@ -43,58 +207,115 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
         showBack: true,
       ),
       body: SafeArea(
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(16.w, 18.h, 16.w, 30.h),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  _header(report),
-                  SizedBox(height: 18.h),
-                  _homeworkSection(report),
-                  SizedBox(height: 16.h),
-                  _teacherObservation(report),
-                  SizedBox(height: 16.h),
-                  _attendanceSection(),
-                  SizedBox(height: 16.h),
-                  _reportAction(report, studentName, studentClass),
-                  SizedBox(height: 10.h),
-                ]),
-              ),
+        child: RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: () async {
+            final childrenState = ref.read(parentChildrenControllerProvider);
+            final effectiveChildId = widget.childId?.isNotEmpty == true
+                ? widget.childId!
+                : (childrenState.selectedChild?.id ??
+                    (childrenState.children.isNotEmpty
+                        ? childrenState.children.first.id
+                        : ''));
+            final effectiveReportId = widget.reportId.isNotEmpty
+                ? widget.reportId
+                : (widget.initialReport?.id ?? '');
+            if (effectiveChildId.isNotEmpty && effectiveReportId.isNotEmpty) {
+              ref.invalidate(
+                childReportDetailProvider(
+                  ChildReportDetailParams(
+                    childId: effectiveChildId,
+                    reportId: effectiveReportId,
+                  ),
+                ),
+              );
+            }
+          },
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
             ),
-          ],
+            slivers: [
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(16.w, 18.h, 16.w, 30.h),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    _header(detail),
+                    SizedBox(height: 18.h),
+                    _contentCoveredSection(detail),
+                    _homeworkSection(detail),
+                    SizedBox(height: 16.h),
+                    _teacherObservation(detail),
+                    SizedBox(height: 16.h),
+                    _attendanceSection(detail),
+                    SizedBox(height: 16.h),
+                    _reportAction(detail, studentName, studentClass),
+                    SizedBox(height: 10.h),
+                  ]),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  String _formatReportDate(ReportModel report, WidgetRef ref) {
+  String _formatReportDate(String? rawDate, WidgetRef ref) {
+    if (rawDate == null || rawDate.isEmpty) return '';
     final langCode =
         ref.watch(languageProvider).valueOrNull?.language.code ?? 'en';
-    if (report.date != null) {
-      return DateFormat('EEEE, d MMM', langCode).format(report.date!);
+    final dt = DateTime.tryParse(rawDate);
+    if (dt != null) {
+      try {
+        return DateFormat('EEEE, d MMM', langCode).format(dt);
+      } catch (_) {
+        try {
+          return DateFormat('EEEE, d MMM').format(dt);
+        } catch (_) {
+          return rawDate;
+        }
+      }
     }
-    final upper = report.dateLabel.toUpperCase();
-    final today = DateFormat('EEEE, d MMM', langCode).format(DateTime.now());
-    final yesterday = DateFormat(
-      'EEEE, d MMM',
-      langCode,
-    ).format(DateTime.now().subtract(const Duration(days: 1)));
-
-    if (upper.contains('HOY') || upper.contains('TODAY')) {
-      return today;
-    } else if (upper.contains('AYER') || upper.contains('YESTERDAY')) {
-      return yesterday;
-    }
-    return report.dateLabel
-        .replaceAll('HOY — ', '')
-        .replaceAll('AYER — ', '')
-        .replaceAll('TODAY — ', '')
-        .replaceAll('YESTERDAY — ', '');
+    return rawDate;
   }
 
-  Widget _header(ReportModel report) {
+  String _formatTimeRange(ChildReportDetailDto detail) {
+    final start = detail.startTime ?? '';
+    final end = detail.endTime ?? '';
+    if (start.isNotEmpty && end.isNotEmpty) {
+      return '$start - $end';
+    } else if (start.isNotEmpty) {
+      return start;
+    } else if (end.isNotEmpty) {
+      return end;
+    }
+    final dt = DateTime.tryParse(detail.reportDate);
+    if (dt != null) {
+      return DateFormat('HH:mm').format(dt);
+    }
+    return '10:00';
+  }
+
+  (String, Color) _statusPillData(WidgetRef ref, String? rawStatus) {
+    final status = rawStatus?.toUpperCase() ?? 'PRESENT';
+    switch (status) {
+      case 'PRESENT':
+        return (ref.watchTr(AppStrings.present), const Color(0xFF14B87A));
+      case 'ABSENT':
+        return (ref.watchTr(AppStrings.absent), const Color(0xFFDC2626));
+      case 'LATE':
+        return (ref.watchTr(AppStrings.late), const Color(0xFFD97706));
+      case 'EXCUSED':
+        return (ref.watchTr(AppStrings.excused), const Color(0xFF4F46E5));
+      default:
+        return (rawStatus ?? ref.watchTr(AppStrings.present), const Color(0xFF14B87A));
+    }
+  }
+
+  Widget _header(ChildReportDetailDto detail) {
+    final pillData = _statusPillData(ref, detail.studentAttendanceStatus);
+
     return AulaCard(
       padding: EdgeInsets.all(16.w),
       child: Column(
@@ -108,7 +329,7 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      report.subject,
+                      detail.subjectName,
                       style: TxtStyle.titleLarge(
                         color: AppColors.text,
                         fontSize: 21.sp,
@@ -117,7 +338,7 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
                     ),
                     SizedBox(height: 5.h),
                     Text(
-                      report.teacher,
+                      detail.teacherName,
                       style: TxtStyle.titleLarge(
                         color: AppColors.secondaryText,
                         fontSize: 15.sp,
@@ -126,9 +347,77 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
                   ],
                 ),
               ),
-              StatusPill(text: ref.watchTr(AppStrings.present)),
+              StatusPill(
+                text: pillData.$1,
+                color: pillData.$2,
+              ),
             ],
           ),
+
+          if ((detail.classroomRoomNumber != null &&
+                  detail.classroomRoomNumber!.isNotEmpty) ||
+              (detail.cohortName != null && detail.cohortName!.isNotEmpty)) ...[
+            SizedBox(height: 10.h),
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 6.w,
+              runSpacing: 4.h,
+              children: [
+                if (detail.classroomRoomNumber != null &&
+                    detail.classroomRoomNumber!.isNotEmpty) ...[
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.meeting_room_outlined,
+                        size: 15.sp,
+                        color: AppColors.secondaryText,
+                      ),
+                      SizedBox(width: 5.w),
+                      Text(
+                        detail.classroomRoomNumber!,
+                        style: TxtStyle.bodyMedium(
+                          color: AppColors.secondaryText,
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                if (detail.classroomRoomNumber != null &&
+                    detail.classroomRoomNumber!.isNotEmpty &&
+                    detail.cohortName != null &&
+                    detail.cohortName!.isNotEmpty)
+                  Text(
+                    '•',
+                    style: TextStyle(color: AppColors.secondaryText),
+                  ),
+                if (detail.cohortName != null &&
+                    detail.cohortName!.isNotEmpty) ...[
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.groups_outlined,
+                        size: 15.sp,
+                        color: AppColors.secondaryText,
+                      ),
+                      SizedBox(width: 5.w),
+                      Text(
+                        detail.cohortName!,
+                        style: TxtStyle.bodyMedium(
+                          color: AppColors.secondaryText,
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ],
 
           SizedBox(height: 15.h),
           Divider(height: 1, color: AppColors.backgroundsLinesColor),
@@ -148,7 +437,7 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
                     SizedBox(width: 7.w),
                     Flexible(
                       child: Text(
-                        _formatReportDate(report, ref),
+                        _formatReportDate(detail.reportDate, ref),
                         style: TxtStyle.titleLarge(
                           color: AppColors.secondaryText,
                           fontSize: 13.5.sp,
@@ -162,11 +451,15 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
               Expanded(
                 child: Row(
                   children: [
-                    Icon(Icons.schedule_rounded, size: 16.sp),
+                    Icon(
+                      Icons.schedule_rounded,
+                      size: 16.sp,
+                      color: AppColors.secondaryText,
+                    ),
                     SizedBox(width: 6.w),
                     Flexible(
                       child: Text(
-                        report.time,
+                        _formatTimeRange(detail),
                         style: TxtStyle.titleLarge(
                           color: AppColors.secondaryText,
                           fontSize: 13.5.sp,
@@ -184,15 +477,53 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
     );
   }
 
-  Widget _homeworkSection(ReportModel report) {
+  Widget _contentCoveredSection(ChildReportDetailDto detail) {
+    if (detail.contentCovered == null ||
+        detail.contentCovered!.trim().isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      children: [
+        _sectionCard(
+          title: ref.watchTr(AppStrings.contentDeliveredTitle),
+          child: Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(12.w),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9FAFB),
+              borderRadius: BorderRadius.circular(9.r),
+              border: Border.all(
+                color: AppColors.backgroundsLinesColor.withValues(alpha: 0.8),
+              ),
+            ),
+            child: Text(
+              detail.contentCovered!,
+              style: TxtStyle.bodyMedium(
+                color: AppColors.text,
+                fontSize: 14.5.sp,
+                height: 1.45,
+              ),
+            ),
+          ),
+        ),
+        SizedBox(height: 16.h),
+      ],
+    );
+  }
+
+  Widget _homeworkSection(ChildReportDetailDto detail) {
+    final hasHomework = detail.homeworkAssigned != null &&
+        detail.homeworkAssigned!.trim().isNotEmpty;
+
     return _sectionCard(
       title: ref.watchTr(AppStrings.homeworkAndTasks),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            report.subject.isNotEmpty
-                ? '${report.subject}: ${ref.watchTr(AppStrings.homeworkTitle)}'
+            detail.subjectName.isNotEmpty
+                ? '${detail.subjectName}: ${ref.watchTr(AppStrings.homeworkTitle)}'
                 : ref.watchTr(AppStrings.homeworkAndTasks),
             style: TxtStyle.titleLarge(
               color: AppColors.text,
@@ -202,7 +533,7 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
           ),
           SizedBox(height: 5.h),
           Text(
-            '${ref.watchTr(AppStrings.duePrefix)} ${_formatReportDate(report, ref)}',
+            '${ref.watchTr(AppStrings.duePrefix)} ${_formatReportDate(detail.reportDate, ref)}',
             style: TxtStyle.titleLarge(
               color: const Color(0xFFE68A27),
               fontSize: 14.sp,
@@ -211,11 +542,13 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
           ),
           SizedBox(height: 10.h),
           Text(
-            report.note.isNotEmpty
-                ? report.note
-                : ref.watchTr(AppStrings.homeworkAndTasks),
+            hasHomework
+                ? detail.homeworkAssigned!
+                : ref.watchTr(AppStrings.noHomeworkAssigned),
             style: TxtStyle.bodyMedium(
-              color: AppColors.secondaryText,
+              color: hasHomework
+                  ? AppColors.secondaryText
+                  : AppColors.subtitleTextColor,
               fontSize: 14.5.sp,
               height: 1.45,
             ),
@@ -242,8 +575,22 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
     );
   }
 
-  Widget _teacherObservation(ReportModel report) {
-    final note = report.note;
+  Widget _teacherObservation(ChildReportDetailDto detail) {
+    final note = detail.observations?.trim().isNotEmpty == true
+        ? detail.observations!
+        : (detail.contentCovered?.trim().isNotEmpty == true
+            ? detail.contentCovered!
+            : '');
+
+    String initials = 'DOC';
+    if (detail.teacherName.trim().isNotEmpty) {
+      final parts = detail.teacherName.trim().split(' ');
+      if (parts.length >= 2) {
+        initials = '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+      } else {
+        initials = detail.teacherName.substring(0, 1).toUpperCase();
+      }
+    }
 
     return _sectionCard(
       title: ref.watchTr(AppStrings.teacherObservation),
@@ -252,14 +599,14 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
         children: [
           Row(
             children: [
-              UserAvatar(initials: report.initials, size: 36),
+              UserAvatar(initials: initials, size: 36),
               SizedBox(width: 9.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      report.teacher,
+                      detail.teacherName,
                       style: TxtStyle.titleLarge(
                         color: AppColors.text,
                         fontSize: 15.sp,
@@ -268,7 +615,7 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
                     ),
                     SizedBox(height: 2.h),
                     Text(
-                      report.subject,
+                      detail.subjectName,
                       style: TxtStyle.titleLarge(
                         color: AppColors.secondaryText,
                         fontSize: 13.sp,
@@ -279,43 +626,104 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
               ),
             ],
           ),
-          SizedBox(height: 13.h),
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(12.w),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF4F7FF),
-              borderRadius: BorderRadius.circular(9.r),
-            ),
-            child: Text(
-              '"$note"',
-              maxLines: showFullNote ? null : 4,
-              overflow: showFullNote
-                  ? TextOverflow.visible
-                  : TextOverflow.ellipsis,
-              style: TxtStyle.bodyMedium(
-                color: AppColors.text,
-                fontSize: 14.5.sp,
-                height: 1.5,
+          if (note.isNotEmpty) ...[
+            SizedBox(height: 13.h),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(12.w),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF4F7FF),
+                borderRadius: BorderRadius.circular(9.r),
               ),
+              child: Text(
+                '"$note"',
+                maxLines: showFullNote ? null : 4,
+                overflow: showFullNote
+                    ? TextOverflow.visible
+                    : TextOverflow.ellipsis,
+                style: TxtStyle.bodyMedium(
+                  color: AppColors.text,
+                  fontSize: 14.5.sp,
+                  height: 1.5,
+                ),
+              ),
+            ),
+            SizedBox(height: 8.h),
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  showFullNote = !showFullNote;
+                });
+              },
+              child: Text(
+                showFullNote
+                    ? ref.watchTr(AppStrings.showLess)
+                    : ref.watchTr(AppStrings.readFullNote),
+                style: TxtStyle.titleLarge(
+                  color: AppColors.primary,
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+          if (detail.attitudeRating != null ||
+              detail.workEffortRating != null) ...[
+            SizedBox(height: 12.h),
+            Row(
+              children: [
+                if (detail.attitudeRating != null)
+                  Expanded(
+                    child: _ratingBadge(
+                      ref,
+                      ref.watchTr(AppStrings.conductAndAttitudeTitle),
+                      _formatRating(ref, detail.attitudeRating),
+                    ),
+                  ),
+                if (detail.attitudeRating != null &&
+                    detail.workEffortRating != null)
+                  SizedBox(width: 8.w),
+                if (detail.workEffortRating != null)
+                  Expanded(
+                    child: _ratingBadge(
+                      ref,
+                      ref.watchTr(AppStrings.effortAndDedicationTitle),
+                      _formatRating(ref, detail.workEffortRating),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _ratingBadge(WidgetRef ref, String label, String value) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: AppColors.backgroundsLinesColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TxtStyle.bodyMedium(
+              color: AppColors.subtitleTextColor,
+              fontSize: 11.5.sp,
             ),
           ),
-          SizedBox(height: 8.h),
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                showFullNote = !showFullNote;
-              });
-            },
-            child: Text(
-              showFullNote
-                  ? ref.watchTr(AppStrings.showLess)
-                  : ref.watchTr(AppStrings.readFullNote),
-              style: TxtStyle.titleLarge(
-                color: AppColors.primary,
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w800,
-              ),
+          SizedBox(height: 3.h),
+          Text(
+            value,
+            style: TxtStyle.titleLarge(
+              color: AppColors.text,
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -323,7 +731,59 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
     );
   }
 
-  Widget _attendanceSection() {
+  String _calculateDuration(String? start, String? end) {
+    if (start == null || end == null || start.isEmpty || end.isEmpty) {
+      return '1h 30min';
+    }
+    try {
+      final startParts = start.split(':').map(int.parse).toList();
+      final endParts = end.split(':').map(int.parse).toList();
+      final startMinutes = startParts[0] * 60 + startParts[1];
+      final endMinutes = endParts[0] * 60 + endParts[1];
+      int diffMinutes = endMinutes - startMinutes;
+      if (diffMinutes < 0) diffMinutes += 24 * 60;
+      final hours = diffMinutes ~/ 60;
+      final minutes = diffMinutes % 60;
+      if (hours > 0 && minutes > 0) {
+        return '${hours}h ${minutes}min';
+      } else if (hours > 0) {
+        return '${hours}h';
+      } else {
+        return '${minutes}min';
+      }
+    } catch (_) {
+      return '1h 30min';
+    }
+  }
+
+  String _formatRating(WidgetRef ref, String? rating) {
+    if (rating == null || rating.isEmpty) {
+      return ref.watchTr(AppStrings.conductSatisfactory);
+    }
+    final valUpper = rating.toUpperCase();
+    if (valUpper == 'SATISFACTORY') {
+      return ref.watchTr(AppStrings.conductSatisfactory);
+    } else if (valUpper == 'NEEDS_ATTENTION' ||
+        valUpper == 'NEEDS_IMPROVEMENT') {
+      return ref.watchTr(AppStrings.conductNeedsAttention);
+    } else if (valUpper == 'EXCELLENT' || valUpper == 'OUTSTANDING') {
+      return ref.watchTr(AppStrings.conductExcellent);
+    } else if (valUpper == 'ON_TRACK' || valUpper == 'ADEQUATE') {
+      return ref.watchTr(AppStrings.effortAdequate);
+    } else if (valUpper == 'MODERATE') {
+      return ref.watchTr(AppStrings.effortModerate);
+    } else if (valUpper == 'HIGH_EFFORT' || valUpper == 'HIGH_PERFORMANCE') {
+      return ref.watchTr(AppStrings.effortHighPerformance);
+    }
+    return rating;
+  }
+
+  Widget _attendanceSection(ChildReportDetailDto detail) {
+    final pillData = _statusPillData(ref, detail.studentAttendanceStatus);
+    final duration = _calculateDuration(detail.startTime, detail.endTime);
+    final participation =
+        _formatRating(ref, detail.attitudeRating ?? detail.workEffortRating);
+
     return _sectionCard(
       title: ref.watchTr(AppStrings.attendance),
       child: Row(
@@ -331,21 +791,21 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
           Expanded(
             child: _statItem(
               ref.watchTr(AppStrings.status),
-              ref.watchTr(AppStrings.present),
-              const Color(0xFF2B9D70),
+              pillData.$1,
+              pillData.$2,
             ),
           ),
           Expanded(
             child: _statItem(
               ref.watchTr(AppStrings.duration),
-              '1h 20min',
+              duration,
               AppColors.primary,
             ),
           ),
           Expanded(
             child: _statItem(
               ref.watchTr(AppStrings.participation),
-              ref.watchTr(AppStrings.conductExcellent),
+              participation,
               const Color(0xFF7656D8),
             ),
           ),
@@ -398,6 +858,7 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
       report: report,
       studentName: studentName,
       studentClass: studentClass,
+      languageCode: LanguageNotifier.activeLanguageCode,
       onProgress: (received, total) {
         if (!mounted || total <= 0) return;
         setState(() {
@@ -448,6 +909,7 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
       setState(() {
         _isDownloading = false;
       });
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result.message),
@@ -480,10 +942,15 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
   void _showReportPreviewModal(
     BuildContext context,
     String filePath,
-    ReportModel report,
+    ChildReportDetailDto detail,
     String studentName,
     String studentClass,
   ) {
+    final pillData = _statusPillData(ref, detail.studentAttendanceStatus);
+    final duration = _calculateDuration(detail.startTime, detail.endTime);
+    final participation =
+        _formatRating(ref, detail.attitudeRating ?? detail.workEffortRating);
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -569,13 +1036,13 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
                                 vertical: 3.h,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFE7FAF2),
+                                color: pillData.$2.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(10.r),
                               ),
                               child: Text(
-                                ref.watchTr(AppStrings.present),
+                                pillData.$1,
                                 style: TxtStyle.titleLarge(
-                                  color: AppColors.emeraldGreenColor,
+                                  color: pillData.$2,
                                   fontSize: 11.sp,
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -591,12 +1058,12 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
                         SizedBox(height: 12.h),
                         _previewRow(
                           ref.watchTr(AppStrings.subjectLabel),
-                          report.subject,
+                          detail.subjectName,
                         ),
                         SizedBox(height: 6.h),
                         _previewRow(
                           ref.watchTr(AppStrings.teacherLabel),
-                          report.teacher,
+                          detail.teacherName,
                         ),
                         SizedBox(height: 6.h),
                         _previewRow(
@@ -606,30 +1073,41 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
                         SizedBox(height: 6.h),
                         _previewRow(
                           ref.watchTr(AppStrings.date),
-                          '${_formatReportDate(report, ref)} • ${report.time}',
+                          '${_formatReportDate(detail.reportDate, ref)} • ${_formatTimeRange(detail)}',
                         ),
                         SizedBox(height: 6.h),
                         _previewRow(
                           ref.watchTr(AppStrings.attendance),
-                          ref.watchTr(AppStrings.present),
+                          pillData.$1,
                         ),
                         SizedBox(height: 6.h),
                         _previewRow(
                           ref.watchTr(AppStrings.duration),
-                          '1h 20min',
+                          duration,
                         ),
                         SizedBox(height: 6.h),
                         _previewRow(
                           ref.watchTr(AppStrings.participation),
-                          ref.watchTr(AppStrings.conductExcellent),
+                          participation,
                         ),
-                        if (report.note.isNotEmpty) ...[
+                        if (detail.observations != null &&
+                            detail.observations!.trim().isNotEmpty) ...[
                           SizedBox(height: 6.h),
                           _previewRow(
                             ref.watchTr(AppStrings.teacherObservation),
-                            report.note.length > 60
-                                ? '${report.note.substring(0, 60)}...'
-                                : report.note,
+                            detail.observations!.length > 60
+                                ? '${detail.observations!.substring(0, 60)}...'
+                                : detail.observations!,
+                          ),
+                        ],
+                        if (detail.contentCovered != null &&
+                            detail.contentCovered!.trim().isNotEmpty) ...[
+                          SizedBox(height: 6.h),
+                          _previewRow(
+                            ref.watchTr(AppStrings.contentDeliveredTitle),
+                            detail.contentCovered!.length > 60
+                                ? '${detail.contentCovered!.substring(0, 60)}...'
+                                : detail.contentCovered!,
                           ),
                         ],
                         SizedBox(height: 12.h),
@@ -740,10 +1218,12 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
   }
 
   Widget _reportAction(
-    ReportModel report,
+    ChildReportDetailDto detail,
     String studentName,
     String studentClass,
   ) {
+    final reportModel = detail.toReportModel();
+
     if (_isDownloading) {
       return Container(
         width: double.infinity,
@@ -831,7 +1311,7 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
                     style: TxtStyle.titleLarge(
                       color: AppColors.emeraldGreenColor,
                       fontSize: 13.sp,
-                    fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w700,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -846,7 +1326,7 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () =>
-                      _startDownload(report, studentName, studentClass),
+                      _startDownload(reportModel, studentName, studentClass),
                   icon: Icon(
                     Icons.download_outlined,
                     color: AppColors.primary,
@@ -877,7 +1357,7 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
                   onPressed: () => _showReportPreviewModal(
                     context,
                     _downloadedFilePath!,
-                    report,
+                    detail,
                     studentName,
                     studentClass,
                   ),
@@ -913,7 +1393,7 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
     }
 
     return GestureDetector(
-      onTap: () => _startDownload(report, studentName, studentClass),
+      onTap: () => _startDownload(reportModel, studentName, studentClass),
       child: Container(
         width: double.infinity,
         padding: EdgeInsets.symmetric(vertical: 13.h),

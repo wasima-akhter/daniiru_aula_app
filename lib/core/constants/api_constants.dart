@@ -77,6 +77,8 @@ abstract final class ApiConstants {
   static String parentChildAttendance(String id) =>
       '/parent/children/$id/attendance';
   static String parentChildReports(String id) => '/parent/children/$id/reports';
+  static String parentChildReportDetail(String childId, String reportId) =>
+      '/parent/children/$childId/reports/$reportId';
   static String parentChildHomework(String id) =>
       '/parent/children/$id/homework';
   static const String parentInvoices = '/parent/invoices';

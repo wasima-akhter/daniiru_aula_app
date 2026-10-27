@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/dtos/child_report_dto.dart';
 import '../../data/repositories/parent_repository_impl.dart';
 import '../../domain/models/parent_models.dart';
 import '../../domain/repositories/parent_repository.dart';
@@ -185,3 +186,34 @@ class ParentReportsController extends Notifier<ParentReportsState> {
     state = state.copyWith(selectedCategoryIndex: index);
   }
 }
+
+class ChildReportDetailParams {
+  final String childId;
+  final String reportId;
+
+  const ChildReportDetailParams({
+    required this.childId,
+    required this.reportId,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ChildReportDetailParams &&
+          runtimeType == other.runtimeType &&
+          childId == other.childId &&
+          reportId == other.reportId;
+
+  @override
+  int get hashCode => Object.hash(childId, reportId);
+}
+
+final childReportDetailProvider = FutureProvider.autoDispose
+    .family<ChildReportDetailDto, ChildReportDetailParams>(
+  (ref, params) async {
+    return ref
+        .watch(parentRepositoryProvider)
+        .getChildReportDetail(params.childId, params.reportId);
+  },
+);
+

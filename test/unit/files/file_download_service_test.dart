@@ -40,8 +40,8 @@ void main() {
       expect(safeName, isNot(contains('..')));
       expect(safeName, '____etc_passwd');
     });
-    test('ReceiptPdfBuilder generates valid PDF with correct headers and content', () {
-      final bytes = ReceiptPdfBuilder.generate(
+    test('ReceiptPdfBuilder generates valid PDF with correct headers and content', () async {
+      final bytes = await ReceiptPdfBuilder.generate(
         invoiceNumber: '#A360-8492',
         studentName: 'Lucas Rivera',
         studentDetails: '2º ESO • Aula 3',
@@ -59,6 +59,39 @@ void main() {
       expect(pdfContent, contains('Lucas Rivera'));
       expect(pdfContent, contains('340,00'));
       expect(pdfContent, contains('%%EOF'));
+    });
+
+    test('ReceiptPdfBuilder localizes correctly for Spanish and English', () async {
+      final bytesEs = ReceiptPdfBuilder.generateSync(
+        invoiceNumber: '#A360-ES',
+        studentName: 'Lucas Rivera',
+        studentDetails: '2º ESO',
+        period: '2024 - 2025',
+        date: '24 Oct 2024',
+        paymentMethod: 'Stripe',
+        amount: '100,00 €',
+        status: 'PAGADO',
+        languageCode: 'es',
+      );
+      final pdfContentEs = String.fromCharCodes(bytesEs);
+      expect(pdfContentEs, contains('COMPROBANTE DE PAGO'));
+      expect(pdfContentEs, contains('DATOS DEL ALUMNO'));
+
+      final bytesEn = ReceiptPdfBuilder.generateSync(
+        invoiceNumber: '#A360-EN',
+        studentName: 'Lucas Rivera',
+        studentDetails: 'Grade 10',
+        period: '2024 - 2025',
+        date: 'Oct 24 2024',
+        paymentMethod: 'Stripe',
+        amount: '100,00 €',
+        status: 'PAID',
+        languageCode: 'en',
+      );
+      final pdfContentEn = String.fromCharCodes(bytesEn);
+      expect(pdfContentEn, contains('OFFICIAL PAYMENT RECEIPT'));
+      expect(pdfContentEn, contains('STUDENT INFORMATION'));
+      expect(pdfContentEn, contains('TRANSACTION DETAILS'));
     });
 
     testWidgets('ReportPdfBuilder generates valid PDF with logo, teacher, student, and observations', (tester) async {
@@ -118,6 +151,40 @@ void main() {
       expect(pdfContent, contains('/Type /Page'));
       expect(pdfContent, contains('%%EOF'));
       expect(bytes!.length, greaterThan(1000));
+    });
+
+    test('ReportPdfBuilder localizes correctly for Spanish and English', () {
+      final sampleReport = const ReportModel(
+        dateLabel: '24 Oct 2024',
+        subject: 'Matemáticas',
+        teacher: 'Prof. Carlos Mendoza',
+        time: '09:00 - 10:20',
+        category: 'Matemáticas',
+        status: 'Asistió',
+        note: 'Participación excelente.',
+        initials: 'CM',
+      );
+
+      final bytesEs = ReportPdfBuilder.generateSync(
+        report: sampleReport,
+        languageCode: 'es',
+      );
+      final pdfContentEs = String.fromCharCodes(bytesEs);
+      expect(pdfContentEs, contains('INFORME DIARIO DE CLASE'));
+      expect(pdfContentEs, contains('AULA 360 - CENTRO EDUCATIVO'));
+      expect(pdfContentEs, contains('ESTADO DE ASISTENCIA'));
+      expect(pdfContentEs, contains('OBSERVACIONES DEL PROFESOR'));
+
+      final bytesEn = ReportPdfBuilder.generateSync(
+        report: sampleReport,
+        languageCode: 'en',
+      );
+      final pdfContentEn = String.fromCharCodes(bytesEn);
+      expect(pdfContentEn, contains('DAILY CLASS REPORT'));
+      expect(pdfContentEn, contains('AULA 360 - EDUCATIONAL CENTER'));
+      expect(pdfContentEn, contains('ATTENDANCE STATUS'));
+      expect(pdfContentEn, contains('TEACHER OBSERVATIONS'));
+      expect(pdfContentEn, contains('OFFICIAL VALIDATION DOCUMENT'));
     });
 
     test('FileShareService returns unavailable when target file does not exist', () async {

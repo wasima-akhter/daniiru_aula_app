@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 import '../../share/export/screen_export.dart';
 import '../domain/models/parent_models.dart';
 import '../presentation/controllers/parent_children_controller.dart';
@@ -697,9 +699,7 @@ class _TuitionPaymentScreenState extends ConsumerState<TuitionPaymentScreen> {
           SizedBox(height: 20.h),
           _sectionTitle(ref.watchTr(AppStrings.paymentMethodTitle)),
           SizedBox(height: 10.h),
-          _cardDetails(),
-          SizedBox(height: 10.h),
-          _saveCard(),
+          _stripePaymentMethodCard(),
           SizedBox(height: 20.h),
           _payButton(paymentState, paymentController, invoice, activeChild),
           SizedBox(height: 12.h),
@@ -940,110 +940,102 @@ class _TuitionPaymentScreenState extends ConsumerState<TuitionPaymentScreen> {
     );
   }
 
-  Widget _cardDetails() {
+  Widget _stripePaymentMethodCard() {
     return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(9.r),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: [
-          _field(
-            title: ref.watchTr(AppStrings.cardNumber),
-            value: '4242 4242 4242 4242',
-            trailing: Row(
-              children: [
-                _cardBrand('VISA'),
-                SizedBox(width: 4.w),
-                _cardBrand('MC'),
-                SizedBox(width: 4.w),
-                _cardBrand('AMEX'),
-              ],
-            ),
-          ),
-          Row(
-            children: [
-              Expanded(
-                child: _field(
-                  title: ref.watchTr(AppStrings.expiration),
-                  value: '08 / 27',
-                  borderRight: true,
-                ),
-              ),
-              Expanded(
-                child: _field(title: ref.watchTr(AppStrings.cvc), value: '123'),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              Expanded(
-                child: _field(
-                  title: ref.watchTr(AppStrings.country),
-                  value: 'España',
-                  borderRight: true,
-                  trailing: Icon(
-                    Icons.keyboard_arrow_down,
-                    size: 15.sp,
-                    color: AppColors.subtitleTextColor,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: _field(
-                  title: ref.watchTr(AppStrings.postalCode),
-                  value: '28013',
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _field({
-    required String title,
-    required String value,
-    Widget? trailing,
-    bool borderRight = false,
-  }) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(9.w, 9.h, 9.w, 9.h),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: AppColors.backgroundsLinesColor),
-          right: borderRight
-              ? BorderSide(color: AppColors.backgroundsLinesColor)
-              : BorderSide.none,
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(
+          color: AppColors.primaryDark.withValues(alpha: 0.25),
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: TxtStyle.titleLarge(
-              color: AppColors.blueTextColor,
-              fontSize: 13.5.sp,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(height: 5.h),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Expanded(
-                child: Text(
-                  value,
-                  style: TxtStyle.titleLarge(
-                    color: AppColors.text,
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w500,
+              Container(
+                width: 42.w,
+                height: 42.w,
+                decoration: BoxDecoration(
+                  color: AppColors.blueSoft,
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.credit_card_rounded,
+                    color: AppColors.primaryDark,
+                    size: 22.sp,
                   ),
                 ),
               ),
-              ?trailing,
+              SizedBox(width: 11.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      ref.watchTr(AppStrings.stripePaymentMethod),
+                      style: TxtStyle.titleLarge(
+                        color: AppColors.text,
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 3.h),
+                    Text(
+                      ref.watchTr(AppStrings.stripeSecureCheckoutDesc),
+                      style: TxtStyle.bodyMedium(
+                        color: AppColors.subtitleTextColor,
+                        fontSize: 12.5.sp,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Container(
+                padding: EdgeInsets.all(4.w),
+                decoration: const BoxDecoration(
+                  color: AppColors.primaryDark,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.check, color: Colors.white, size: 12.sp),
+              ),
+            ],
+          ),
+          SizedBox(height: 14.h),
+          Divider(height: 1, color: AppColors.backgroundsLinesColor),
+          SizedBox(height: 10.h),
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            runAlignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8.w,
+            runSpacing: 6.h,
+            children: [
+              Text(
+                ref.watchTr(AppStrings.supportedCardsLabel),
+                style: TxtStyle.bodyMedium(
+                  color: AppColors.subtitleTextColor,
+                  fontSize: 12.sp,
+                ),
+              ),
+              Wrap(
+                spacing: 4.w,
+                runSpacing: 4.h,
+                children: [
+                  _cardBrand('VISA'),
+                  _cardBrand('MC'),
+                  _cardBrand('AMEX'),
+                  _cardBrand('GPAY'),
+                  _cardBrand('APPLE'),
+                ],
+              ),
             ],
           ),
         ],
@@ -1053,67 +1045,18 @@ class _TuitionPaymentScreenState extends ConsumerState<TuitionPaymentScreen> {
 
   Widget _cardBrand(String text) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+      padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
       decoration: BoxDecoration(
         color: AppColors.softSlateBgColor,
-        borderRadius: BorderRadius.circular(3.r),
+        borderRadius: BorderRadius.circular(4.r),
       ),
       child: Text(
         text,
         style: TxtStyle.titleLarge(
           color: AppColors.blueTextColor,
-          fontSize: 9.sp,
+          fontSize: 9.5.sp,
           fontWeight: FontWeight.w800,
         ),
-      ),
-    );
-  }
-
-  Widget _saveCard() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
-      decoration: BoxDecoration(
-        color: AppColors.blueSoft,
-        borderRadius: BorderRadius.circular(7.r),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.bookmark, color: AppColors.primaryDark, size: 14.sp),
-          SizedBox(width: 8.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  ref.watchTr(AppStrings.saveCardFuture),
-                  style: TxtStyle.titleLarge(
-                    color: AppColors.text,
-                    fontSize: 14.5.sp,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                SizedBox(height: 2.h),
-                Text(
-                  ref.watchTr(AppStrings.autoBillingSubtitle),
-                  style: TxtStyle.titleLarge(
-                    color: AppColors.subtitleTextColor,
-                    fontSize: 13.5.sp,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Switch(
-            value: saveCard,
-            onChanged: (value) {
-              setState(() {
-                saveCard = value;
-              });
-            },
-            activeThumbColor: Colors.white,
-            activeTrackColor: AppColors.primaryDark,
-          ),
-        ],
       ),
     );
   }
@@ -1154,14 +1097,28 @@ class _TuitionPaymentScreenState extends ConsumerState<TuitionPaymentScreen> {
     if (!mounted) return;
 
     if (result.isSuccess) {
+      final now = DateTime.now();
+      String formattedDate;
+      try {
+        formattedDate =
+            DateFormat('d MMM yyyy', LanguageNotifier.activeLanguageCode)
+                .format(now);
+      } catch (_) {
+        try {
+          formattedDate = DateFormat('d MMM yyyy').format(now);
+        } catch (_) {
+          formattedDate = '${now.day}/${now.month}/${now.year}';
+        }
+      }
+
       context.push(
         RoutePath.paymentReceipt,
         extra: {
           'invoice': invoice.copyWith(
             isPaid: true,
-            paidDate: 'Hoy',
+            paidDate: formattedDate,
             receiptNumber:
-                'REC-${DateTime.now().millisecondsSinceEpoch % 100000}',
+                'REC-${now.millisecondsSinceEpoch % 100000}',
           ),
           'child': child,
         },

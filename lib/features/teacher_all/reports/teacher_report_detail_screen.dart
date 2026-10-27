@@ -14,11 +14,7 @@ class TeacherReportDetailsScreen extends ConsumerStatefulWidget {
   final TeacherReport? report;
   final String? reportId;
 
-  const TeacherReportDetailsScreen({
-    super.key,
-    this.report,
-    this.reportId,
-  });
+  const TeacherReportDetailsScreen({super.key, this.report, this.reportId});
 
   @override
   ConsumerState<TeacherReportDetailsScreen> createState() =>
@@ -36,7 +32,10 @@ class _TeacherReportDetailsScreenState
 
   String? get _resolvedId => widget.reportId ?? widget.report?.id;
 
-  Future<void> _startDownload(TeacherReport report, {bool andShare = false}) async {
+  Future<void> _startDownload(
+    TeacherReport report, {
+    bool andShare = false,
+  }) async {
     if (_isDownloading) return;
 
     setState(() {
@@ -48,13 +47,14 @@ class _TeacherReportDetailsScreenState
 
     final facultyName =
         ref.read(authControllerProvider).user?.fullName.isNotEmpty == true
-            ? ref.read(authControllerProvider).user!.fullName
-            : 'Docente Aula 360';
+        ? ref.read(authControllerProvider).user!.fullName
+        : ref.readTr(AppStrings.facultyDefaultName);
 
     final downloadService = ref.read(fileDownloadServiceProvider);
     final result = await downloadService.downloadTeacherReport(
       report: report,
       facultyName: facultyName,
+      languageCode: LanguageNotifier.activeLanguageCode,
       onProgress: (received, total) {
         if (!mounted || total <= 0) return;
         setState(() {
@@ -127,9 +127,9 @@ class _TeacherReportDetailsScreenState
       final shareService = ref.read(fileShareServiceProvider);
       await shareService.shareFile(
         filePath: filePath,
-        subject: 'Informe Aula 360 - ${report.title}',
+        subject: '${ref.readTr(AppStrings.shareReportSubject)} - ${report.title}',
         text:
-            'Adjunto el informe oficial de ${report.title} (${report.date} • ${report.time}) de Aula 360.',
+            '${ref.readTr(AppStrings.shareReportTextPrefix)} ${report.title} (${report.date} • ${report.time}) Aula 360.',
       );
     } finally {
       if (mounted) {
@@ -162,10 +162,11 @@ class _TeacherReportDetailsScreenState
   ) {
     final facultyName =
         ref.read(authControllerProvider).user?.fullName.isNotEmpty == true
-            ? ref.read(authControllerProvider).user!.fullName
-            : 'Docente Aula 360';
+        ? ref.read(authControllerProvider).user!.fullName
+        : ref.readTr(AppStrings.facultyDefaultName);
 
-    final isReviewed = report.rawStatus.toUpperCase() == 'REVIEWED' ||
+    final isReviewed =
+        report.rawStatus.toUpperCase() == 'REVIEWED' ||
         report.status == ReportStatus.reviewed;
 
     final attendanceSummary = report.attendanceSummary;
@@ -245,14 +246,14 @@ class _TeacherReportDetailsScreenState
                               fit: BoxFit.contain,
                               errorBuilder: (context, error, stackTrace) =>
                                   Text(
-                                'AULA 360',
-                                style: TxtStyle.titleLarge(
-                                  color: AppColors.primaryDark,
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
+                                    'AULA 360',
+                                    style: TxtStyle.titleLarge(
+                                      color: AppColors.primaryDark,
+                                      fontSize: 16.sp,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
                             ),
                             Container(
                               padding: EdgeInsets.symmetric(
@@ -262,7 +263,9 @@ class _TeacherReportDetailsScreenState
                               decoration: BoxDecoration(
                                 color: isReviewed
                                     ? const Color(0xFFE7FAF2)
-                                    : AppColors.primaryDark.withValues(alpha: 0.1),
+                                    : AppColors.primaryDark.withValues(
+                                        alpha: 0.1,
+                                      ),
                                 borderRadius: BorderRadius.circular(10.r),
                               ),
                               child: Text(
@@ -293,9 +296,10 @@ class _TeacherReportDetailsScreenState
                         SizedBox(height: 6.h),
                         _previewRow(
                           ref.watchTr(AppStrings.group),
-                          report.cohortName != null && report.cohortName!.isNotEmpty
+                          report.cohortName != null &&
+                                  report.cohortName!.isNotEmpty
                               ? report.cohortName!
-                              : '${ref.watchTr(report.group.stringKey)} • ${report.grade ?? ""} • ${report.room ?? "Aula"}',
+                              : '${ref.watchTr(report.group.stringKey)} • ${report.grade ?? ""} • ${report.room ?? ref.watchTr(AppStrings.aula2)}',
                         ),
                         SizedBox(height: 6.h),
                         _previewRow(
@@ -579,8 +583,11 @@ class _TeacherReportDetailsScreenState
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline_rounded,
-                      size: 48.sp, color: Colors.redAccent),
+                  Icon(
+                    Icons.error_outline_rounded,
+                    size: 48.sp,
+                    color: Colors.redAccent,
+                  ),
                   SizedBox(height: 12.h),
                   Text(
                     detailAsync.error.toString(),
@@ -595,8 +602,10 @@ class _TeacherReportDetailsScreenState
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                     ),
-                    child: const Text('Reintentar',
-                        style: TextStyle(color: Colors.white)),
+                    child: Text(
+                      ref.watchTr(AppStrings.retry),
+                      style: const TextStyle(color: Colors.white),
+                    ),
                   ),
                 ],
               ),
@@ -679,16 +688,17 @@ class _TeacherReportDetailsScreenState
   Widget _recordHeader(WidgetRef ref, TeacherReport report) {
     final facultyName =
         ref.watch(authControllerProvider).user?.fullName.isNotEmpty == true
-            ? ref.watch(authControllerProvider).user!.fullName
-            : 'Docente Aula 360';
+        ? ref.watch(authControllerProvider).user!.fullName
+        : ref.watchTr(AppStrings.facultyDefaultName);
 
-    final isReviewed = report.rawStatus.toUpperCase() == 'REVIEWED' ||
+    final isReviewed =
+        report.rawStatus.toUpperCase() == 'REVIEWED' ||
         report.status == ReportStatus.reviewed;
 
     final idTag = (report.id != null && report.id!.isNotEmpty)
         ? (report.id!.length > 8
-            ? report.id!.substring(0, 8).toUpperCase()
-            : report.id!.toUpperCase())
+              ? report.id!.substring(0, 8).toUpperCase()
+              : report.id!.toUpperCase())
         : '8041';
 
     final sessionTime = (report.startTime != null && report.endTime != null)
@@ -700,16 +710,20 @@ class _TeacherReportDetailsScreenState
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '${ref.watchTr(AppStrings.attendanceRecordTitle)} • #AR-$idTag',
-              style: TxtStyle.titleLarge(
-                color: AppColors.subtitleTextColor,
-                fontSize: 14.5.sp,
-                fontWeight: FontWeight.w700,
-                letterSpacing: .5,
+            Expanded(
+              child: Text(
+                '${ref.watchTr(AppStrings.attendanceRecordTitle)} \n• #AR-$idTag',
+                style: TxtStyle.titleLarge(
+                  color: AppColors.subtitleTextColor,
+                  fontSize: 14.5.sp,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: .5,
+                ),
               ),
             ),
+            SizedBox(width: 8.w),
             Container(
               padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
               decoration: BoxDecoration(
@@ -782,48 +796,67 @@ class _TeacherReportDetailsScreenState
         ),
         if (report.entryTime != null || report.exitTime != null) ...[
           SizedBox(height: 6.h),
-          _timingRow(report),
+          _timingRow(ref, report),
         ],
       ],
     );
   }
 
-  Widget _timingRow(TeacherReport report) {
+  Widget _timingRow(WidgetRef ref, TeacherReport report) {
     String formatIsoTime(String? iso) {
       if (iso == null || iso.isEmpty) return '--:--';
       if (iso.length >= 16) return iso.substring(11, 16);
       return iso;
     }
 
-    return Row(
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 6.w,
+      runSpacing: 4.h,
       children: [
-        if (report.entryTime != null) ...[
-          Icon(Icons.login_rounded, size: 14.sp, color: AppColors.subtitleTextColor),
-          SizedBox(width: 4.w),
-          Text(
-            'Entrada: ${formatIsoTime(report.entryTime)}',
-            style: TxtStyle.bodyMedium(
-              color: AppColors.subtitleTextColor,
-              fontSize: 13.sp,
-            ),
+        if (report.entryTime != null)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.login_rounded,
+                size: 14.sp,
+                color: AppColors.subtitleTextColor,
+              ),
+              SizedBox(width: 4.w),
+              Text(
+                '${ref.watchTr(AppStrings.entryTimeLabel)}: ${formatIsoTime(report.entryTime)}',
+                style: TxtStyle.bodyMedium(
+                  color: AppColors.subtitleTextColor,
+                  fontSize: 13.sp,
+                ),
+              ),
+            ],
           ),
-        ],
         if (report.entryTime != null && report.exitTime != null)
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8.w),
-            child: Text('•', style: TextStyle(color: AppColors.subtitleTextColor)),
-          ),
-        if (report.exitTime != null) ...[
-          Icon(Icons.logout_rounded, size: 14.sp, color: AppColors.subtitleTextColor),
-          SizedBox(width: 4.w),
           Text(
-            'Salida: ${formatIsoTime(report.exitTime)}',
-            style: TxtStyle.bodyMedium(
-              color: AppColors.subtitleTextColor,
-              fontSize: 13.sp,
-            ),
+            '•',
+            style: TextStyle(color: AppColors.subtitleTextColor),
           ),
-        ],
+        if (report.exitTime != null)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.logout_rounded,
+                size: 14.sp,
+                color: AppColors.subtitleTextColor,
+              ),
+              SizedBox(width: 4.w),
+              Text(
+                '${ref.watchTr(AppStrings.exitTimeLabel)}: ${formatIsoTime(report.exitTime)}',
+                style: TxtStyle.bodyMedium(
+                  color: AppColors.subtitleTextColor,
+                  fontSize: 13.sp,
+                ),
+              ),
+            ],
+          ),
       ],
     );
   }
@@ -858,14 +891,39 @@ class _TeacherReportDetailsScreenState
               spacing: 8.w,
               runSpacing: 6.h,
               children: [
-                _summaryChip('Total', total, const Color(0xFFF3F4F6), AppColors.text),
-                _summaryChip('Presentes', present, const Color(0xFFE7FAF2), const Color(0xFF18B86B)),
+                _summaryChip(
+                  ref.watchTr(AppStrings.summaryTotal),
+                  total,
+                  const Color(0xFFF3F4F6),
+                  AppColors.text,
+                ),
+                _summaryChip(
+                  ref.watchTr(AppStrings.summaryPresent),
+                  present,
+                  const Color(0xFFE7FAF2),
+                  const Color(0xFF18B86B),
+                ),
                 if (absent > 0)
-                  _summaryChip('Ausentes', absent, const Color(0xFFFEE2E2), const Color(0xFFDC2626)),
+                  _summaryChip(
+                    ref.watchTr(AppStrings.summaryAbsent),
+                    absent,
+                    const Color(0xFFFEE2E2),
+                    const Color(0xFFDC2626),
+                  ),
                 if (lateCount > 0)
-                  _summaryChip('Tarde', lateCount, const Color(0xFFFEF3C7), const Color(0xFFD97706)),
+                  _summaryChip(
+                    ref.watchTr(AppStrings.summaryLate),
+                    lateCount,
+                    const Color(0xFFFEF3C7),
+                    const Color(0xFFD97706),
+                  ),
                 if (excused > 0)
-                  _summaryChip('Justificados', excused, const Color(0xFFE0E7FF), const Color(0xFF4F46E5)),
+                  _summaryChip(
+                    ref.watchTr(AppStrings.summaryExcused),
+                    excused,
+                    const Color(0xFFE0E7FF),
+                    const Color(0xFF4F46E5),
+                  ),
               ],
             ),
           ],
@@ -874,6 +932,7 @@ class _TeacherReportDetailsScreenState
             children: [
               Expanded(
                 child: _ratingBadge(
+                  ref,
                   ref.watchTr(AppStrings.conductAndAttitudeTitle),
                   report.attitudeRating ?? 'SATISFACTORY',
                 ),
@@ -881,7 +940,8 @@ class _TeacherReportDetailsScreenState
               SizedBox(width: 8.w),
               Expanded(
                 child: _ratingBadge(
-                  'Esfuerzo y Trabajo',
+                  ref,
+                  ref.watchTr(AppStrings.effortAndDedicationTitle),
                   report.workEffortRating ?? 'ON_TRACK',
                 ),
               ),
@@ -890,7 +950,7 @@ class _TeacherReportDetailsScreenState
           if (report.attendances.isNotEmpty) ...[
             SizedBox(height: 14.h),
             Text(
-              'Alumnos (${report.attendances.length})',
+              '${ref.watchTr(AppStrings.studentsLabel)} (${report.attendances.length})',
               style: TxtStyle.titleLarge(
                 color: AppColors.text,
                 fontSize: 14.5.sp,
@@ -914,16 +974,22 @@ class _TeacherReportDetailsScreenState
                     children: [
                       CircleAvatar(
                         radius: 14.r,
-                        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                        backgroundImage: (student.avatarUrl != null &&
+                        backgroundColor: AppColors.primary.withValues(
+                          alpha: 0.1,
+                        ),
+                        backgroundImage:
+                            (student.avatarUrl != null &&
                                 student.avatarUrl!.isNotEmpty)
                             ? NetworkImage(student.avatarUrl!)
                             : null,
-                        child: (student.avatarUrl == null ||
+                        child:
+                            (student.avatarUrl == null ||
                                 student.avatarUrl!.isEmpty)
                             ? Text(
                                 student.studentName.isNotEmpty
-                                    ? student.studentName.substring(0, 1).toUpperCase()
+                                    ? student.studentName
+                                          .substring(0, 1)
+                                          .toUpperCase()
                                     : 'A',
                                 style: TextStyle(
                                   color: AppColors.primary,
@@ -944,7 +1010,7 @@ class _TeacherReportDetailsScreenState
                           ),
                         ),
                       ),
-                      _attendanceStatusPill(student.status),
+                      _attendanceStatusPill(ref, student.status),
                     ],
                   ),
                 );
@@ -974,15 +1040,22 @@ class _TeacherReportDetailsScreenState
     );
   }
 
-  Widget _ratingBadge(String label, String value) {
+  Widget _ratingBadge(WidgetRef ref, String label, String value) {
     String displayVal = value;
     final valUpper = value.toUpperCase();
-    if (valUpper == 'SATISFACTORY') displayVal = 'Satisfactorio';
-    if (valUpper == 'NEEDS_ATTENTION') displayVal = 'Requiere atención';
-    if (valUpper == 'EXCELLENT') displayVal = 'Excelente';
-    if (valUpper == 'ON_TRACK') displayVal = 'Adecuado';
-    if (valUpper == 'MODERATE') displayVal = 'Moderado';
-    if (valUpper == 'HIGH_EFFORT') displayVal = 'Alto rendimiento';
+    if (valUpper == 'SATISFACTORY') {
+      displayVal = ref.watchTr(AppStrings.conductSatisfactory);
+    } else if (valUpper == 'NEEDS_ATTENTION') {
+      displayVal = ref.watchTr(AppStrings.conductNeedsAttention);
+    } else if (valUpper == 'EXCELLENT') {
+      displayVal = ref.watchTr(AppStrings.conductExcellent);
+    } else if (valUpper == 'ON_TRACK' || valUpper == 'ADEQUATE') {
+      displayVal = ref.watchTr(AppStrings.effortAdequate);
+    } else if (valUpper == 'MODERATE') {
+      displayVal = ref.watchTr(AppStrings.effortModerate);
+    } else if (valUpper == 'HIGH_EFFORT' || valUpper == 'HIGH_PERFORMANCE') {
+      displayVal = ref.watchTr(AppStrings.effortHighPerformance);
+    }
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
@@ -1015,7 +1088,7 @@ class _TeacherReportDetailsScreenState
     );
   }
 
-  Widget _attendanceStatusPill(String status) {
+  Widget _attendanceStatusPill(WidgetRef ref, String status) {
     Color bg;
     Color text;
     String label;
@@ -1023,22 +1096,22 @@ class _TeacherReportDetailsScreenState
       case 'PRESENT':
         bg = const Color(0xFFE7FAF2);
         text = const Color(0xFF18B86B);
-        label = 'Presente';
+        label = ref.watchTr(AppStrings.present);
         break;
       case 'ABSENT':
         bg = const Color(0xFFFEE2E2);
         text = const Color(0xFFDC2626);
-        label = 'Ausente';
+        label = ref.watchTr(AppStrings.absent);
         break;
       case 'LATE':
         bg = const Color(0xFFFEF3C7);
         text = const Color(0xFFD97706);
-        label = 'Tarde';
+        label = ref.watchTr(AppStrings.late);
         break;
       case 'EXCUSED':
         bg = const Color(0xFFE0E7FF);
         text = const Color(0xFF4F46E5);
-        label = 'Justificado';
+        label = ref.watchTr(AppStrings.excused);
         break;
       default:
         bg = const Color(0xFFF3F4F6);
@@ -1063,12 +1136,12 @@ class _TeacherReportDetailsScreenState
   }
 
   Widget _contentSection(WidgetRef ref, TeacherReport report) {
-    final contentText = (report.contentCovered != null &&
-            report.contentCovered!.isNotEmpty)
+    final contentText =
+        (report.contentCovered != null && report.contentCovered!.isNotEmpty)
         ? report.contentCovered!
         : (report.subtitle.isNotEmpty
-            ? report.subtitle
-            : ref.watchTr(AppStrings.contentDeliveredTitle));
+              ? report.subtitle
+              : ref.watchTr(AppStrings.contentDeliveredTitle));
 
     return _detailSection(
       title: ref.watchTr(AppStrings.contentDeliveredTitle).toUpperCase(),
@@ -1098,8 +1171,8 @@ class _TeacherReportDetailsScreenState
   }
 
   Widget _homeworkSection(WidgetRef ref, TeacherReport report) {
-    final homeworkText = (report.homeworkAssigned != null &&
-            report.homeworkAssigned!.isNotEmpty)
+    final homeworkText =
+        (report.homeworkAssigned != null && report.homeworkAssigned!.isNotEmpty)
         ? report.homeworkAssigned!
         : ref.watchTr(AppStrings.assignedTasksTitle);
 
@@ -1164,7 +1237,7 @@ class _TeacherReportDetailsScreenState
     }
 
     return _detailSection(
-      title: 'REVISIÓN ACADÉMICA',
+      title: ref.watchTr(AppStrings.academicReviewTitle),
       child: Container(
         width: double.infinity,
         padding: EdgeInsets.all(12.w),
@@ -1178,7 +1251,7 @@ class _TeacherReportDetailsScreenState
           children: [
             if (reviewedDateStr.isNotEmpty) ...[
               Text(
-                'Revisado el $reviewedDateStr',
+                '${ref.watchTr(AppStrings.reviewedOnPrefix)} $reviewedDateStr',
                 style: TxtStyle.bodyMedium(
                   color: AppColors.subtitleTextColor,
                   fontSize: 12.sp,
@@ -1381,8 +1454,11 @@ class _TeacherReportDetailsScreenState
               SizedBox(width: 8.w),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () =>
-                      _showReportPreviewModal(context, _downloadedFilePath!, report),
+                  onPressed: () => _showReportPreviewModal(
+                    context,
+                    _downloadedFilePath!,
+                    report,
+                  ),
                   icon: Icon(
                     Icons.visibility_outlined,
                     color: Colors.white,

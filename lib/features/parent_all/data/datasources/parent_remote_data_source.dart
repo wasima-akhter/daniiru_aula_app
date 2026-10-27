@@ -25,6 +25,10 @@ abstract class ParentRemoteDataSource {
     int page = 1,
     int limit = 20,
   });
+  Future<ChildReportDetailDto> getChildReportDetail(
+    String childId,
+    String reportId,
+  );
   Future<PaginatedResult<ChildHomeworkDto>> getChildHomework(
     String childId, {
     int page = 1,
@@ -166,6 +170,35 @@ class ParentRemoteDataSourceImpl implements ParentRemoteDataSource {
       if (e is ApiException) rethrow;
       throw ApiException(
         message: 'Failed to fetch child reports: $e',
+        statusCode: 500,
+      );
+    }
+  }
+
+  @override
+  Future<ChildReportDetailDto> getChildReportDetail(
+    String childId,
+    String reportId,
+  ) async {
+    try {
+      final response = await _client.get(
+        ApiConstants.parentChildReportDetail(childId, reportId),
+      );
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        final reportData = data['data'];
+        if (reportData is Map<String, dynamic>) {
+          return ChildReportDetailDto.fromJson(reportData);
+        }
+      }
+      throw ApiException(
+        message: 'Invalid response format for child report detail',
+        statusCode: 500,
+      );
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException(
+        message: 'Failed to fetch child report detail: $e',
         statusCode: 500,
       );
     }

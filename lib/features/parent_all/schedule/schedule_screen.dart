@@ -40,6 +40,13 @@ class ScheduleScreen extends ConsumerWidget {
     final childrenState = ref.watch(parentChildrenControllerProvider);
     final children = childrenState.children;
 
+    final selectedChild = (children.isNotEmpty &&
+            scheduleState.selectedChildIndex < children.length)
+        ? children[scheduleState.selectedChildIndex]
+        : (childrenState.selectedChild ??
+            (children.isNotEmpty ? children.first : null));
+    final childId = selectedChild?.id ?? '';
+
     final langCode =
         ref.watch(languageProvider).valueOrNull?.language.code ?? 'en';
     final days = _getCenteredDays(langCode, scheduleState.anchorDate);
@@ -106,7 +113,9 @@ class ScheduleScreen extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          ref.watchTr(AppStrings.studentInfoTitle).toUpperCase(),
+                          ref
+                              .watchTr(AppStrings.studentInfoTitle)
+                              .toUpperCase(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TxtStyle.titleLarge(
@@ -250,7 +259,9 @@ class ScheduleScreen extends ConsumerWidget {
                                       ),
                                       decoration: BoxDecoration(
                                         color: const Color(0xFFE6EDFF),
-                                        borderRadius: BorderRadius.circular(5.r),
+                                        borderRadius: BorderRadius.circular(
+                                          5.r,
+                                        ),
                                       ),
                                       child: Text(
                                         ref.watchTr(AppStrings.today),
@@ -264,7 +275,8 @@ class ScheduleScreen extends ConsumerWidget {
                                   ] else ...[
                                     SizedBox(width: 6.w),
                                     InkWell(
-                                      onTap: () => scheduleController.resetToToday(),
+                                      onTap: () =>
+                                          scheduleController.resetToToday(),
                                       borderRadius: BorderRadius.circular(5.r),
                                       child: Container(
                                         padding: EdgeInsets.symmetric(
@@ -272,10 +284,16 @@ class ScheduleScreen extends ConsumerWidget {
                                           vertical: 3.h,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: AppColors.primary.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(5.r),
+                                          color: AppColors.primary.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            5.r,
+                                          ),
                                           border: Border.all(
-                                            color: AppColors.primary.withValues(alpha: 0.3),
+                                            color: AppColors.primary.withValues(
+                                              alpha: 0.3,
+                                            ),
                                           ),
                                         ),
                                         child: Row(
@@ -320,7 +338,9 @@ class ScheduleScreen extends ConsumerWidget {
                                   color: const Color(0xFFE6EDFF),
                                   borderRadius: BorderRadius.circular(8.r),
                                   border: Border.all(
-                                    color: AppColors.primary.withValues(alpha: 0.25),
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.25,
+                                    ),
                                   ),
                                 ),
                                 child: Row(
@@ -372,7 +392,7 @@ class ScheduleScreen extends ConsumerWidget {
                   SizedBox(height: 25.h),
 
                   if (scheduleState.isLoading) ...[
-                    const Center(
+                    const Center( 
                       child: Padding(
                         padding: EdgeInsets.symmetric(vertical: 24),
                         child: CircularProgressIndicator(),
@@ -408,7 +428,7 @@ class ScheduleScreen extends ConsumerWidget {
                       ),
                       SizedBox(height: 12.h),
                       for (final classData in completedClasses) ...[
-                        _completedClassCard(ref, classData),
+                        _completedClassCard(context, ref, classData, childId: childId),
                         SizedBox(height: 12.h),
                       ],
                     ],
@@ -664,104 +684,136 @@ class ScheduleScreen extends ConsumerWidget {
     );
   }
 
-  Widget _completedClassCard(WidgetRef ref, ClassModel classData) {
-    return AulaCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              StatusPill(text: ref.watchTr(AppStrings.completedPresent)),
-              const Spacer(),
-              Text(
-                '${classData.time} – ${classData.duration}',
-                style: TxtStyle.titleLarge(
-                  color: AppColors.secondaryText,
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w600,
+  Widget _completedClassCard(
+    BuildContext context,
+    WidgetRef ref,
+    ClassModel classData, {
+    String? childId,
+  }) {
+    void navigateToReportDetail() {
+      final reportModel = ReportModel(
+        id: classData.id,
+        subject: classData.subject,
+        teacher: classData.teacher,
+        time: '${classData.time} – ${classData.duration}',
+        category: classData.category,
+        dateLabel: ref.readTr(AppStrings.today),
+        status: ref.readTr(AppStrings.completedPresent),
+        note: '',
+        initials: classData.teacher.isNotEmpty
+            ? classData.teacher[0].toUpperCase()
+            : 'P',
+      );
+
+      context.push(
+        RoutePath.reportDetail,
+        extra: {
+          'childId': childId ?? '',
+          'reportId': classData.id ?? '',
+          'initialReport': reportModel,
+        },
+      );
+    }
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: navigateToReportDetail,
+      child: AulaCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                StatusPill(text: ref.watchTr(AppStrings.completedPresent)),
+                const Spacer(),
+                Text(
+                  '${classData.time} – ${classData.duration}',
+                  style: TxtStyle.titleLarge(
+                    color: AppColors.secondaryText,
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-            ],
-          ),
-
-          SizedBox(height: 11.h),
-
-          Text(
-            classData.subject,
-            style: TxtStyle.titleLarge(
-              color: AppColors.text,
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w800,
+              ],
             ),
-          ),
 
-          SizedBox(height: 12.h),
+            SizedBox(height: 11.h),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Row(
+            Text(
+              classData.subject,
+              style: TxtStyle.titleLarge(
+                color: AppColors.text,
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+
+            SizedBox(height: 12.h),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.person_outline_rounded,
+                        size: 16.sp,
+                        color: AppColors.secondaryText,
+                      ),
+                      SizedBox(width: 5.w),
+                      Flexible(
+                        child: Text(
+                          classData.teacher,
+                          style: TxtStyle.titleLarge(
+                            color: AppColors.secondaryText,
+                            fontSize: 14.5.sp,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Gap(12.w),
+                Row(
                   children: [
                     Icon(
-                      Icons.person_outline_rounded,
-                      size: 16.sp,
+                      Icons.location_on_outlined,
+                      size: 15.sp,
                       color: AppColors.secondaryText,
                     ),
-                    SizedBox(width: 5.w),
-                    Flexible(
-                      child: Text(
-                        classData.teacher,
-                        style: TxtStyle.titleLarge(
-                          color: AppColors.secondaryText,
-                          fontSize: 14.5.sp,
-                        ),
+                    SizedBox(width: 4.w),
+                    Text(
+                      classData.room,
+                      style: TxtStyle.titleLarge(
+                        color: AppColors.secondaryText,
+                        fontSize: 13.5.sp,
                       ),
                     ),
                   ],
                 ),
-              ),
-              Gap(12.w),
-              Row(
-                children: [
-                  Icon(
-                    Icons.location_on_outlined,
-                    size: 15.sp,
-                    color: AppColors.secondaryText,
-                  ),
-                  SizedBox(width: 4.w),
-                  Text(
-                    classData.room,
-                    style: TxtStyle.titleLarge(
-                      color: AppColors.secondaryText,
-                      fontSize: 13.5.sp,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+              ],
+            ),
 
-          SizedBox(height: 13.h),
+            SizedBox(height: 13.h),
 
-          Align(
-            alignment: Alignment.centerRight,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () {
-                ref.read(navigationProvider.notifier).goToParentReports();
-              },
-              child: Text(
-                ref.watchTr(AppStrings.classReportAction),
-                style: TxtStyle.titleLarge(
-                  color: AppColors.primary,
-                  fontSize: 14.5.sp,
-                  fontWeight: FontWeight.w700,
+            Align(
+              alignment: Alignment.centerRight,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: navigateToReportDetail,
+                child: Text(
+                  ref.watchTr(AppStrings.classReportAction),
+                  style: TxtStyle.titleLarge(
+                    color: AppColors.primary,
+                    fontSize: 14.5.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -885,7 +937,9 @@ class ScheduleScreen extends ConsumerWidget {
     );
 
     if (picked != null) {
-      ref.read(parentScheduleControllerProvider.notifier).selectCustomDate(picked);
+      ref
+          .read(parentScheduleControllerProvider.notifier)
+          .selectCustomDate(picked);
     }
   }
 }

@@ -85,6 +85,7 @@ class ChildScheduleSessionDto {
 
   ClassModel toClassModel() {
     return ClassModel(
+      id: id,
       subject: subjectName,
       teacher: teacherName,
       time: startTime,

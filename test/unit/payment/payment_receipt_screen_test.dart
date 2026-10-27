@@ -21,6 +21,7 @@ class MockFileDownloadService extends Fake implements FileDownloadService {
     required String paymentMethod,
     required String amount,
     required String status,
+    String? languageCode,
     void Function(int received, int total)? onProgress,
     dynamic cancelToken,
   }) async {

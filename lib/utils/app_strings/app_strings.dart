@@ -398,6 +398,19 @@ class AppStrings {
   static const String searchReportsHint = 'search_reports_hint';
   static const String noReportsMatchSearch = 'no_reports_match_search';
   static const String shareReport = 'share_report';
+  static const String facultyDefaultName = 'faculty_default_name';
+  static const String shareReportSubject = 'share_report_subject';
+  static const String shareReportTextPrefix = 'share_report_text_prefix';
+  static const String entryTimeLabel = 'entry_time_label';
+  static const String exitTimeLabel = 'exit_time_label';
+  static const String summaryTotal = 'summary_total';
+  static const String summaryPresent = 'summary_present';
+  static const String summaryAbsent = 'summary_absent';
+  static const String summaryLate = 'summary_late';
+  static const String summaryExcused = 'summary_excused';
+  static const String studentsLabel = 'students_label';
+  static const String academicReviewTitle = 'academic_review_title';
+  static const String reviewedOnPrefix = 'reviewed_on_prefix';
   static const String homeworkTitle = 'homework_title';
   static const String allTab = 'all_tab';
   static const String pendingTab = 'pending_tab';
@@ -425,6 +438,9 @@ class AppStrings {
   // ── Payment & Invoicing (Fixed UI) ────────────────────────────────────────
   static const String tuitionPaymentTitle = 'tuition_payment_title';
   static const String paymentMethodTitle = 'payment_method_title';
+  static const String stripePaymentMethod = 'stripe_payment_method';
+  static const String stripeSecureCheckoutDesc = 'stripe_secure_checkout_desc';
+  static const String supportedCardsLabel = 'supported_cards_label';
   static const String processedByStripe = 'processed_by_stripe';
   static const String totalToPay = 'total_to_pay';
   static const String cardNumber = 'card_number';
@@ -514,6 +530,11 @@ class AppStrings {
   static const String conductAndAttitudeTitle = 'conduct_and_attitude_title';
   static const String effortAndDedicationTitle = 'effort_and_dedication_title';
   static const String quickNotesTitle = 'quick_notes_title';
+  static const String additionalObservationsHint =
+      'additional_observations_hint';
+  static const String observationsPrefix = 'observations_prefix';
+  static const String ratingOutstanding = 'rating_outstanding';
+  static const String ratingSatisfactory = 'rating_satisfactory';
   static const String sendReportBtn = 'send_report_btn';
   static const String conductNeedsAttention = 'conduct_needs_attention';
   static const String conductSatisfactory = 'conduct_satisfactory';

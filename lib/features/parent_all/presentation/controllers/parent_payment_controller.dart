@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/config/stripe_config.dart';
 import '../../../../core/network/api_exception.dart';
+import '../../../../core/service/language/language_provider.dart';
 import '../../../../core/services/stripe/stripe_payment_service.dart';
 import '../../data/repositories/parent_repository_impl.dart';
 import '../../domain/models/parent_models.dart';
@@ -203,14 +205,28 @@ class ParentPaymentController extends Notifier<ParentPaymentState> {
 
       // 3. Handle payment result
       if (result.isSuccess) {
+        final now = DateTime.now();
+        String formattedDate;
+        try {
+          formattedDate =
+              DateFormat('d MMM yyyy', LanguageNotifier.activeLanguageCode)
+                  .format(now);
+        } catch (_) {
+          try {
+            formattedDate = DateFormat('d MMM yyyy').format(now);
+          } catch (_) {
+            formattedDate = '${now.day}/${now.month}/${now.year}';
+          }
+        }
+
         // Optimistically mark invoice as paid in local state
         final updated = state.invoices.map((inv) {
           if (inv.id == invoice.id) {
             return inv.copyWith(
               isPaid: true,
-              paidDate: 'Hoy',
+              paidDate: formattedDate,
               receiptNumber:
-                  'REC-${DateTime.now().millisecondsSinceEpoch % 100000}',
+                  'REC-${now.millisecondsSinceEpoch % 100000}',
             );
           }
           return inv;

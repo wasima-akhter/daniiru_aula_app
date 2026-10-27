@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'receipt_pdf_builder.dart';
 import 'report_pdf_builder.dart';
+import '../service/language/language_provider.dart';
 import '../../features/parent_all/domain/models/parent_models.dart';
 import '../../features/teacher_all/helper/teacher_enums.dart';
 import '../../features/teacher_all/helper/teacher_models.dart';
@@ -86,15 +87,20 @@ class FileDownloadService {
     required String paymentMethod,
     required String amount,
     required String status,
+    String? languageCode,
     void Function(int received, int total)? onProgress,
     CancelToken? cancelToken,
   }) async {
+    final effectiveLang = languageCode ?? LanguageNotifier.activeLanguageCode;
+    final isEs = effectiveLang.toLowerCase().startsWith('es');
+    final filePrefix = isEs ? 'Recibo_' : 'Receipt_';
+
     // If a remote URL is provided, download directly via Dio
     if (url != null && url.trim().isNotEmpty && url.startsWith('http')) {
       final safeInvoice = _sanitizeFileName(invoiceNumber.replaceAll('#', ''));
       return downloadFile(
         url: url,
-        customFileName: 'Recibo_$safeInvoice.pdf',
+        customFileName: '$filePrefix$safeInvoice.pdf',
         onProgress: onProgress,
         cancelToken: cancelToken,
       );
@@ -105,7 +111,7 @@ class FileDownloadService {
     try {
       final aulaDir = await getAulaDirectory();
       final safeInvoice = _sanitizeFileName(invoiceNumber.replaceAll('#', ''));
-      final sanitizedName = 'Recibo_$safeInvoice.pdf';
+      final sanitizedName = '$filePrefix$safeInvoice.pdf';
       final finalFilePath = _resolveNonDuplicatePath(
         aulaDir.path,
         sanitizedName,
@@ -117,7 +123,7 @@ class FileDownloadService {
         await tempFile.delete();
       }
 
-      final bytes = ReceiptPdfBuilder.generate(
+      final bytes = await ReceiptPdfBuilder.generate(
         invoiceNumber: invoiceNumber,
         studentName: studentName,
         studentDetails: studentDetails,
@@ -126,6 +132,7 @@ class FileDownloadService {
         paymentMethod: paymentMethod,
         amount: amount,
         status: status,
+        languageCode: effectiveLang,
       );
 
       final totalBytes = bytes.length;
@@ -177,16 +184,21 @@ class FileDownloadService {
     required ReportModel report,
     String? studentName,
     String? studentClass,
+    String? languageCode,
     void Function(int received, int total)? onProgress,
     CancelToken? cancelToken,
   }) async {
+    final effectiveLang = languageCode ?? LanguageNotifier.activeLanguageCode;
+    final isEs = effectiveLang.toLowerCase().startsWith('es');
+    final filePrefix = isEs ? 'Informe_' : 'Report_';
+
     // If a remote URL is provided, download directly via Dio
     if (url != null && url.trim().isNotEmpty && url.startsWith('http')) {
       final safeSubject = _sanitizeFileName(report.subject);
       return downloadFile(
         url: url,
         customFileName:
-            'Informe_${safeSubject}_${DateTime.now().millisecondsSinceEpoch}.pdf',
+            '$filePrefix${safeSubject}_${DateTime.now().millisecondsSinceEpoch}.pdf',
         onProgress: onProgress,
         cancelToken: cancelToken,
       );
@@ -197,7 +209,7 @@ class FileDownloadService {
     try {
       final aulaDir = await getAulaDirectory();
       final safeSubject = _sanitizeFileName(report.subject);
-      final sanitizedName = 'Informe_$safeSubject.pdf';
+      final sanitizedName = '$filePrefix$safeSubject.pdf';
       final finalFilePath = _resolveNonDuplicatePath(
         aulaDir.path,
         sanitizedName,
@@ -213,6 +225,7 @@ class FileDownloadService {
         report: report,
         studentName: studentName,
         studentClass: studentClass,
+        languageCode: effectiveLang,
       );
 
       final totalBytes = bytes.length;
@@ -262,13 +275,19 @@ class FileDownloadService {
   Future<DownloadResult> downloadTeacherReport({
     required TeacherReport report,
     String? facultyName,
+    String? languageCode,
     void Function(int received, int total)? onProgress,
     CancelToken? cancelToken,
   }) async {
-    final effectiveFaculty = facultyName ?? 'Docente Aula 360';
+    final effectiveLang = languageCode ?? LanguageNotifier.activeLanguageCode;
+    final isEs = effectiveLang.toLowerCase().startsWith('es');
+    final effectiveFaculty =
+        facultyName ?? (isEs ? 'Docente Aula 360' : 'Aula 360 Faculty');
     final isReviewed = report.rawStatus.toUpperCase() == 'REVIEWED' ||
         report.status == ReportStatus.reviewed ||
         report.status == ReportStatus.filed;
+    final defaultCat = isEs ? 'Informe de Clase' : 'Class Report';
+    final defaultIndCat = isEs ? 'Informe Individual' : 'Individual Report';
     final reportModel = ReportModel(
       dateLabel: report.date,
       subject: report.title,
@@ -278,9 +297,11 @@ class FileDownloadService {
           (report.cohortName != null && report.cohortName!.isNotEmpty
               ? report.cohortName!
               : (report.category == ReportCategory.classReport
-                  ? 'Informe de Clase'
-                  : 'Informe Individual')),
-      status: isReviewed ? 'Revisado' : 'Entregado',
+                  ? defaultCat
+                  : defaultIndCat)),
+      status: isReviewed
+          ? (isEs ? 'Revisado' : 'Reviewed')
+          : (isEs ? 'Entregado' : 'Submitted'),
       note: (report.contentCovered != null && report.contentCovered!.isNotEmpty)
           ? report.contentCovered!
           : report.subtitle,
@@ -290,12 +311,13 @@ class FileDownloadService {
     );
     final groupClass = report.cohortName != null && report.cohortName!.isNotEmpty
         ? report.cohortName!
-        : '${report.group.name} • ${report.grade ?? ""} • ${report.room ?? "Aula"}';
+        : '${report.group.name} • ${report.grade ?? ""} • ${report.room ?? (isEs ? "Aula" : "Room")}';
 
     return downloadReport(
       report: reportModel,
-      studentName: report.studentName ?? 'Grupo General',
+      studentName: report.studentName ?? (isEs ? 'Grupo General' : 'General Group'),
       studentClass: groupClass,
+      languageCode: effectiveLang,
       onProgress: onProgress,
       cancelToken: cancelToken,
     );

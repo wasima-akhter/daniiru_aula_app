@@ -72,6 +72,7 @@ class ChildModel {
 // ===============================================================
 
 class ClassModel {
+  final String? id;
   final String subject;
   final String teacher;
   final String time;
@@ -82,6 +83,7 @@ class ClassModel {
   final Color color;
 
   const ClassModel({
+    this.id,
     required this.subject,
     required this.teacher,
     required this.time,
@@ -93,6 +95,7 @@ class ClassModel {
   });
 
   ClassModel copyWith({
+    String? id,
     String? subject,
     String? teacher,
     String? time,
@@ -103,6 +106,7 @@ class ClassModel {
     Color? color,
   }) {
     return ClassModel(
+      id: id ?? this.id,
       subject: subject ?? this.subject,
       teacher: teacher ?? this.teacher,
       time: time ?? this.time,

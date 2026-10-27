@@ -5,8 +5,17 @@ import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 
 import '../../features/parent_all/domain/models/parent_models.dart';
+import '../service/language/language_provider.dart';
 
-class ReportPdfBuilder {
+/// Helper to generate pure-Dart compliant PDF-1.4 documents for academic class reports.
+/// Embeds the official Aula360 logo (assets/images/app_logo.png) with alpha mask transparency,
+/// and dynamically localizes content according to the selected language (Spanish / English).
+abstract final class ReportPdfBuilder {
+  static int? _cachedLogoWidth;
+  static int? _cachedLogoHeight;
+  static List<int>? _cachedCompressedRgb;
+  static List<int>? _cachedCompressedAlpha;
+
   /// Generates a formatted Aula 360 Daily Academic Class Report in PDF-1.4 format.
   /// Embeds the official Aula360 logo (assets/images/app_logo.png) with alpha mask transparency.
   static Future<Uint8List> generate({
@@ -14,70 +23,126 @@ class ReportPdfBuilder {
     String? studentName,
     String? studentClass,
     String? reportId,
+    String? languageCode,
     Uint8List? preloadedLogoBytes,
   }) async {
-    final effectiveStudent = studentName ?? 'Lucas Rivera';
-    final effectiveClass = studentClass ?? '2º ESO • Aula 3';
-    final effectiveReportId = reportId ??
-        'REP-${report.subject.length > 3 ? report.subject.substring(0, 3).toUpperCase() : "A36"}-${(DateTime.now().millisecondsSinceEpoch % 90000) + 10000}';
+    int? logoWidth = _cachedLogoWidth;
+    int? logoHeight = _cachedLogoHeight;
+    List<int>? compressedRgb = _cachedCompressedRgb;
+    List<int>? compressedAlpha = _cachedCompressedAlpha;
 
-    // 1. Load logo bytes (assets/images/app_logo.png)
-    Uint8List? rawLogoBytes = preloadedLogoBytes;
-    if (rawLogoBytes == null || rawLogoBytes.isEmpty) {
-      try {
-        final f = File('assets/images/app_logo.png');
-        if (f.existsSync()) {
-          rawLogoBytes = await f.readAsBytes();
-        }
-      } catch (_) {}
+    // 1. Load logo bytes if not cached
+    if (compressedRgb == null) {
+      Uint8List? rawLogoBytes = preloadedLogoBytes;
       if (rawLogoBytes == null || rawLogoBytes.isEmpty) {
         try {
-          final byteData = await rootBundle.load('assets/images/app_logo.png');
-          rawLogoBytes = byteData.buffer.asUint8List();
+          final f = File('assets/images/app_logo.png');
+          if (f.existsSync()) {
+            rawLogoBytes = await f.readAsBytes();
+          }
+        } catch (_) {}
+        if (rawLogoBytes == null || rawLogoBytes.isEmpty) {
+          try {
+            final byteData = await rootBundle.load('assets/images/app_logo.png');
+            rawLogoBytes = byteData.buffer.asUint8List();
+          } catch (_) {}
+        }
+      }
+
+      // 2. Decode logo image and extract RGB + Alpha streams
+      if (rawLogoBytes != null && rawLogoBytes.isNotEmpty) {
+        try {
+          final codec = await ui.instantiateImageCodec(
+            rawLogoBytes,
+            targetWidth: 380,
+          );
+          final frame = await codec.getNextFrame();
+          final img = frame.image;
+          final byteData = await img.toByteData(format: ui.ImageByteFormat.rawRgba);
+
+          if (byteData != null) {
+            logoWidth = img.width;
+            logoHeight = img.height;
+            final rgba = byteData.buffer.asUint8List();
+
+            final rgb = Uint8List(logoWidth * logoHeight * 3);
+            final alpha = Uint8List(logoWidth * logoHeight);
+
+            int rgbIdx = 0;
+            int aIdx = 0;
+            for (int i = 0; i < rgba.length; i += 4) {
+              rgb[rgbIdx++] = rgba[i];
+              rgb[rgbIdx++] = rgba[i + 1];
+              rgb[rgbIdx++] = rgba[i + 2];
+              alpha[aIdx++] = rgba[i + 3];
+            }
+
+            compressedRgb = zlib.encode(rgb);
+            compressedAlpha = zlib.encode(alpha);
+
+            _cachedLogoWidth = logoWidth;
+            _cachedLogoHeight = logoHeight;
+            _cachedCompressedRgb = compressedRgb;
+            _cachedCompressedAlpha = compressedAlpha;
+          }
         } catch (_) {}
       }
     }
 
-    // 2. Decode logo image and extract RGB + Alpha streams
-    int? logoWidth;
-    int? logoHeight;
-    List<int>? compressedRgb;
-    List<int>? compressedAlpha;
+    return _buildPdf(
+      report: report,
+      studentName: studentName,
+      studentClass: studentClass,
+      reportId: reportId,
+      languageCode: languageCode,
+      logoWidth: logoWidth,
+      logoHeight: logoHeight,
+      compressedRgb: compressedRgb,
+      compressedAlpha: compressedAlpha,
+    );
+  }
 
-    if (rawLogoBytes != null && rawLogoBytes.isNotEmpty) {
-      try {
-        final codec = await ui.instantiateImageCodec(
-          rawLogoBytes,
-          targetWidth: 380,
-        );
-        final frame = await codec.getNextFrame();
-        final img = frame.image;
-        final byteData = await img.toByteData(format: ui.ImageByteFormat.rawRgba);
+  /// Synchronous fallback when async image decoding is not available.
+  static Uint8List generateSync({
+    required ReportModel report,
+    String? studentName,
+    String? studentClass,
+    String? reportId,
+    String? languageCode,
+  }) {
+    return _buildPdf(
+      report: report,
+      studentName: studentName,
+      studentClass: studentClass,
+      reportId: reportId,
+      languageCode: languageCode,
+      logoWidth: _cachedLogoWidth,
+      logoHeight: _cachedLogoHeight,
+      compressedRgb: _cachedCompressedRgb,
+      compressedAlpha: _cachedCompressedAlpha,
+    );
+  }
 
-        if (byteData != null) {
-          logoWidth = img.width;
-          logoHeight = img.height;
-          final rgba = byteData.buffer.asUint8List();
+  static Uint8List _buildPdf({
+    required ReportModel report,
+    String? studentName,
+    String? studentClass,
+    String? reportId,
+    String? languageCode,
+    int? logoWidth,
+    int? logoHeight,
+    List<int>? compressedRgb,
+    List<int>? compressedAlpha,
+  }) {
+    final effectiveLang = languageCode ?? LanguageNotifier.activeLanguageCode;
+    final isEs = effectiveLang.toLowerCase().startsWith('es');
 
-          final rgb = Uint8List(logoWidth * logoHeight * 3);
-          final alpha = Uint8List(logoWidth * logoHeight);
+    final effectiveStudent = studentName ?? (isEs ? 'Lucas Rivera' : 'Lucas Rivera');
+    final effectiveClass = studentClass ?? (isEs ? '2º ESO • Aula 3' : 'Grade 10 • Room 3');
+    final effectiveReportId = reportId ??
+        'REP-${report.subject.length > 3 ? report.subject.substring(0, 3).toUpperCase() : "A36"}-${(DateTime.now().millisecondsSinceEpoch % 90000) + 10000}';
 
-          int rgbIdx = 0;
-          int aIdx = 0;
-          for (int i = 0; i < rgba.length; i += 4) {
-            rgb[rgbIdx++] = rgba[i];
-            rgb[rgbIdx++] = rgba[i + 1];
-            rgb[rgbIdx++] = rgba[i + 2];
-            alpha[aIdx++] = rgba[i + 3];
-          }
-
-          compressedRgb = zlib.encode(rgb);
-          compressedAlpha = zlib.encode(alpha);
-        }
-      } catch (_) {}
-    }
-
-    // 3. Assemble PDF objects
+    // Assemble PDF objects
     final hasLogo = logoWidth != null &&
         logoHeight != null &&
         compressedRgb != null &&
@@ -154,18 +219,24 @@ class ReportPdfBuilder {
     sb.writeln('/F2 11 Tf');
     sb.writeln('0.07 0.23 0.56 rg');
     sb.writeln('350 742 Td');
-    sb.writeln('(${_clean("AULA 360 - CENTRO EDUCATIVO")}) Tj');
+    final instHeader = isEs ? 'AULA 360 - CENTRO EDUCATIVO' : 'AULA 360 - EDUCATIONAL CENTER';
+    sb.writeln('(${_clean(instHeader)}) Tj');
     sb.writeln('/F1 8 Tf');
     sb.writeln('0.40 0.45 0.55 rg');
     sb.writeln('0 -13 Td');
-    sb.writeln('(${_clean("Plataforma Digital de Seguimiento Escolar")}) Tj');
+    final instSub = isEs
+        ? 'Plataforma Digital de Seguimiento Escolar'
+        : 'Digital Academic Monitoring Platform';
+    sb.writeln('(${_clean(instSub)}) Tj');
     sb.writeln('0 -11 Td');
-    sb.writeln('(${_clean("N. Identificador: #$effectiveReportId")}) Tj');
+    final idLabel = isEs ? 'N. Identificador:' : 'ID Number:';
+    sb.writeln('(${_clean("$idLabel #$effectiveReportId")}) Tj');
     sb.writeln('0 -11 Td');
     final formattedDate = report.date != null
         ? '${report.date!.day.toString().padLeft(2, '0')}/${report.date!.month.toString().padLeft(2, '0')}/${report.date!.year}'
         : report.dateLabel;
-    sb.writeln('(${_clean("Fecha de Registro: $formattedDate")}) Tj');
+    final dateLabel = isEs ? 'Fecha de Registro:' : 'Registration Date:';
+    sb.writeln('(${_clean("$dateLabel $formattedDate")}) Tj');
     sb.writeln('ET');
 
     // Horizontal Separator
@@ -173,14 +244,29 @@ class ReportPdfBuilder {
     sb.writeln('42 688 m 570 688 l S');
 
     // Document Main Title & Category
+    final docTitle = isEs ? 'INFORME DIARIO DE CLASE' : 'DAILY CLASS REPORT';
     sb.writeln('BT');
     sb.writeln('/F2 15 Tf');
     sb.writeln('0.10 0.14 0.22 rg');
     sb.writeln('42 662 Td');
-    sb.writeln('(${_clean("INFORME DIARIO DE CLASE")}) Tj');
+    sb.writeln('(${_clean(docTitle)}) Tj');
     sb.writeln('ET');
 
     // Status Pill Badge (top right of section)
+    String statusBadgeText;
+    final rawStatus = report.status.trim().toLowerCase();
+    if (rawStatus.contains('ausente') || rawStatus.contains('absent')) {
+      statusBadgeText = isEs ? 'AUSENTE' : 'ABSENT';
+    } else if (rawStatus.contains('justificad') || rawStatus.contains('excused')) {
+      statusBadgeText = isEs ? 'JUSTIFICADO' : 'EXCUSED';
+    } else if (rawStatus.contains('revisad') || rawStatus.contains('reviewed')) {
+      statusBadgeText = isEs ? 'REVISADO' : 'REVIEWED';
+    } else if (rawStatus.contains('entregad') || rawStatus.contains('submitted')) {
+      statusBadgeText = isEs ? 'ENTREGADO' : 'SUBMITTED';
+    } else {
+      statusBadgeText = isEs ? 'PRESENTE' : 'PRESENT';
+    }
+
     sb.writeln('q');
     sb.writeln('0.90 0.98 0.94 rg 472 654 98 22 re f');
     sb.writeln('0.15 0.65 0.38 RG 0.8 w 472 654 98 22 re S');
@@ -188,7 +274,7 @@ class ReportPdfBuilder {
     sb.writeln('/F2 9.5 Tf');
     sb.writeln('0.10 0.55 0.30 rg');
     sb.writeln('482 660 Td');
-    sb.writeln('(${_clean("PRESENTE")}) Tj');
+    sb.writeln('(${_clean(statusBadgeText)}) Tj');
     sb.writeln('ET');
     sb.writeln('Q');
 
@@ -203,20 +289,30 @@ class ReportPdfBuilder {
     sb.writeln('(${_clean(report.subject)}) Tj');
 
     sb.writeln('/F1 10 Tf 0.30 0.35 0.45 rg 0 -17 Td');
-    sb.writeln('(${_clean("Docente: ${report.teacher}")}) Tj');
+    final teacherLabel = isEs ? 'Docente:' : 'Teacher:';
+    sb.writeln('(${_clean("$teacherLabel ${report.teacher}")}) Tj');
 
     sb.writeln('0 -15 Td');
-    sb.writeln('(${_clean("Horario de clase: ${report.time}")}) Tj');
+    final timeLabel = isEs ? 'Horario de clase:' : 'Class Schedule:';
+    sb.writeln('(${_clean("$timeLabel ${report.time}")}) Tj');
 
     // Right Column in Card: Student & Class
     sb.writeln('/F2 10.5 Tf 0.12 0.16 0.24 rg 340 622 Td');
-    sb.writeln('(${_clean("Alumno: $effectiveStudent")}) Tj');
+    final studentLabel = isEs ? 'Alumno:' : 'Student:';
+    sb.writeln('(${_clean("$studentLabel $effectiveStudent")}) Tj');
 
     sb.writeln('/F1 10 Tf 0.35 0.40 0.50 rg 0 -16 Td');
-    sb.writeln('(${_clean("Curso: $effectiveClass")}) Tj');
+    final classLabel = isEs ? 'Curso:' : 'Class / Grade:';
+    sb.writeln('(${_clean("$classLabel $effectiveClass")}) Tj');
 
     sb.writeln('0 -15 Td');
-    sb.writeln('(${_clean("Categoría: ${report.category}")}) Tj');
+    final categoryLabel = isEs ? 'Categoría:' : 'Category:';
+    var categoryVal = report.category;
+    if (!isEs) {
+      if (categoryVal == 'Informe de Clase') categoryVal = 'Class Report';
+      if (categoryVal == 'Informe Individual') categoryVal = 'Individual Report';
+    }
+    sb.writeln('(${_clean("$categoryLabel $categoryVal")}) Tj');
     sb.writeln('ET');
     sb.writeln('Q');
 
@@ -233,23 +329,31 @@ class ReportPdfBuilder {
     sb.writeln('0.88 0.90 0.96 RG 0.6 w 400 492 170 64 re S');
 
     // Metrics Text
+    final metric1Title = isEs ? 'ESTADO DE ASISTENCIA' : 'ATTENDANCE STATUS';
+    final metric1Val = isEs ? 'PRESENTE (ASISTIÓ)' : 'PRESENT (ATTENDED)';
+    final metric2Title = isEs ? 'DURACIÓN' : 'DURATION';
+    const metric2Val = '1h 20min';
+    final metric3Title = isEs ? 'PARTICIPACIÓN' : 'PARTICIPATION';
+    final metric3Val = isEs ? 'EXCELENTE CONDUCTA' : 'EXCELLENT CONDUCT';
+
     sb.writeln('BT');
     // Metric 1: Estado
-    sb.writeln('/F1 9 Tf 0.45 0.50 0.60 rg 75 538 Td (${_clean("ESTADO DE ASISTENCIA")}) Tj');
-    sb.writeln('/F2 12 Tf 0.12 0.60 0.35 rg -10 -18 Td (${_clean("PRESENTE (ASISTIÓ)")}) Tj');
+    sb.writeln('/F1 9 Tf 0.45 0.50 0.60 rg 75 538 Td (${_clean(metric1Title)}) Tj');
+    sb.writeln('/F2 12 Tf 0.12 0.60 0.35 rg -10 -18 Td (${_clean(metric1Val)}) Tj');
 
     // Metric 2: Duración
-    sb.writeln('/F1 9 Tf 0.45 0.50 0.60 rg 270 538 Td (${_clean("DURACIÓN")}) Tj');
-    sb.writeln('/F2 12 Tf 0.07 0.23 0.56 rg -5 -18 Td (${_clean("1h 20min")}) Tj');
+    sb.writeln('/F1 9 Tf 0.45 0.50 0.60 rg 270 538 Td (${_clean(metric2Title)}) Tj');
+    sb.writeln('/F2 12 Tf 0.07 0.23 0.56 rg -5 -18 Td (${_clean(metric2Val)}) Tj');
 
     // Metric 3: Participación
-    sb.writeln('/F1 9 Tf 0.45 0.50 0.60 rg 440 538 Td (${_clean("PARTICIPACIÓN")}) Tj');
-    sb.writeln('/F2 12 Tf 0.45 0.28 0.82 rg -8 -18 Td (${_clean("EXCELENTE CONDUCTA")}) Tj');
+    sb.writeln('/F1 9 Tf 0.45 0.50 0.60 rg 440 538 Td (${_clean(metric3Title)}) Tj');
+    sb.writeln('/F2 12 Tf 0.45 0.28 0.82 rg -8 -18 Td (${_clean(metric3Val)}) Tj');
     sb.writeln('ET');
     sb.writeln('Q');
 
     // Teacher Observations Section (Y = 352 to 472, height 120)
-    sb.writeln('BT /F2 12 Tf 0.07 0.23 0.56 rg 42 466 Td (${_clean("OBSERVACIONES DEL PROFESOR")}) Tj ET');
+    final obsTitle = isEs ? 'OBSERVACIONES DEL PROFESOR' : 'TEACHER OBSERVATIONS';
+    sb.writeln('BT /F2 12 Tf 0.07 0.23 0.56 rg 42 466 Td (${_clean(obsTitle)}) Tj ET');
 
     sb.writeln('q');
     sb.writeln('0.96 0.97 0.99 rg 42 352 528 98 re f');
@@ -261,7 +365,8 @@ class ReportPdfBuilder {
     // Observation text wrapped
     sb.writeln('BT');
     sb.writeln('/F2 10 Tf 0.15 0.20 0.30 rg 56 428 Td');
-    sb.writeln('(${_clean("Nota escrita por ${report.teacher}:")}) Tj');
+    final noteWrittenBy = isEs ? 'Nota escrita por ${report.teacher}:' : 'Note written by ${report.teacher}:';
+    sb.writeln('(${_clean(noteWrittenBy)}) Tj');
     sb.writeln('/F1 9.5 Tf 0.25 0.30 0.40 rg');
 
     final lines = _wrapText(report.note, 80);
@@ -274,7 +379,8 @@ class ReportPdfBuilder {
     sb.writeln('Q');
 
     // Homework & Assigned Tasks Section (Y = 222 to 332, height 110)
-    sb.writeln('BT /F2 12 Tf 0.07 0.23 0.56 rg 42 326 Td (${_clean("TAREAS Y DEBERES ASIGNADOS")}) Tj ET');
+    final hwTitle = isEs ? 'TAREAS Y DEBERES ASIGNADOS' : 'ASSIGNED TASKS & HOMEWORK';
+    sb.writeln('BT /F2 12 Tf 0.07 0.23 0.56 rg 42 326 Td (${_clean(hwTitle)}) Tj ET');
 
     sb.writeln('q');
     sb.writeln('0.99 0.98 0.96 rg 42 222 528 88 re f');
@@ -284,15 +390,21 @@ class ReportPdfBuilder {
 
     sb.writeln('BT');
     sb.writeln('/F2 11 Tf 0.15 0.20 0.30 rg 56 288 Td');
-    sb.writeln('(${_clean("${report.subject}: Tarea y ejercicios")}) Tj');
+    final hwSubjectTask = isEs
+        ? '${report.subject}: Tarea y ejercicios'
+        : '${report.subject}: Tasks and exercises';
+    sb.writeln('(${_clean(hwSubjectTask)}) Tj');
 
     sb.writeln('/F2 9.5 Tf 0.85 0.45 0.10 rg 0 -16 Td');
-    sb.writeln('(${_clean("Fecha límite de entrega: ${_clean(report.dateLabel)}")}) Tj');
+    final dueDatePrefix = isEs ? 'Fecha límite de entrega:' : 'Due date:';
+    sb.writeln('(${_clean("$dueDatePrefix ${_clean(report.dateLabel)}")}) Tj');
 
     sb.writeln('/F1 9 Tf 0.35 0.40 0.45 rg 0 -14 Td');
     final homeworkPreview = report.note.isNotEmpty
         ? report.note
-        : 'Revisar material de apoyo y completar las actividades asignadas.';
+        : (isEs
+            ? 'Revisar material de apoyo y completar las actividades asignadas.'
+            : 'Review supporting materials and complete the assigned activities.');
     final hwLines = _wrapText(homeworkPreview, 85);
     for (final l in hwLines.take(2)) {
       sb.writeln('(${_clean(l)}) Tj');
@@ -307,19 +419,28 @@ class ReportPdfBuilder {
 
     sb.writeln('BT');
     sb.writeln('/F2 9.5 Tf 0.10 0.55 0.30 rg 42 145 Td');
-    sb.writeln('(${_clean("DOCUMENTO OFICIAL VALIDADOR")}) Tj');
+    final sealTitle = isEs ? 'DOCUMENTO OFICIAL VALIDADOR' : 'OFFICIAL VALIDATION DOCUMENT';
+    sb.writeln('(${_clean(sealTitle)}) Tj');
 
     sb.writeln('/F1 8 Tf 0.45 0.50 0.58 rg 0 -13 Td');
-    sb.writeln('(${_clean("Informe generado automáticamente por el sistema institucional Aula 360.")}) Tj');
+    final sealGen = isEs
+        ? 'Informe generado automáticamente por el sistema institucional Aula 360.'
+        : 'Report automatically generated by the Aula 360 institutional system.';
+    sb.writeln('(${_clean(sealGen)}) Tj');
 
     sb.writeln('0 -11 Td');
-    sb.writeln('(${_clean("Todos los datos académicos han sido validados por la secretaría del centro escolar.")}) Tj');
+    final sealValidated = isEs
+        ? 'Todos los datos académicos han sido validados por la secretaría del centro escolar.'
+        : 'All academic records have been validated by the school administration.';
+    sb.writeln('(${_clean(sealValidated)}) Tj');
 
     sb.writeln('0 -11 Td');
-    sb.writeln('(${_clean("Firma Digital: AULA-360-SEC-${DateTime.now().millisecondsSinceEpoch}")}) Tj');
+    final sigLabel = isEs ? 'Firma Digital:' : 'Digital Signature:';
+    sb.writeln('(${_clean("$sigLabel AULA-360-SEC-${DateTime.now().millisecondsSinceEpoch}")}) Tj');
 
     sb.writeln('/F2 8 Tf 0.45 0.50 0.58 rg 500 110 Td');
-    sb.writeln('(${_clean("Página 1 de 1")}) Tj');
+    final pageNum = isEs ? 'Página 1 de 1' : 'Page 1 of 1';
+    sb.writeln('(${_clean(pageNum)}) Tj');
     sb.writeln('ET');
 
     final contentStr = sb.toString();

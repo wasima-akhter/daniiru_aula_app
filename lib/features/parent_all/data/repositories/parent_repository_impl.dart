@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/network/network_providers.dart';
+import '../../../../core/service/language/language_provider.dart';
 import '../../../share/widgets/paginator/paginator.dart';
 import '../../domain/models/parent_models.dart';
 import '../../domain/repositories/parent_repository.dart';
@@ -11,6 +13,7 @@ import '../dtos/add_child_dto.dart';
 import '../dtos/announcement_dto.dart';
 import '../dtos/child_attendance_dto.dart';
 import '../dtos/child_progress_dto.dart';
+import '../dtos/child_report_dto.dart';
 import '../dtos/child_schedule_dto.dart';
 import '../dtos/child_teacher_dto.dart';
 import '../dtos/conversation_dto.dart';
@@ -43,10 +46,11 @@ class ParentRepositoryImpl implements ParentRepository {
   ParentRepositoryImpl({
     this.notificationRemoteDataSource,
     this.parentRemoteDataSource,
-  });
+    List<InvoiceModel>? initialInvoices,
+  }) : _invoices = initialInvoices ?? [];
 
   List<ChildModel> _children = [];
-  List<InvoiceModel> _invoices = [];
+  List<InvoiceModel> _invoices;
   List<ParentNotificationModel> _notifications = [];
   final List<ChatMessageModel> _messages = [];
   final Map<String, int> _attendancePercentages = {};
@@ -222,6 +226,17 @@ class ParentRepositoryImpl implements ParentRepository {
   }
 
   @override
+  Future<ChildReportDetailDto> getChildReportDetail(
+    String childId,
+    String reportId,
+  ) async {
+    if (parentRemoteDataSource != null) {
+      return parentRemoteDataSource!.getChildReportDetail(childId, reportId);
+    }
+    throw Exception('Parent remote data source is not initialized');
+  }
+
+  @override
   Future<PaginatedResult<HomeworkModel>> getHomeworkList({
     int page = 1,
     int limit = 20,
@@ -339,18 +354,32 @@ class ParentRepositoryImpl implements ParentRepository {
     }
 
     // Mock fallback when testing without remote data source
+    final now = DateTime.now();
+    String formattedDate;
+    try {
+      formattedDate =
+          DateFormat('d MMM yyyy', LanguageNotifier.activeLanguageCode)
+              .format(now);
+    } catch (_) {
+      try {
+        formattedDate = DateFormat('d MMM yyyy').format(now);
+      } catch (_) {
+        formattedDate = '${now.day}/${now.month}/${now.year}';
+      }
+    }
+
     _invoices = _invoices.map((inv) {
       if (inv.id == invoiceId) {
         return inv.copyWith(
           isPaid: true,
-          paidDate: 'Hoy',
-          receiptNumber: 'REC-${DateTime.now().millisecondsSinceEpoch % 10000}',
+          paidDate: formattedDate,
+          receiptNumber: 'REC-${now.millisecondsSinceEpoch % 10000}',
         );
       }
       return inv;
     }).toList();
 
-    return 'pi_mock_secret_${DateTime.now().millisecondsSinceEpoch}';
+    return 'pi_mock_secret_${now.millisecondsSinceEpoch}';
   }
 
   @override

@@ -2,6 +2,7 @@ import 'package:intl/intl.dart';
 
 import '../../share/export/screen_export.dart';
 import '../helper/parent_home_helper.dart';
+import '../presentation/controllers/parent_children_controller.dart';
 import '../presentation/controllers/parent_reports_controller.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
@@ -462,7 +463,25 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget _reportCard(BuildContext context, WidgetRef ref, ReportModel report) {
     return GestureDetector(
       onTap: () {
-        context.push(RoutePath.reportDetail, extra: report);
+        final reportsState = ref.read(parentReportsControllerProvider);
+        final children = ref.read(parentChildrenControllerProvider).children;
+        String? childId;
+        if (reportsState.selectedStudentIndex >= 0 &&
+            reportsState.selectedStudentIndex < children.length) {
+          childId = children[reportsState.selectedStudentIndex].id;
+        } else {
+          childId =
+              ref.read(parentChildrenControllerProvider).selectedChild?.id;
+        }
+        childId ??= children.isNotEmpty ? children.first.id : '';
+
+        context.push(
+          RoutePath.reportDetail,
+          extra: {
+            'childId': childId,
+            'reportId': report.id ?? '',
+          },
+        );
       },
       child: AulaCard(
         padding: EdgeInsets.all(15.w),

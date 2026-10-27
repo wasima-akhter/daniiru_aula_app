@@ -1,8 +1,11 @@
+import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../config/stripe_config.dart';
 import '../services/notification/push_notification_service.dart';
 import '../storage/storage_provider.dart';
 
@@ -35,6 +38,17 @@ Future<void> bootstrap({required Widget app}) async {
 
   // Initialize PushNotificationService safely in background
   container.read(pushNotificationServiceProvider).initialize();
+
+  // Initialize Stripe SDK if configured on mobile platform
+  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS) && StripeConfig.isConfigured) {
+    try {
+      Stripe.publishableKey = StripeConfig.publishableKey.trim();
+      Stripe.merchantIdentifier = StripeConfig.merchantDisplayName;
+      await Stripe.instance.applySettings();
+    } catch (e) {
+      debugPrint('Stripe bootstrap initialization error: $e');
+    }
+  }
 
   try {
     runApp(UncontrolledProviderScope(container: container, child: app));

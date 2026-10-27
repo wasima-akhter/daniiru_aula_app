@@ -75,9 +75,10 @@ class _PaymentReceiptScreenState extends ConsumerState<PaymentReceiptScreen> {
       studentDetails: studentDetails,
       period: ref.readTr(AppStrings.academicYearLabel),
       date: dateFormatted,
-      paymentMethod: 'VISA •••• 4242',
+      paymentMethod: 'Stripe',
       amount: amountFormatted,
       status: ref.readTr(AppStrings.paidAndSettled),
+      languageCode: LanguageNotifier.activeLanguageCode,
       onProgress: (received, total) {
         if (!mounted || total <= 0) return;
         setState(() {
@@ -221,18 +222,37 @@ class _PaymentReceiptScreenState extends ConsumerState<PaymentReceiptScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'AULA 360',
-                            style: TxtStyle.titleLarge(
-                              color: AppColors.primaryDark,
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.5,
+                          Flexible(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Image.asset(
+                                  'assets/images/app_logo.png',
+                                  height: 22.h,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                                ),
+                                SizedBox(width: 6.w),
+                                Flexible(
+                                  child: Text(
+                                    'AULA 360',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TxtStyle.titleLarge(
+                                      color: AppColors.primaryDark,
+                                      fontSize: 15.sp,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+                          SizedBox(width: 8.w),
                           Container(
                             padding: EdgeInsets.symmetric(
-                              horizontal: 8.w,
+                              horizontal: 7.w,
                               vertical: 3.h,
                             ),
                             decoration: BoxDecoration(
@@ -241,9 +261,11 @@ class _PaymentReceiptScreenState extends ConsumerState<PaymentReceiptScreen> {
                             ),
                             child: Text(
                               ref.watchTr(AppStrings.paidAndSettled),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: TxtStyle.titleLarge(
                                 color: AppColors.emeraldGreenColor,
-                                fontSize: 11.sp,
+                                fontSize: 10.5.sp,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -284,7 +306,7 @@ class _PaymentReceiptScreenState extends ConsumerState<PaymentReceiptScreen> {
                       SizedBox(height: 6.h),
                       _previewRow(
                         ref.watchTr(AppStrings.methodLabel),
-                        'VISA •••• 4242',
+                        'Stripe',
                       ),
                       SizedBox(height: 12.h),
                       const Divider(
@@ -602,8 +624,8 @@ class _PaymentReceiptScreenState extends ConsumerState<PaymentReceiptScreen> {
           _receiptDivider(),
           _receiptRow(
             ref.watchTr(AppStrings.methodLabel),
-            '•••• 4242',
-            leading: _cardBrand('VISA'),
+            'Stripe',
+            leading: _cardBrand('STRIPE'),
           ),
           _receiptDivider(),
           _receiptRow(
@@ -827,32 +849,43 @@ class _PaymentReceiptScreenState extends ConsumerState<PaymentReceiptScreen> {
             ),
           ),
           const Spacer(),
-          if (leading != null) ...[leading, SizedBox(width: 5.w)],
+
           Flexible(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  value,
-                  textAlign: TextAlign.right,
-                  style: TxtStyle.titleLarge(
-                    color: AppColors.text,
-                    fontSize: 14.5.sp,
-                    fontWeight: FontWeight.w700,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (leading != null) ...[leading, Gap(6.w)],
+                      Flexible(
+                        child: Text(
+                          value,
+                          textAlign: TextAlign.right,
+                          style: TxtStyle.titleLarge(
+                            color: AppColors.text,
+                            fontSize: 14.5.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                if (subValue != null) ...[
-                  SizedBox(height: 2.h),
-                  Text(
-                    subValue,
-                    textAlign: TextAlign.right,
-                    style: TxtStyle.titleLarge(
-                      color: AppColors.subtitleTextColor,
-                      fontSize: 13.5.sp,
+                  if (subValue != null) ...[
+                    SizedBox(height: 2.h),
+                    Text(
+                      subValue,
+                      textAlign: TextAlign.right,
+                      style: TxtStyle.titleLarge(
+                        color: AppColors.subtitleTextColor,
+                        fontSize: 13.5.sp,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ],

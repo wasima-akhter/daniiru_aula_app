@@ -258,10 +258,33 @@ class AppRouter {
         name: RoutePath.reportDetail,
         path: RoutePath.reportDetail.addBasePath,
         pageBuilder: (context, state) {
-          final extra = state.extra as ReportModel;
+          String? childId;
+          String? reportId;
+          ReportModel? initialReport;
+          final extra = state.extra;
+
+          if (extra is Map) {
+            childId = extra['childId'] as String? ?? extra['id'] as String?;
+            reportId = (extra['reportId'] ?? extra['id']) as String?;
+            initialReport = extra['initialReport'] as ReportModel?;
+          } else if (extra is String) {
+            reportId = extra;
+          } else if (extra is ReportModel) {
+            reportId = extra.id;
+            initialReport = extra;
+          }
+
+          childId ??= state.uri.queryParameters['childId'] ??
+              state.uri.queryParameters['id'];
+          reportId ??= state.uri.queryParameters['reportId'];
+
           return _buildPageWithAnimation(
             state: state,
-            child: ReportDetailsScreen(report: extra),
+            child: ReportDetailsScreen(
+              childId: childId,
+              reportId: reportId ?? '',
+              initialReport: initialReport,
+            ),
           );
         },
       ),
