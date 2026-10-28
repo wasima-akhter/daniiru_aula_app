@@ -70,6 +70,16 @@
 	<key>NSCameraUsageDescription</key>
 <string>Aula 360 needs camera access to let you take a profile photo.</string>
 
+
+<key>CFBundleURLTypes</key>
+<array>
+  <dict>
+    <key>CFBundleURLSchemes</key>
+    <array>
+      <string>aula360</string>
+    </array>
+  </dict>
+</array>
 <key>NSPhotoLibraryUsageDescription</key>
 <string>Aula 360 needs photo library access to let you choose a profile photo.</string>
 
@@ -81,5 +91,8 @@
 		<string>fetch</string>
 		<string>remote-notification</string>
 	</array>
+
+<key>ITSAppUsesNonExemptEncryption</key>
+<false/>
 </dict>
 </plist>
