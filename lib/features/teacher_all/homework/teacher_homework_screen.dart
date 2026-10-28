@@ -205,18 +205,18 @@ class _TeacherHomeworkScreenState extends ConsumerState<TeacherHomeworkScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.primaryDark,
-        onPressed: () => _openCreateHomeworkSheet(context),
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: Text(
-          ref.watchTr(AppStrings.newHomeworkTitle),
-          style: TxtStyle.titleMedium(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
+      // floatingActionButton: FloatingActionButton.extended(
+      //   backgroundColor: AppColors.primaryDark,
+      //   onPressed: () => _openCreateHomeworkSheet(context),
+      //   icon: const Icon(Icons.add, color: Colors.white),
+      //   label: Text(
+      //     ref.watchTr(AppStrings.newHomeworkTitle),
+      //     style: TxtStyle.titleMedium(
+      //       color: Colors.white,
+      //       fontWeight: FontWeight.w700,
+      //     ),
+      //   ),
+      // ),
     );
   }
 

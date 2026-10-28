@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:intl_phone_field/countries.dart';
+
 import '../../../core/storage/storage_provider.dart';
 import '../../../core/utils/formatters/app_input_formatters.dart';
 import '../../../core/utils/validators.dart';
@@ -28,6 +30,7 @@ class _EditTeacherProfileScreenState
   final _formKey = GlobalKey<FormState>();
   final _phoneFormKey = GlobalKey<FormState>();
   String _completePhoneNumber = '';
+  String _initialCountryCode = 'ES';
 
   late final TextEditingController nameController;
   late final TextEditingController emailController;
@@ -57,17 +60,59 @@ class _EditTeacherProfileScreenState
 
     final rawPhone = profile.phone;
     _completePhoneNumber = rawPhone;
-    if (rawPhone.startsWith('+34')) {
-      phoneController = TextEditingController(
-        text: rawPhone.substring(3).trim(),
-      );
-    } else {
-      phoneController = TextEditingController(text: rawPhone);
-    }
+
+    final parsed = _parsePhoneNumber(rawPhone);
+    _initialCountryCode = parsed.countryCode;
+    phoneController = TextEditingController(text: parsed.localNumber);
 
     departmentController = TextEditingController(text: profile.department);
     designationController = TextEditingController(text: profile.designation);
     bioController = TextEditingController(text: profile.bio);
+  }
+
+  /// Parses a full phone number (e.g. "+34612345678") into its country ISO code
+  /// and local number. Handles edge cases:
+  ///  - No phone / empty → defaults to ES, empty number
+  ///  - Phone without '+' prefix → defaults to ES, raw number
+  ///  - Phone with '+' but unknown code → defaults to ES, digits after '+'
+  ///  - Sorts country dial codes longest-first to match "+1868" (Trinidad)
+  ///    before "+1" (US)
+  ({String countryCode, String localNumber}) _parsePhoneNumber(String raw) {
+    final trimmed = raw.trim();
+
+    // Empty or no plus → can't detect country
+    if (trimmed.isEmpty) {
+      return (countryCode: 'ES', localNumber: '');
+    }
+
+    if (!trimmed.startsWith('+')) {
+      // No dial code prefix — assume the raw value is a local number.
+      // Strip a leading country dial code only if it matches the default (ES / 34).
+      if (trimmed.startsWith('34') && trimmed.length > 5) {
+        return (countryCode: 'ES', localNumber: trimmed.substring(2).trim());
+      }
+      return (countryCode: 'ES', localNumber: trimmed);
+    }
+
+    // Has '+' prefix — try to match a country dial code.
+    final digits = trimmed.substring(1); // strip the '+'
+
+    // Sort countries by fullCountryCode length descending so longer codes
+    // (e.g. "1868") match before shorter ones (e.g. "1").
+    final sorted = List<Country>.from(countries)
+      ..sort((a, b) =>
+          b.fullCountryCode.length.compareTo(a.fullCountryCode.length));
+
+    for (final country in sorted) {
+      if (digits.startsWith(country.fullCountryCode)) {
+        final localNumber =
+            digits.substring(country.fullCountryCode.length).trim();
+        return (countryCode: country.code, localNumber: localNumber);
+      }
+    }
+
+    // No country matched — default to Spain, put all digits in the field.
+    return (countryCode: 'ES', localNumber: digits);
   }
 
   @override
@@ -160,7 +205,7 @@ class _EditTeacherProfileScreenState
                   icon: Icons.phone_outlined,
                   keyboardType: TextInputType.phone,
                   isPhoneField: true,
-                  initialCountryCode: 'ES',
+                  initialCountryCode: _initialCountryCode,
                   phoneFormKey: _phoneFormKey,
                   languageCode: ref
                       .watch(languageProvider)

@@ -185,11 +185,13 @@ class _TeacherLoginScreenState extends ConsumerState<TeacherLoginScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      floatingActionButton: kDebugMode ? FloatingActionButton(
-        onPressed: () {
-          context.pushNamed(RoutePath.teacherProfileSetup);
-     },
-      ) : null,
+      floatingActionButton: kDebugMode
+          ? FloatingActionButton(
+              onPressed: () {
+                context.pushNamed(RoutePath.teacherProfileSetup);
+              },
+            )
+          : null,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(22, 18, 22, 30),
@@ -235,8 +237,8 @@ class _TeacherLoginScreenState extends ConsumerState<TeacherLoginScreen> {
 
               AppTextField(
                 controller: emailController,
-                label: tr(AppStrings.fieldEmailOrFacultyId),
-                hint: tr(AppStrings.fieldEmailOrFacultyIdHint),
+                label: tr(AppStrings.emailAddressTitle),
+                hint: tr(AppStrings.emailAddressTitle),
                 icon: Icons.person_outline_rounded,
                 keyboardType: TextInputType.emailAddress,
               ),

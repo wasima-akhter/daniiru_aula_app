@@ -161,7 +161,7 @@ class _TeacherSignUpScreenState extends ConsumerState<TeacherSignUpScreen> {
 
               Center(
                 child: Text(
-                  tr(AppStrings.emailAddressTitle),
+                  tr(AppStrings.createAccount),
                   style: TxtStyle.titleLarge(
                     color: AppColors.text,
                     fontSize: 29.5.sp,
@@ -227,8 +227,8 @@ class _TeacherSignUpScreenState extends ConsumerState<TeacherSignUpScreen> {
 
               AppTextField(
                 controller: emailController,
-                label: tr(AppStrings.fieldAcademyEmail),
-                hint: tr(AppStrings.fieldAcademyEmailHint),
+                label: tr(AppStrings.emailAddressTitle),
+                hint: tr(AppStrings.emailAddressTitle),
                 icon: Icons.school_outlined,
                 keyboardType: TextInputType.emailAddress,
               ),

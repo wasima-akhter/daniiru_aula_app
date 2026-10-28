@@ -235,8 +235,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
               AppTextField(
                 controller: emailController,
-                label: tr(AppStrings.fieldMobileOrEmail),
-                hint: tr(AppStrings.fieldMobileOrEmailHint),
+                label: tr(AppStrings.emailAddressTitle),
+                hint: tr(AppStrings.emailAddressTitle),
                 icon: Icons.person_outline_rounded,
                 keyboardType: TextInputType.emailAddress,
               ),

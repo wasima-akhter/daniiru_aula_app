@@ -182,8 +182,9 @@ class _TeacherPostClassReportScreenState
     BuildContext context,
     TeacherReportFormState formState,
   ) async {
-    final attendanceController =
-        ref.read(teacherAttendanceControllerProvider.notifier);
+    final attendanceController = ref.read(
+      teacherAttendanceControllerProvider.notifier,
+    );
 
     String attitude = 'SATISFACTORY';
     if (formState.conduct == StudentConduct.excellent) attitude = 'EXCELLENT';
@@ -204,8 +205,7 @@ class _TeacherPostClassReportScreenState
     final success = await attendanceController.endSession(
       sessionId: sid,
       contentCovered: content,
-      homeworkAssigned:
-          formState.homework.isEmpty ? null : formState.homework,
+      homeworkAssigned: formState.homework.isEmpty ? null : formState.homework,
       attitudeRating: attitude,
       workEffortRating: effort,
       observations: formState.notes.isEmpty ? null : formState.notes,
@@ -221,17 +221,17 @@ class _TeacherPostClassReportScreenState
             orElse: () => classesState.todayClasses.isNotEmpty
                 ? classesState.todayClasses.first
                 : (classesState.upcomingClasses.isNotEmpty
-                    ? classesState.upcomingClasses.first
-                    : const AcademyClass(
-                        id: '',
-                        title: '',
-                        subtitle: '',
-                        time: '',
-                        room: '',
-                        students: 0,
-                        group: '',
-                        status: ClassStatus.scheduled,
-                      )),
+                      ? classesState.upcomingClasses.first
+                      : const AcademyClass(
+                          id: '',
+                          title: '',
+                          subtitle: '',
+                          time: '',
+                          room: '',
+                          students: 0,
+                          group: '',
+                          status: ClassStatus.scheduled,
+                        )),
           ),
         );
 
@@ -244,14 +244,13 @@ class _TeacherPostClassReportScreenState
           },
         );
       } else {
-        final err =
-            ref.read(teacherAttendanceControllerProvider).endSessionError;
+        final err = ref
+            .read(teacherAttendanceControllerProvider)
+            .endSessionError;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: AppColors.error,
-            content: Text(
-              err ?? ref.watchTr(AppStrings.endSessionErrorNotice),
-            ),
+            content: Text(err ?? ref.watchTr(AppStrings.endSessionErrorNotice)),
           ),
         );
       }
@@ -275,17 +274,17 @@ class _TeacherPostClassReportScreenState
         orElse: () => classesState.todayClasses.isNotEmpty
             ? classesState.todayClasses.first
             : (classesState.upcomingClasses.isNotEmpty
-                ? classesState.upcomingClasses.first
-                : const AcademyClass(
-                    id: '',
-                    title: '',
-                    subtitle: '',
-                    time: '',
-                    room: '',
-                    students: 0,
-                    group: '',
-                    status: ClassStatus.scheduled,
-                  )),
+                  ? classesState.upcomingClasses.first
+                  : const AcademyClass(
+                      id: '',
+                      title: '',
+                      subtitle: '',
+                      time: '',
+                      room: '',
+                      students: 0,
+                      group: '',
+                      status: ClassStatus.scheduled,
+                    )),
       ),
     );
 

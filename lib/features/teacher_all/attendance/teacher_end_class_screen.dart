@@ -24,17 +24,17 @@ class TeacherEndClassScreen extends ConsumerWidget {
       orElse: () => classesState.todayClasses.isNotEmpty
           ? classesState.todayClasses.first
           : (classesState.upcomingClasses.isNotEmpty
-              ? classesState.upcomingClasses.first
-              : AcademyClass(
-                  id: '',
-                  title: ref.watchTr(AppStrings.navClasses),
-                  subtitle: '',
-                  time: '',
-                  room: '',
-                  students: 0,
-                  group: '',
-                  status: ClassStatus.scheduled,
-                )),
+                ? classesState.upcomingClasses.first
+                : AcademyClass(
+                    id: '',
+                    title: ref.watchTr(AppStrings.navClasses),
+                    subtitle: '',
+                    time: '',
+                    room: '',
+                    students: 0,
+                    group: '',
+                    status: ClassStatus.scheduled,
+                  )),
     );
 
     return Scaffold(
@@ -49,80 +49,87 @@ class TeacherEndClassScreen extends ConsumerWidget {
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               padding: EdgeInsets.fromLTRB(16.w, 24.h, 16.w, 20.h),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _statusPill(ref),
-                  SizedBox(height: 15.h),
+              child: SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _statusPill(ref),
+                    SizedBox(height: 15.h),
 
-                  Center(
-                    child: Text(
-                      ref.watchTr(AppStrings.endClassSessionTitle),
-                      style: TxtStyle.titleLarge(
-                        color: AppColors.text,
-                        fontSize: 23.sp,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-
-                  SizedBox(height: 8.h),
-
-                  Center(
-                    child: Text(
-                      ref.watchTr(AppStrings.endClassSessionDesc),
-                      textAlign: TextAlign.center,
-                      style: TxtStyle.bodyMedium(
-                        color: AppColors.subtitleTextColor,
-                        fontSize: 15.5.sp,
-                        height: 1.45,
-                      ),
-                    ),
-                  ),
-
-                  SizedBox(height: 18.h),
-
-                  _classSummaryCard(ref, activeClass, attendanceState),
-
-                  SizedBox(height: 17.h),
-
-                  _lockedAttendanceCard(ref),
-
-                  SizedBox(height: 22.h),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: AulaPrimaryButton(
-                      onTap: () {
-                        context.push(RoutePath.teacherPostClassReport, extra: sessionId);
-                      },
-                      text: ref.watchTr(AppStrings.finishClassAndCreateReport),
-                      trailing: Icon(
-                        Icons.arrow_forward_rounded,
-                        color: Colors.white,
-                        size: 18.sp,
-                      ),
-                    ),
-                  ),
-
-                  SizedBox(height: 16.h),
-
-                  GestureDetector(
-                    onTap: () {
-                      context.pop();
-                    },
-                    child: Center(
+                    Center(
                       child: Text(
-                        ref.watchTr(AppStrings.backToAttendance),
-                        style: TxtStyle.labelLarge(
-                          color: AppColors.subtitleTextColor,
-                          fontSize: 15.5.sp,
-                          fontWeight: FontWeight.w500,
+                        ref.watchTr(AppStrings.endClassSessionTitle),
+                        style: TxtStyle.titleLarge(
+                          color: AppColors.text,
+                          fontSize: 23.sp,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
-                  ),
-                ],
+
+                    SizedBox(height: 8.h),
+
+                    Center(
+                      child: Text(
+                        ref.watchTr(AppStrings.endClassSessionDesc),
+                        textAlign: TextAlign.center,
+                        style: TxtStyle.bodyMedium(
+                          color: AppColors.subtitleTextColor,
+                          fontSize: 15.5.sp,
+                          height: 1.45,
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: 18.h),
+
+                    _classSummaryCard(ref, activeClass, attendanceState),
+
+                    SizedBox(height: 17.h),
+
+                    _lockedAttendanceCard(ref),
+
+                    SizedBox(height: 22.h),
+
+                    SizedBox(
+                      width: double.infinity,
+                      child: AulaPrimaryButton(
+                        onTap: () {
+                          context.push(
+                            RoutePath.teacherPostClassReport,
+                            extra: sessionId,
+                          );
+                        },
+                        text: ref.watchTr(
+                          AppStrings.finishClassAndCreateReport,
+                        ),
+                        trailing: Icon(
+                          Icons.arrow_forward_rounded,
+                          color: Colors.white,
+                          size: 18.sp,
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: 16.h),
+
+                    GestureDetector(
+                      onTap: () {
+                        context.pop();
+                      },
+                      child: Center(
+                        child: Text(
+                          ref.watchTr(AppStrings.backToAttendance),
+                          style: TxtStyle.labelLarge(
+                            color: AppColors.subtitleTextColor,
+                            fontSize: 15.5.sp,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -320,7 +327,9 @@ class TeacherEndClassScreen extends ConsumerWidget {
     final total = attendanceState.totalCount;
     final present = attendanceState.presentCount;
     final absent = attendanceState.absentCount;
-    final percentage = total > 0 ? (present / total * 100).toStringAsFixed(1) : '100';
+    final percentage = total > 0
+        ? (present / total * 100).toStringAsFixed(1)
+        : '100';
     final progress = total > 0 ? (present / total) : 1.0;
 
     return Container(

@@ -15,7 +15,7 @@ import 'presentation/providers/teacher_classes_providers.dart';
 /// GET /api/v1/teacher/sessions/{id}
 /// ===============================================================
 
-class TeacherClassDetailScreen extends ConsumerWidget {
+class TeacherClassDetailScreen extends ConsumerStatefulWidget {
   final String? sessionId;
   final AcademyClass? academyClass;
 
@@ -26,12 +26,43 @@ class TeacherClassDetailScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TeacherClassDetailScreen> createState() =>
+      _TeacherClassDetailScreenState();
+}
+
+class _TeacherClassDetailScreenState
+    extends ConsumerState<TeacherClassDetailScreen> {
+  String? _effectiveId;
+
+  @override
+  void initState() {
+    super.initState();
+    // Compute effective ID and invalidate provider so data is always fresh
+    // when this screen is visited.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final classesState = ref.read(teacherClassesControllerProvider);
+      _effectiveId = (widget.sessionId != null && widget.sessionId!.isNotEmpty)
+          ? widget.sessionId
+          : (widget.academyClass?.id.isNotEmpty == true
+                ? widget.academyClass!.id
+                : (classesState.todayClasses.isNotEmpty
+                      ? classesState.todayClasses.first.id
+                      : (classesState.upcomingClasses.isNotEmpty
+                            ? classesState.upcomingClasses.first.id
+                            : null)));
+      if (_effectiveId != null) {
+        ref.invalidate(teacherSessionDetailProvider(_effectiveId!));
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final classesState = ref.watch(teacherClassesControllerProvider);
-    final effectiveId = (sessionId != null && sessionId!.isNotEmpty)
-        ? sessionId
-        : (academyClass?.id.isNotEmpty == true
-              ? academyClass!.id
+    final effectiveId = (widget.sessionId != null && widget.sessionId!.isNotEmpty)
+        ? widget.sessionId
+        : (widget.academyClass?.id.isNotEmpty == true
+              ? widget.academyClass!.id
               : (classesState.todayClasses.isNotEmpty
                     ? classesState.todayClasses.first.id
                     : (classesState.upcomingClasses.isNotEmpty
@@ -59,44 +90,49 @@ class TeacherClassDetailScreen extends ConsumerWidget {
         error: (error, _) => Center(
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 24.w),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.error_outline_rounded,
-                  color: AppColors.error,
-                  size: 48.sp,
-                ),
-                SizedBox(height: 12.h),
-                Text(
-                  ref.watchTr(AppStrings.somethingWentWrong),
-                  style: TxtStyle.titleLarge(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w700,
+            child: SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.error_outline_rounded,
+                    color: AppColors.error,
+                    size: 48.sp,
                   ),
-                ),
-                SizedBox(height: 8.h),
-                Text(
-                  AppErrorResolver.resolve(
-                    error,
-                    languageCode:
-                        ref.watch(languageProvider).valueOrNull?.languageCode ??
-                        LanguageNotifier.activeLanguageCode,
-                  ).displayMessage,
-                  textAlign: TextAlign.center,
-                  style: TxtStyle.bodyMedium(
-                    color: AppColors.subtitleTextColor,
-                    fontSize: 13.sp,
+                  SizedBox(height: 12.h),
+                  Text(
+                    ref.watchTr(AppStrings.somethingWentWrong),
+                    style: TxtStyle.titleLarge(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                SizedBox(height: 16.h),
-                AulaPrimaryButton(
-                  text: ref.watchTr(AppStrings.retry),
-                  onTap: () {
-                    ref.invalidate(teacherSessionDetailProvider(effectiveId));
-                  },
-                ),
-              ],
+                  SizedBox(height: 8.h),
+                  Text(
+                    AppErrorResolver.resolve(
+                      error,
+                      languageCode:
+                          ref
+                              .watch(languageProvider)
+                              .valueOrNull
+                              ?.languageCode ??
+                          LanguageNotifier.activeLanguageCode,
+                    ).displayMessage,
+                    textAlign: TextAlign.center,
+                    style: TxtStyle.bodyMedium(
+                      color: AppColors.subtitleTextColor,
+                      fontSize: 13.sp,
+                    ),
+                  ),
+                  SizedBox(height: 16.h),
+                  AulaPrimaryButton(
+                    text: ref.watchTr(AppStrings.retry),
+                    onTap: () {
+                      ref.invalidate(teacherSessionDetailProvider(effectiveId));
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -1061,38 +1097,38 @@ class TeacherClassDetailScreen extends ConsumerWidget {
                   )
                   .firstOrNull;
 
-              final effectiveCohortId = (session.cohortId != null &&
-                      session.cohortId!.isNotEmpty)
+              final effectiveCohortId =
+                  (session.cohortId != null && session.cohortId!.isNotEmpty)
                   ? session.cohortId
-                  : (academyClass?.cohortId != null &&
-                          academyClass!.cohortId!.isNotEmpty
-                      ? academyClass!.cohortId
-                      : matchedClass?.cohortId);
+                  : (widget.academyClass?.cohortId != null &&
+                            widget.academyClass!.cohortId!.isNotEmpty
+                        ? widget.academyClass!.cohortId
+                        : matchedClass?.cohortId);
 
-              final effectiveSubjectId = (session.subjectId != null &&
-                      session.subjectId!.isNotEmpty)
+              final effectiveSubjectId =
+                  (session.subjectId != null && session.subjectId!.isNotEmpty)
                   ? session.subjectId
-                  : (academyClass?.subjectId != null &&
-                          academyClass!.subjectId!.isNotEmpty
-                      ? academyClass!.subjectId
-                      : (matchedClass?.subjectId != null &&
-                              matchedClass!.subjectId!.isNotEmpty
-                          ? matchedClass.subjectId
-                          : (session.scheduleId.isNotEmpty
-                              ? session.scheduleId
-                              : null)));
+                  : (widget.academyClass?.subjectId != null &&
+                            widget.academyClass!.subjectId!.isNotEmpty
+                        ? widget.academyClass!.subjectId
+                        : (matchedClass?.subjectId != null &&
+                                  matchedClass!.subjectId!.isNotEmpty
+                              ? matchedClass.subjectId
+                              : (session.scheduleId.isNotEmpty
+                                    ? session.scheduleId
+                                    : null)));
 
               final effectiveCohortName = session.cohortName.isNotEmpty
                   ? session.cohortName
-                  : (academyClass?.group.isNotEmpty == true
-                      ? academyClass!.group
-                      : (matchedClass?.group ?? ''));
+                  : (widget.academyClass?.group.isNotEmpty == true
+                        ? widget.academyClass!.group
+                        : (matchedClass?.group ?? ''));
 
               final effectiveSubjectName = session.subjectName.isNotEmpty
                   ? session.subjectName
-                  : (academyClass?.title.isNotEmpty == true
-                      ? academyClass!.title
-                      : (matchedClass?.title ?? ''));
+                  : (widget.academyClass?.title.isNotEmpty == true
+                        ? widget.academyClass!.title
+                        : (matchedClass?.title ?? ''));
 
               final created = await showAssignHomeworkBottomSheet(
                 context: context,
@@ -1106,7 +1142,9 @@ class TeacherClassDetailScreen extends ConsumerWidget {
               if (created == true) {
                 ref.invalidate(teacherSessionDetailProvider(session.id));
                 try {
-                  await ref.read(teacherSessionDetailProvider(session.id).future);
+                  await ref.read(
+                    teacherSessionDetailProvider(session.id).future,
+                  );
                 } catch (_) {}
                 ref
                     .read(teacherClassesControllerProvider.notifier)

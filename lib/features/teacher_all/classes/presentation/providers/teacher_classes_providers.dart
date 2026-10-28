@@ -20,7 +20,7 @@ final teacherClassesRepositoryProvider =
 });
 
 final teacherSessionDetailProvider =
-    FutureProvider.family<ClassSessionDto, String>((ref, sessionId) async {
+    FutureProvider.autoDispose.family<ClassSessionDto, String>((ref, sessionId) async {
   final repository = ref.watch(teacherClassesRepositoryProvider);
   return repository.getSessionDetail(sessionId);
 });
