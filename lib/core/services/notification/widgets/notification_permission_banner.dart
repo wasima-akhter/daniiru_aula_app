@@ -2,7 +2,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:app_settings/app_settings.dart';
 
 import '../../../../utils/app_strings/app_strings.dart';
 import '../../../../utils/color/app_colors.dart';
@@ -14,10 +14,7 @@ import '../push_notification_service.dart';
 /// Serves as a persistent / contextual **future opportunity** for users to
 /// trigger the one-time OS system prompt after initially choosing "Maybe Later".
 class NotificationPermissionBanner extends ConsumerStatefulWidget {
-  const NotificationPermissionBanner({
-    super.key,
-    this.onPermissionChanged,
-  });
+  const NotificationPermissionBanner({super.key, this.onPermissionChanged});
 
   final VoidCallback? onPermissionChanged;
 
@@ -82,7 +79,10 @@ class _NotificationPermissionBannerState
         ),
         content: Text(
           'Notifications are currently disabled in your device settings. Please allow notifications in system settings to receive updates.',
-          style: TextStyle(fontSize: 13.5.sp, color: AppColors.subtitleTextColor),
+          style: TextStyle(
+            fontSize: 13.5.sp,
+            color: AppColors.subtitleTextColor,
+          ),
         ),
         actions: [
           TextButton(
@@ -96,7 +96,9 @@ class _NotificationPermissionBannerState
             ),
             onPressed: () async {
               Navigator.of(ctx).pop();
-              await Geolocator.openAppSettings();
+              await AppSettings.openAppSettings(
+                type: AppSettingsType.notification,
+              );
             },
             child: const Text('Settings'),
           ),
@@ -175,14 +177,15 @@ class _NotificationPermissionBannerState
             ),
             child: Text(
               ref.watchTr(AppStrings.notificationBannerEnable),
-              style: TextStyle(
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w700,
-              ),
+              style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700),
             ),
           ),
           IconButton(
-            icon: Icon(Icons.close_rounded, size: 16.sp, color: Colors.grey.shade600),
+            icon: Icon(
+              Icons.close_rounded,
+              size: 16.sp,
+              color: Colors.grey.shade600,
+            ),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
             onPressed: () {

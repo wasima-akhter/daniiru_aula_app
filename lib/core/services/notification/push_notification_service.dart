@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app_settings/app_settings.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -530,7 +531,8 @@ class PushNotificationService {
   /// Opens native application system settings using Geolocator.
   Future<bool> openDeviceSettings() async {
     try {
-      return await Geolocator.openAppSettings();
+      await AppSettings.openAppSettings(type: AppSettingsType.notification);
+      return true;
     } catch (e) {
       debugPrint('PushNotificationService: Failed to open app settings: $e');
       return false;
