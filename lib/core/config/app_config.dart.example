@@ -29,7 +29,7 @@ class AppConfig {
 
   static const String _apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://alua.localbox.online/api/v1',
+    defaultValue: 'https://api.aula360academia.com/api/v1',
   );
 
   static AppConfig get current {

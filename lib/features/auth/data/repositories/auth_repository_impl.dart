@@ -9,20 +9,20 @@ import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_data_source.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  final AuthRemoteDataSource _remoteDataSource;
-  final StorageService _storageService;
+  final AuthRemoteDataSource remoteDataSource;
+  final StorageService storageService;
 
   AuthUser? _currentUser;
 
   AuthRepositoryImpl({
-    required this._remoteDataSource,
-    required this._storageService,
+    required this.remoteDataSource,
+    required this.storageService,
   }) {
     _loadCachedUser();
   }
 
   void _loadCachedUser() {
-    final cached = _storageService.getCurrentUserJson();
+    final cached = storageService.getCurrentUserJson();
     if (cached != null && cached.isNotEmpty) {
       try {
         final map = jsonDecode(cached) as Map<String, dynamic>;
@@ -51,10 +51,10 @@ class AuthRepositoryImpl implements AuthRepository {
       isLegalTermAccepted: true,
     );
 
-    final otpPageToken = await _remoteDataSource.signup(request);
-    await _storageService.saveOtpPageToken(otpPageToken);
-    await _storageService.saveUserRole(role.isTeacher ? 'TEACHER' : 'PARENT');
-    await _storageService.saveUserEmail(email);
+    final otpPageToken = await remoteDataSource.signup(request);
+    await storageService.saveOtpPageToken(otpPageToken);
+    await storageService.saveUserRole(role.isTeacher ? 'TEACHER' : 'PARENT');
+    await storageService.saveUserEmail(email);
     return otpPageToken;
   }
 
@@ -67,21 +67,21 @@ class AuthRepositoryImpl implements AuthRepository {
   }) async {
     final token = (otpPageToken != null && otpPageToken.isNotEmpty)
         ? otpPageToken
-        : await _storageService.getOtpPageToken();
+        : await storageService.getOtpPageToken();
     final request = VerifyOtpRequestDto(
       otp: otp,
       deviceIdentifier: deviceIdentifier,
       fcmToken: fcmToken,
     );
 
-    var session = await _remoteDataSource.verifyOtp(
+    var session = await remoteDataSource.verifyOtp(
       request: request,
       otpPageToken: token,
     );
 
     // Decode email from accessToken if user.email is empty
     final emailFromToken = JwtHelper.extractEmail(session.accessToken);
-    final storedEmail = _storageService.getUserEmail();
+    final storedEmail = storageService.getUserEmail();
     final effectiveEmail = (emailFromToken != null && emailFromToken.isNotEmpty)
         ? emailFromToken
         : (session.user.email.isNotEmpty ? session.user.email : storedEmail);
@@ -90,17 +90,15 @@ class AuthRepositoryImpl implements AuthRepository {
       session = session.copyWith(
         user: session.user.copyWith(email: effectiveEmail),
       );
-      await _storageService.saveUserEmail(effectiveEmail);
+      await storageService.saveUserEmail(effectiveEmail);
     }
 
-    await _storageService.saveAccessToken(session.accessToken);
-    await _storageService.saveCurrentUserJson(
-      jsonEncode(session.user.toJson()),
-    );
-    await _storageService.saveUserRole(
+    await storageService.saveAccessToken(session.accessToken);
+    await storageService.saveCurrentUserJson(jsonEncode(session.user.toJson()));
+    await storageService.saveUserRole(
       session.user.role.isTeacher ? 'TEACHER' : 'PARENT',
     );
-    await _storageService.clearOtpPageToken();
+    await storageService.clearOtpPageToken();
 
     _currentUser = session.user;
     return session;
@@ -110,13 +108,13 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> resendOtp({String? email, String? otpPageToken}) async {
     final token = (otpPageToken != null && otpPageToken.isNotEmpty)
         ? otpPageToken
-        : await _storageService.getOtpPageToken();
-    final newToken = await _remoteDataSource.resendOtp(
+        : await storageService.getOtpPageToken();
+    final newToken = await remoteDataSource.resendOtp(
       otpPageToken: token,
       email: email,
     );
     if (newToken != null && newToken.isNotEmpty) {
-      await _storageService.saveOtpPageToken(newToken);
+      await storageService.saveOtpPageToken(newToken);
     }
   }
 
@@ -138,7 +136,7 @@ class AuthRepositoryImpl implements AuthRepository {
       fcmToken: fcmToken,
     );
 
-    var session = await _remoteDataSource.login(request);
+    var session = await remoteDataSource.login(request);
 
     // Decode email from accessToken if user.email is empty
     final emailFromToken = JwtHelper.extractEmail(session.accessToken);
@@ -149,23 +147,21 @@ class AuthRepositoryImpl implements AuthRepository {
     session = session.copyWith(
       user: session.user.copyWith(email: effectiveEmail),
     );
-    await _storageService.saveUserEmail(effectiveEmail);
+    await storageService.saveUserEmail(effectiveEmail);
 
-    await _storageService.saveAccessToken(session.accessToken);
-    await _storageService.saveCurrentUserJson(
-      jsonEncode(session.user.toJson()),
-    );
-    await _storageService.saveUserRole(
+    await storageService.saveAccessToken(session.accessToken);
+    await storageService.saveCurrentUserJson(jsonEncode(session.user.toJson()));
+    await storageService.saveUserRole(
       session.user.role.isTeacher ? 'TEACHER' : 'PARENT',
     );
-    await _storageService.setRememberMe(rememberMe);
+    await storageService.setRememberMe(rememberMe);
 
     if (session.user.isInactive && session.accessToken.isNotEmpty) {
-      await _storageService.saveOtpPageToken(session.accessToken);
+      await storageService.saveOtpPageToken(session.accessToken);
     }
 
     if (rememberMe) {
-      await _storageService.setRememberedEmail(effectiveEmail);
+      await storageService.setRememberedEmail(effectiveEmail);
     }
 
     _currentUser = session.user;
@@ -174,50 +170,51 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<AuthUser?> checkSession({String? fcmToken}) async {
-    final isValid = await _storageService.hasValidAccessToken();
+    final isValid = await storageService.hasValidAccessToken();
     if (!isValid) {
-      final hasToken = await _storageService.hasAccessToken();
+      final hasToken = await storageService.hasAccessToken();
       if (hasToken) {
-        await _storageService.clearAuthentication();
+        await storageService.clearAuthentication();
       }
       _currentUser = null;
       return null;
     }
 
     // Decode email from the existing access token
-    final token = await _storageService.getAccessToken();
+    final token = await storageService.getAccessToken();
     final emailFromToken = JwtHelper.extractEmail(token);
     if (emailFromToken != null && emailFromToken.isNotEmpty) {
-      await _storageService.saveUserEmail(emailFromToken);
+      await storageService.saveUserEmail(emailFromToken);
     }
 
     try {
-      var user = await _remoteDataSource.checkSession(
+      var user = await remoteDataSource.checkSession(
         request: CheckSessionRequestDto(fcmToken: fcmToken),
       );
 
       // Populate email from token or local storage if check response omitted email
-      final storedEmail = _storageService.getUserEmail();
+      final storedEmail = storageService.getUserEmail();
       final effectiveEmail = user.email.isNotEmpty
           ? user.email
           : ((emailFromToken != null && emailFromToken.isNotEmpty)
-              ? emailFromToken
-              : (storedEmail ?? ''));
+                ? emailFromToken
+                : (storedEmail ?? ''));
 
       if (effectiveEmail.isNotEmpty) {
         user = user.copyWith(email: effectiveEmail);
-        await _storageService.saveUserEmail(effectiveEmail);
+        await storageService.saveUserEmail(effectiveEmail);
       }
 
-      await _storageService.saveCurrentUserJson(jsonEncode(user.toJson()));
-      await _storageService.saveUserRole(
+      await storageService.saveCurrentUserJson(jsonEncode(user.toJson()));
+      await storageService.saveUserRole(
         user.role.isTeacher ? 'TEACHER' : 'PARENT',
       );
       _currentUser = user;
       return user;
     } catch (e) {
       // If error indicates unauthorized / invalid session, clear it
-      final isAuthError = (e is ApiException &&
+      final isAuthError =
+          (e is ApiException &&
               (e.statusCode == 401 ||
                   e.statusCode == 403 ||
                   e.errorType == 'TOKEN_EXPIRED' ||
@@ -225,8 +222,7 @@ class AuthRepositoryImpl implements AuthRepository {
                   e.errorType == 'UNAUTHORIZED' ||
                   e.errorType == 'NEW_LOGIN_SUPERSEDED')) ||
           (e is DioException &&
-              (e.response?.statusCode == 401 ||
-                  e.response?.statusCode == 403));
+              (e.response?.statusCode == 401 || e.response?.statusCode == 403));
 
       final errStr = e.toString().toLowerCase();
       if (isAuthError ||
@@ -236,7 +232,7 @@ class AuthRepositoryImpl implements AuthRepository {
           errStr.contains('jwt') ||
           errStr.contains('token_expired') ||
           errStr.contains('session_expired')) {
-        await _storageService.clearAuthentication();
+        await storageService.clearAuthentication();
         _currentUser = null;
         return null;
       }
@@ -252,24 +248,24 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> logout() async {
     try {
-      await _remoteDataSource.logout();
+      await remoteDataSource.logout();
     } catch (_) {}
-    await _storageService.logout();
+    await storageService.logout();
     _currentUser = null;
   }
 
   @override
   Future<AuthUser> setupParentProfile(ParentProfileSetupDto dto) async {
-    final updatedUser = await _remoteDataSource.setupParentProfile(dto);
-    await _storageService.saveCurrentUserJson(jsonEncode(updatedUser.toJson()));
+    final updatedUser = await remoteDataSource.setupParentProfile(dto);
+    await storageService.saveCurrentUserJson(jsonEncode(updatedUser.toJson()));
     _currentUser = updatedUser;
     return updatedUser;
   }
 
   @override
   Future<AuthUser> setupTeacherProfile(TeacherProfileSetupDto dto) async {
-    final updatedUser = await _remoteDataSource.setupTeacherProfile(dto);
-    await _storageService.saveCurrentUserJson(jsonEncode(updatedUser.toJson()));
+    final updatedUser = await remoteDataSource.setupTeacherProfile(dto);
+    await storageService.saveCurrentUserJson(jsonEncode(updatedUser.toJson()));
     _currentUser = updatedUser;
     return updatedUser;
   }
@@ -292,16 +288,16 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<RecoverUserData> findUserForRecovery({required String email}) async {
-    final userData = await _remoteDataSource.findUserForRecovery(email);
+    final userData = await remoteDataSource.findUserForRecovery(email);
     if (userData.token.isNotEmpty) {
-      await _storageService.savePasswordResetToken(userData.token);
+      await storageService.savePasswordResetToken(userData.token);
     }
     return userData;
   }
 
   @override
   Future<String> resendRecoveryOtp({String? recoveryToken}) async {
-    final token = recoveryToken ?? await _storageService.getPasswordResetToken();
+    final token = recoveryToken ?? await storageService.getPasswordResetToken();
     if (token == null || token.isEmpty) {
       throw ApiException(
         message: 'Recovery session expired, please request OTP again',
@@ -309,7 +305,7 @@ class AuthRepositoryImpl implements AuthRepository {
         errorType: 'TOKEN_EXPIRED',
       );
     }
-    return _remoteDataSource.resendRecoveryOtp(recoveryToken: token);
+    return remoteDataSource.resendRecoveryOtp(recoveryToken: token);
   }
 
   @override
@@ -317,7 +313,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String otp,
     String? recoveryToken,
   }) async {
-    final token = recoveryToken ?? await _storageService.getPasswordResetToken();
+    final token = recoveryToken ?? await storageService.getPasswordResetToken();
     if (token == null || token.isEmpty) {
       throw ApiException(
         message: 'Recovery session expired, please request OTP again',
@@ -325,7 +321,7 @@ class AuthRepositoryImpl implements AuthRepository {
         errorType: 'TOKEN_EXPIRED',
       );
     }
-    return _remoteDataSource.verifyRecoveryOtp(otp: otp, recoveryToken: token);
+    return remoteDataSource.verifyRecoveryOtp(otp: otp, recoveryToken: token);
   }
 
   @override
@@ -334,7 +330,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String confirmPassword,
     String? recoveryToken,
   }) async {
-    final token = recoveryToken ?? await _storageService.getPasswordResetToken();
+    final token = recoveryToken ?? await storageService.getPasswordResetToken();
     if (token == null || token.isEmpty) {
       throw ApiException(
         message: 'Recovery session expired, please request OTP again',
@@ -342,11 +338,11 @@ class AuthRepositoryImpl implements AuthRepository {
         errorType: 'TOKEN_EXPIRED',
       );
     }
-    await _remoteDataSource.resetPasswordWithRecoveryToken(
+    await remoteDataSource.resetPasswordWithRecoveryToken(
       password: password,
       confirmPassword: confirmPassword,
       recoveryToken: token,
     );
-    await _storageService.clearPasswordResetToken();
+    await storageService.clearPasswordResetToken();
   }
 }

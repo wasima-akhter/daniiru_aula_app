@@ -2,14 +2,13 @@ import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../../../../utils/enum/app_enum.dart';
 
 class AppStorage {
-  AppStorage({required this._preferences, required this._secureStorage});
+  AppStorage({required this.preferences, required this.secureStorage});
 
-  final SharedPreferencesAsync _preferences;
-  final FlutterSecureStorage _secureStorage;
+  final SharedPreferencesAsync preferences;
+  final FlutterSecureStorage secureStorage;
 
   // ============================================================
   // Keys
@@ -52,11 +51,11 @@ class AppStorage {
   // ============================================================
 
   Future<bool> get hasSeenOnboarding async {
-    return await _preferences.getBool(seenOnboardingKey) ?? false;
+    return await preferences.getBool(seenOnboardingKey) ?? false;
   }
 
   Future<void> setSeenOnboarding(bool value) async {
-    await _preferences.setBool(seenOnboardingKey, value);
+    await preferences.setBool(seenOnboardingKey, value);
   }
 
   // ============================================================
@@ -64,11 +63,11 @@ class AppStorage {
   // ============================================================
 
   Future<bool> get isLoggedIn async {
-    return await _preferences.getBool(isLoggedInKey) ?? false;
+    return await preferences.getBool(isLoggedInKey) ?? false;
   }
 
   Future<void> setLoggedIn(bool value) async {
-    await _preferences.setBool(isLoggedInKey, value);
+    await preferences.setBool(isLoggedInKey, value);
   }
 
   // ============================================================
@@ -76,11 +75,11 @@ class AppStorage {
   // ============================================================
 
   Future<bool> get rememberMe async {
-    return await _preferences.getBool(rememberMeKey) ?? false;
+    return await preferences.getBool(rememberMeKey) ?? false;
   }
 
   Future<void> setRememberMe(bool value) async {
-    await _preferences.setBool(rememberMeKey, value);
+    await preferences.setBool(rememberMeKey, value);
   }
 
   // ============================================================
@@ -88,15 +87,15 @@ class AppStorage {
   // ============================================================
 
   Future<String> get accessToken async {
-    return await _secureStorage.read(key: accessTokenKey) ?? '';
+    return await secureStorage.read(key: accessTokenKey) ?? '';
   }
 
   Future<void> setAccessToken(String token) async {
-    await _secureStorage.write(key: accessTokenKey, value: token);
+    await secureStorage.write(key: accessTokenKey, value: token);
   }
 
   Future<void> removeAccessToken() async {
-    await _secureStorage.delete(key: accessTokenKey);
+    await secureStorage.delete(key: accessTokenKey);
   }
 
   // ============================================================
@@ -104,15 +103,15 @@ class AppStorage {
   // ============================================================
 
   Future<String> get refreshToken async {
-    return await _secureStorage.read(key: refreshTokenKey) ?? '';
+    return await secureStorage.read(key: refreshTokenKey) ?? '';
   }
 
   Future<void> setRefreshToken(String token) async {
-    await _secureStorage.write(key: refreshTokenKey, value: token);
+    await secureStorage.write(key: refreshTokenKey, value: token);
   }
 
   Future<void> removeRefreshToken() async {
-    await _secureStorage.delete(key: refreshTokenKey);
+    await secureStorage.delete(key: refreshTokenKey);
   }
 
   // ============================================================
@@ -120,7 +119,7 @@ class AppStorage {
   // ============================================================
 
   Future<UserRole?> get role async {
-    final value = await _preferences.getString(roleKey);
+    final value = await preferences.getString(roleKey);
 
     if (value == null) {
       return null;
@@ -133,11 +132,11 @@ class AppStorage {
   }
 
   Future<void> setRole(UserRole role) async {
-    await _preferences.setString(roleKey, role.name);
+    await preferences.setString(roleKey, role.name);
   }
 
   Future<void> clearRole() async {
-    await _preferences.remove(roleKey);
+    await preferences.remove(roleKey);
   }
 
   // ============================================================
@@ -145,7 +144,7 @@ class AppStorage {
   // ============================================================
 
   Future<UserRole?> get selectedRole async {
-    final value = await _preferences.getString(selectedRoleKey);
+    final value = await preferences.getString(selectedRoleKey);
 
     if (value == null) {
       return null;
@@ -158,11 +157,11 @@ class AppStorage {
   }
 
   Future<void> setSelectedRole(UserRole role) async {
-    await _preferences.setString(selectedRoleKey, role.name);
+    await preferences.setString(selectedRoleKey, role.name);
   }
 
   Future<void> clearSelectedRole() async {
-    await _preferences.remove(selectedRoleKey);
+    await preferences.remove(selectedRoleKey);
   }
 
   // ============================================================
@@ -170,25 +169,25 @@ class AppStorage {
   // ============================================================
 
   Future<String> get pendingEmail async {
-    return await _preferences.getString(pendingEmailKey) ?? '';
+    return await preferences.getString(pendingEmailKey) ?? '';
   }
 
   Future<void> setPendingEmail(String email) async {
-    await _preferences.setString(pendingEmailKey, email);
+    await preferences.setString(pendingEmailKey, email);
   }
 
   Future<String> get pendingRole async {
-    return await _preferences.getString(pendingRoleKey) ?? '';
+    return await preferences.getString(pendingRoleKey) ?? '';
   }
 
   Future<void> setPendingRole(String role) async {
-    await _preferences.setString(pendingRoleKey, role);
+    await preferences.setString(pendingRoleKey, role);
   }
 
   Future<void> clearPendingRegister() async {
     await Future.wait([
-      _preferences.remove(pendingEmailKey),
-      _preferences.remove(pendingRoleKey),
+      preferences.remove(pendingEmailKey),
+      preferences.remove(pendingRoleKey),
     ]);
   }
 
@@ -197,7 +196,7 @@ class AppStorage {
   // ============================================================
 
   Future<Map<String, dynamic>?> get profile async {
-    final value = await _preferences.getString(profileKey);
+    final value = await preferences.getString(profileKey);
 
     if (value == null || value.isEmpty) {
       return null;
@@ -217,19 +216,19 @@ class AppStorage {
   }
 
   Future<void> setProfile(Map<String, dynamic> profile) async {
-    await _preferences.setString(profileKey, jsonEncode(profile));
+    await preferences.setString(profileKey, jsonEncode(profile));
   }
 
   Future<void> clearProfile() async {
-    await _preferences.remove(profileKey);
+    await preferences.remove(profileKey);
   }
 
   Future<bool> get hasCompletedProfile async {
-    return await _preferences.getBool(profileCompletedKey) ?? false;
+    return await preferences.getBool(profileCompletedKey) ?? false;
   }
 
   Future<void> setProfileCompleted(bool value) async {
-    await _preferences.setBool(profileCompletedKey, value);
+    await preferences.setBool(profileCompletedKey, value);
   }
 
   // ============================================================
@@ -237,11 +236,11 @@ class AppStorage {
   // ============================================================
 
   Future<String> get languageCode async {
-    return await _preferences.getString(languageKey) ?? '';
+    return await preferences.getString(languageKey) ?? '';
   }
 
   Future<String> get languageCountry async {
-    return await _preferences.getString(languageCountryKey) ?? '';
+    return await preferences.getString(languageCountryKey) ?? '';
   }
 
   Future<bool> get hasSelectedLanguage async {
@@ -253,19 +252,19 @@ class AppStorage {
     required String languageCode,
     String? countryCode,
   }) async {
-    await _preferences.setString(languageKey, languageCode);
+    await preferences.setString(languageKey, languageCode);
 
     if (countryCode != null) {
-      await _preferences.setString(languageCountryKey, countryCode);
+      await preferences.setString(languageCountryKey, countryCode);
     } else {
-      await _preferences.remove(languageCountryKey);
+      await preferences.remove(languageCountryKey);
     }
   }
 
   Future<void> clearLanguage() async {
     await Future.wait([
-      _preferences.remove(languageKey),
-      _preferences.remove(languageCountryKey),
+      preferences.remove(languageKey),
+      preferences.remove(languageCountryKey),
     ]);
   }
 
@@ -274,11 +273,11 @@ class AppStorage {
   // ============================================================
 
   Future<String> get theme async {
-    return await _preferences.getString(themeKey) ?? 'system';
+    return await preferences.getString(themeKey) ?? 'system';
   }
 
   Future<void> setTheme(String value) async {
-    await _preferences.setString(themeKey, value);
+    await preferences.setString(themeKey, value);
   }
 
   // ============================================================
@@ -286,15 +285,15 @@ class AppStorage {
   // ============================================================
 
   Future<String> get rememberedEmail async {
-    return await _preferences.getString(rememberedEmailKey) ?? '';
+    return await preferences.getString(rememberedEmailKey) ?? '';
   }
 
   Future<void> setRememberedEmail(String value) async {
-    await _preferences.setString(rememberedEmailKey, value);
+    await preferences.setString(rememberedEmailKey, value);
   }
 
   Future<void> clearRememberedEmail() async {
-    await _preferences.remove(rememberedEmailKey);
+    await preferences.remove(rememberedEmailKey);
   }
 
   // ============================================================
@@ -302,11 +301,11 @@ class AppStorage {
   // ============================================================
 
   Future<String> get authId async {
-    return await _preferences.getString(authIdKey) ?? '';
+    return await preferences.getString(authIdKey) ?? '';
   }
 
   Future<void> setAuthId(String value) async {
-    await _preferences.setString(authIdKey, value);
+    await preferences.setString(authIdKey, value);
   }
 
   // ============================================================
@@ -314,11 +313,11 @@ class AppStorage {
   // ============================================================
 
   Future<String> get userId async {
-    return await _preferences.getString(userIdKey) ?? '';
+    return await preferences.getString(userIdKey) ?? '';
   }
 
   Future<void> setUserId(String value) async {
-    await _preferences.setString(userIdKey, value);
+    await preferences.setString(userIdKey, value);
   }
 
   // ============================================================
@@ -326,11 +325,11 @@ class AppStorage {
   // ============================================================
 
   Future<String> get email async {
-    return await _preferences.getString(emailKey) ?? '';
+    return await preferences.getString(emailKey) ?? '';
   }
 
   Future<void> setEmail(String value) async {
-    await _preferences.setString(emailKey, value);
+    await preferences.setString(emailKey, value);
   }
 
   // ============================================================
@@ -338,11 +337,11 @@ class AppStorage {
   // ============================================================
 
   Future<int> get tokenExpiry async {
-    return await _preferences.getInt(tokenExpiryKey) ?? 0;
+    return await preferences.getInt(tokenExpiryKey) ?? 0;
   }
 
   Future<void> setTokenExpiry(int value) async {
-    await _preferences.setInt(tokenExpiryKey, value);
+    await preferences.setInt(tokenExpiryKey, value);
   }
 
   // ============================================================
@@ -350,11 +349,11 @@ class AppStorage {
   // ============================================================
 
   Future<int> get refreshTokenExpiry async {
-    return await _preferences.getInt(refreshTokenExpiryKey) ?? 0;
+    return await preferences.getInt(refreshTokenExpiryKey) ?? 0;
   }
 
   Future<void> setRefreshTokenExpiry(int value) async {
-    await _preferences.setInt(refreshTokenExpiryKey, value);
+    await preferences.setInt(refreshTokenExpiryKey, value);
   }
 
   // ============================================================
@@ -410,20 +409,20 @@ class AppStorage {
 
   Future<void> logout() async {
     // Secure data
-    await _secureStorage.delete(key: accessTokenKey);
+    await secureStorage.delete(key: accessTokenKey);
 
-    await _secureStorage.delete(key: refreshTokenKey);
+    await secureStorage.delete(key: refreshTokenKey);
 
     // Authentication data
     await Future.wait([
-      _preferences.remove(tokenExpiryKey),
-      _preferences.remove(refreshTokenExpiryKey),
-      _preferences.remove(authIdKey),
-      _preferences.remove(userIdKey),
-      _preferences.remove(emailKey),
-      _preferences.remove(profileKey),
-      _preferences.remove(roleKey),
-      _preferences.remove(isLoggedInKey),
+      preferences.remove(tokenExpiryKey),
+      preferences.remove(refreshTokenExpiryKey),
+      preferences.remove(authIdKey),
+      preferences.remove(userIdKey),
+      preferences.remove(emailKey),
+      preferences.remove(profileKey),
+      preferences.remove(roleKey),
+      preferences.remove(isLoggedInKey),
     ]);
 
     // Intentionally kept:
@@ -442,19 +441,19 @@ class AppStorage {
   // ============================================================
 
   Future<void> clearAuth() async {
-    await _secureStorage.delete(key: accessTokenKey);
+    await secureStorage.delete(key: accessTokenKey);
 
-    await _secureStorage.delete(key: refreshTokenKey);
+    await secureStorage.delete(key: refreshTokenKey);
 
     await Future.wait([
-      _preferences.remove(tokenExpiryKey),
-      _preferences.remove(refreshTokenExpiryKey),
-      _preferences.remove(authIdKey),
-      _preferences.remove(userIdKey),
-      _preferences.remove(emailKey),
-      _preferences.remove(profileKey),
-      _preferences.remove(roleKey),
-      _preferences.remove(isLoggedInKey),
+      preferences.remove(tokenExpiryKey),
+      preferences.remove(refreshTokenExpiryKey),
+      preferences.remove(authIdKey),
+      preferences.remove(userIdKey),
+      preferences.remove(emailKey),
+      preferences.remove(profileKey),
+      preferences.remove(roleKey),
+      preferences.remove(isLoggedInKey),
     ]);
   }
 }

@@ -22,9 +22,13 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp();
     }
-    debugPrint('══════════════════════════════════════════════════════════════');
+    debugPrint(
+      '══════════════════════════════════════════════════════════════',
+    );
     debugPrint('📥 FCM NOTIFICATION RECEIVED [STATE: BACKGROUND / ISOLATE]');
-    debugPrint('══════════════════════════════════════════════════════════════');
+    debugPrint(
+      '══════════════════════════════════════════════════════════════',
+    );
     debugPrint('MESSAGE ID   : ${message.messageId}');
     debugPrint(
       'TITLE        : ${message.notification?.title ?? message.data['title'] ?? '(No title)'}',
@@ -33,10 +37,14 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       'BODY         : ${message.notification?.body ?? message.data['body'] ?? '(No body)'}',
     );
     debugPrint('DATA PAYLOAD : ${message.data}');
-    debugPrint('SENT TIME    : ${message.sentTime?.toIso8601String() ?? 'N/A'}');
+    debugPrint(
+      'SENT TIME    : ${message.sentTime?.toIso8601String() ?? 'N/A'}',
+    );
     debugPrint('LIFECYCLE    : Top-level background handler executed');
     debugPrint('TIMESTAMP    : ${DateTime.now().toIso8601String()}');
-    debugPrint('══════════════════════════════════════════════════════════════');
+    debugPrint(
+      '══════════════════════════════════════════════════════════════',
+    );
   } catch (e) {
     debugPrint('PushNotificationService: Background handler error: $e');
   }
@@ -46,9 +54,9 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 /// all lifecycle states (Foreground, Background, Terminated), OS permissions, token synchronization,
 /// and contextual routing.
 class PushNotificationService {
-  PushNotificationService({required this._storageService});
+  PushNotificationService({required this.storageService});
 
-  final StorageService _storageService;
+  final StorageService storageService;
   bool _isInitialized = false;
 
   StreamSubscription<String>? _tokenRefreshSubscription;
@@ -93,14 +101,22 @@ class PushNotificationService {
       // ignore: deprecated_member_use
       _tokenRefreshSubscription = FirebaseMessaging.instance.onTokenRefresh
           .listen((newToken) async {
-            debugPrint('══════════════════════════════════════════════════════════════');
+            debugPrint(
+              '══════════════════════════════════════════════════════════════',
+            );
             debugPrint('🔄 FCM DEVICE TOKEN REFRESHED / ROTATED');
-            debugPrint('══════════════════════════════════════════════════════════════');
+            debugPrint(
+              '══════════════════════════════════════════════════════════════',
+            );
             debugPrint('NEW TOKEN : $newToken');
-            debugPrint('ACTION    : Cached in local storage and triggering sync callback');
+            debugPrint(
+              'ACTION    : Cached in local storage and triggering sync callback',
+            );
             debugPrint('TIMESTAMP : ${DateTime.now().toIso8601String()}');
-            debugPrint('══════════════════════════════════════════════════════════════');
-            await _storageService.saveFcmToken(newToken);
+            debugPrint(
+              '══════════════════════════════════════════════════════════════',
+            );
+            await storageService.saveFcmToken(newToken);
             onTokenRefreshed?.call(newToken);
           });
 
@@ -109,9 +125,13 @@ class PushNotificationService {
       _foregroundSubscription = FirebaseMessaging.onMessage.listen((
         RemoteMessage message,
       ) {
-        debugPrint('══════════════════════════════════════════════════════════════');
+        debugPrint(
+          '══════════════════════════════════════════════════════════════',
+        );
         debugPrint('📥 FCM NOTIFICATION RECEIVED [STATE: FOREGROUND]');
-        debugPrint('══════════════════════════════════════════════════════════════');
+        debugPrint(
+          '══════════════════════════════════════════════════════════════',
+        );
         debugPrint('MESSAGE ID   : ${message.messageId}');
         debugPrint(
           'TITLE        : ${message.notification?.title ?? message.data['title'] ?? '(No title)'}',
@@ -122,7 +142,9 @@ class PushNotificationService {
         debugPrint('DATA PAYLOAD : ${message.data}');
         debugPrint('ACTION       : Presenting InAppNotificationOverlay banner');
         debugPrint('TIMESTAMP    : ${DateTime.now().toIso8601String()}');
-        debugPrint('══════════════════════════════════════════════════════════════');
+        debugPrint(
+          '══════════════════════════════════════════════════════════════',
+        );
         _foregroundMessageController.add(message);
         showInAppNotification(message);
       });
@@ -132,9 +154,15 @@ class PushNotificationService {
       _messageOpenedSubscription = FirebaseMessaging.onMessageOpenedApp.listen((
         RemoteMessage message,
       ) {
-        debugPrint('══════════════════════════════════════════════════════════════');
-        debugPrint('👆 FCM NOTIFICATION TAPPED [STATE: RESUMED FROM BACKGROUND]');
-        debugPrint('══════════════════════════════════════════════════════════════');
+        debugPrint(
+          '══════════════════════════════════════════════════════════════',
+        );
+        debugPrint(
+          '👆 FCM NOTIFICATION TAPPED [STATE: RESUMED FROM BACKGROUND]',
+        );
+        debugPrint(
+          '══════════════════════════════════════════════════════════════',
+        );
         debugPrint('MESSAGE ID   : ${message.messageId}');
         debugPrint(
           'TITLE        : ${message.notification?.title ?? message.data['title'] ?? '(No title)'}',
@@ -142,7 +170,9 @@ class PushNotificationService {
         debugPrint('DATA PAYLOAD : ${message.data}');
         debugPrint('ACTION       : Executing handleNotificationNavigation()');
         debugPrint('TIMESTAMP    : ${DateTime.now().toIso8601String()}');
-        debugPrint('══════════════════════════════════════════════════════════════');
+        debugPrint(
+          '══════════════════════════════════════════════════════════════',
+        );
         handleNotificationNavigation(message.data);
       });
 
@@ -150,17 +180,27 @@ class PushNotificationService {
       final initialMessage = await FirebaseMessaging.instance
           .getInitialMessage();
       if (initialMessage != null) {
-        debugPrint('══════════════════════════════════════════════════════════════');
-        debugPrint('🚀 FCM APP COLD BOOT FROM NOTIFICATION [STATE: TERMINATED]');
-        debugPrint('══════════════════════════════════════════════════════════════');
+        debugPrint(
+          '══════════════════════════════════════════════════════════════',
+        );
+        debugPrint(
+          '🚀 FCM APP COLD BOOT FROM NOTIFICATION [STATE: TERMINATED]',
+        );
+        debugPrint(
+          '══════════════════════════════════════════════════════════════',
+        );
         debugPrint('MESSAGE ID   : ${initialMessage.messageId}');
         debugPrint(
           'TITLE        : ${initialMessage.notification?.title ?? initialMessage.data['title'] ?? '(No title)'}',
         );
         debugPrint('DATA PAYLOAD : ${initialMessage.data}');
-        debugPrint('ACTION       : Stored pending initial message for navigation after boot');
+        debugPrint(
+          'ACTION       : Stored pending initial message for navigation after boot',
+        );
         debugPrint('TIMESTAMP    : ${DateTime.now().toIso8601String()}');
-        debugPrint('══════════════════════════════════════════════════════════════');
+        debugPrint(
+          '══════════════════════════════════════════════════════════════',
+        );
         _pendingInitialMessage = initialMessage;
       }
 
@@ -264,28 +304,34 @@ class PushNotificationService {
       // ignore: deprecated_member_use
       final token = await FirebaseMessaging.instance.getToken();
       if (token != null && token.isNotEmpty) {
-        debugPrint('══════════════════════════════════════════════════════════════');
+        debugPrint(
+          '══════════════════════════════════════════════════════════════',
+        );
         debugPrint('🔑 FCM DEVICE TOKEN ACQUIRED');
-        debugPrint('══════════════════════════════════════════════════════════════');
+        debugPrint(
+          '══════════════════════════════════════════════════════════════',
+        );
         debugPrint('TOKEN     : $token');
         debugPrint('SAVED     : Local storage updated');
         debugPrint('CALLBACK  : onTokenRefreshed triggered for session sync');
         debugPrint('TIMESTAMP : ${DateTime.now().toIso8601String()}');
-        debugPrint('══════════════════════════════════════════════════════════════');
-        await _storageService.saveFcmToken(token);
+        debugPrint(
+          '══════════════════════════════════════════════════════════════',
+        );
+        await storageService.saveFcmToken(token);
         onTokenRefreshed?.call(token);
         return token;
       }
       return null;
     } catch (e) {
       debugPrint('PushNotificationService: Could not retrieve FCM token: $e');
-      return _storageService.getFcmToken();
+      return storageService.getFcmToken();
     }
   }
 
   /// Retrieves previously cached FCM token or fetches a fresh one without prompting.
   Future<String?> getCachedOrFetchToken() async {
-    final cached = await _storageService.getFcmToken();
+    final cached = await storageService.getFcmToken();
     if (cached != null && cached.isNotEmpty) {
       return cached;
     }
@@ -300,7 +346,7 @@ class PushNotificationService {
       final isGranted = await isPermissionGranted();
       if (isGranted) return false;
 
-      final isDismissedRecently = _storageService
+      final isDismissedRecently = storageService
           .isNotificationPrimerDismissedRecently(cooldown: cooldown);
       if (isDismissedRecently) return false;
 
@@ -317,7 +363,7 @@ class PushNotificationService {
 
   /// Records that the user dismissed the soft primer ("Maybe Later").
   Future<void> dismissSoftPrimer() async {
-    await _storageService.setNotificationPrimerDismissed(dismissed: true);
+    await storageService.setNotificationPrimerDismissed(dismissed: true);
   }
 
   /// Invoked when the user taps "Enable Notifications" on the Soft In-App Primer.
@@ -328,7 +374,7 @@ class PushNotificationService {
           settings?.authorizationStatus == AuthorizationStatus.authorized ||
           settings?.authorizationStatus == AuthorizationStatus.provisional;
 
-      await _storageService.setNotificationPrimerDismissed(dismissed: true);
+      await storageService.setNotificationPrimerDismissed(dismissed: true);
 
       final token = await getFcmToken(requestPermissionFirst: false);
       if (isGranted) {
@@ -351,13 +397,19 @@ class PushNotificationService {
     final pending = _pendingInitialMessage;
     if (pending != null) {
       _pendingInitialMessage = null;
-      debugPrint('══════════════════════════════════════════════════════════════');
+      debugPrint(
+        '══════════════════════════════════════════════════════════════',
+      );
       debugPrint('🚀 EXECUTING PENDING TERMINATED NOTIFICATION NAVIGATION');
-      debugPrint('══════════════════════════════════════════════════════════════');
+      debugPrint(
+        '══════════════════════════════════════════════════════════════',
+      );
       debugPrint('MESSAGE ID : ${pending.messageId}');
       debugPrint('DATA       : ${pending.data}');
       debugPrint('TIMESTAMP  : ${DateTime.now().toIso8601String()}');
-      debugPrint('══════════════════════════════════════════════════════════════');
+      debugPrint(
+        '══════════════════════════════════════════════════════════════',
+      );
       WidgetsBinding.instance.addPostFrameCallback((_) {
         handleNotificationNavigation(pending.data);
       });
@@ -402,14 +454,20 @@ class PushNotificationService {
         .toUpperCase();
     final entityId = data['entity_id'] ?? data['id'] ?? data['conversationId'];
 
-    debugPrint('══════════════════════════════════════════════════════════════');
+    debugPrint(
+      '══════════════════════════════════════════════════════════════',
+    );
     debugPrint('🧭 NOTIFICATION NAVIGATION DISPATCHER');
-    debugPrint('══════════════════════════════════════════════════════════════');
+    debugPrint(
+      '══════════════════════════════════════════════════════════════',
+    );
     debugPrint('TARGET TYPE : $type');
     debugPrint('ENTITY ID   : $entityId');
     debugPrint('RAW DATA    : $data');
     debugPrint('TIMESTAMP   : ${DateTime.now().toIso8601String()}');
-    debugPrint('══════════════════════════════════════════════════════════════');
+    debugPrint(
+      '══════════════════════════════════════════════════════════════',
+    );
 
     switch (type) {
       case 'CHAT':

@@ -6,8 +6,18 @@ import '../constants/storage_keys.dart';
 import 'local_storage.dart';
 import 'secure_storage.dart';
 
+// class StorageService {
+//   StorageService({required this._secureStorage, required this._localStorage});
+
+//   final SecureStorage _secureStorage;
+//   final LocalStorage _localStorage;
+
 class StorageService {
-  StorageService({required this._secureStorage, required this._localStorage});
+  StorageService({
+    required SecureStorage secureStorage,
+    required LocalStorage localStorage,
+  }) : _secureStorage = secureStorage,
+       _localStorage = localStorage;
 
   final SecureStorage _secureStorage;
   final LocalStorage _localStorage;
@@ -52,7 +62,10 @@ class StorageService {
   }
 
   Future<void> savePasswordResetToken(String token) async {
-    await _secureStorage.write(key: StorageKeys.passwordResetToken, value: token);
+    await _secureStorage.write(
+      key: StorageKeys.passwordResetToken,
+      value: token,
+    );
   }
 
   Future<String?> getPasswordResetToken() async {
@@ -88,18 +101,26 @@ class StorageService {
   // ==============================
 
   Future<void> setNotificationPrimerDismissed({bool dismissed = true}) async {
-    await _localStorage.setBool(StorageKeys.notificationPrimerDismissed, dismissed);
+    await _localStorage.setBool(
+      StorageKeys.notificationPrimerDismissed,
+      dismissed,
+    );
     await _localStorage.setInt(
       StorageKeys.notificationPrimerDismissedAt,
       DateTime.now().millisecondsSinceEpoch,
     );
   }
 
-  bool isNotificationPrimerDismissedRecently({Duration cooldown = const Duration(days: 7)}) {
-    final isDismissed = _localStorage.getBool(StorageKeys.notificationPrimerDismissed) ?? false;
+  bool isNotificationPrimerDismissedRecently({
+    Duration cooldown = const Duration(days: 7),
+  }) {
+    final isDismissed =
+        _localStorage.getBool(StorageKeys.notificationPrimerDismissed) ?? false;
     if (!isDismissed) return false;
 
-    final dismissedAtMs = _localStorage.getInt(StorageKeys.notificationPrimerDismissedAt);
+    final dismissedAtMs = _localStorage.getInt(
+      StorageKeys.notificationPrimerDismissedAt,
+    );
     if (dismissedAtMs == null) return isDismissed;
 
     final dismissedAt = DateTime.fromMillisecondsSinceEpoch(dismissedAtMs);
@@ -277,7 +298,8 @@ class StorageService {
   }
 
   bool get hasShownBiometricOptIn {
-    return _localStorage.getBool(StorageKeys.biometricOptInPromptShown) ?? false;
+    return _localStorage.getBool(StorageKeys.biometricOptInPromptShown) ??
+        false;
   }
 
   Future<void> setShownBiometricOptIn(bool value) async {

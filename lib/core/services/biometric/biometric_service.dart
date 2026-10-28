@@ -6,21 +6,16 @@ import 'package:local_auth/local_auth.dart';
 
 import 'package:aula360/core/storage/storage_service.dart';
 
-enum BiometricCapability {
-  available,
-  notSupported,
-  notEnrolled,
-  unknown,
-}
+enum BiometricCapability { available, notSupported, notEnrolled, unknown }
 
 class BiometricService {
   final LocalAuthentication _localAuth;
-  final StorageService _storageService;
+  final StorageService storageService;
 
   BiometricService({
     LocalAuthentication? localAuth,
-    required this._storageService,
-  })  : _localAuth = localAuth ?? LocalAuthentication();
+    required this.storageService,
+  }) : _localAuth = localAuth ?? LocalAuthentication();
 
   /// Checks whether biometric hardware is present and ready.
   Future<BiometricCapability> checkCapability() async {
@@ -70,17 +65,22 @@ class BiometricService {
     try {
       final types = await getAvailableBiometrics();
       if (types.contains(BiometricType.face)) {
-        return Platform.isIOS ? 'Face ID' : (isSpanish ? 'Reconocimiento Facial' : 'Face Recognition');
+        return Platform.isIOS
+            ? 'Face ID'
+            : (isSpanish ? 'Reconocimiento Facial' : 'Face Recognition');
       }
-      if (types.contains(BiometricType.fingerprint) || types.contains(BiometricType.strong)) {
-        return Platform.isIOS ? 'Touch ID' : (isSpanish ? 'Huella Digital' : 'Fingerprint');
+      if (types.contains(BiometricType.fingerprint) ||
+          types.contains(BiometricType.strong)) {
+        return Platform.isIOS
+            ? 'Touch ID'
+            : (isSpanish ? 'Huella Digital' : 'Fingerprint');
       }
     } catch (_) {}
     return isSpanish ? 'Acceso Biométrico' : 'Biometric Access';
   }
 
   /// Checks if the user has opted-in to biometric login.
-  bool get isBiometricEnabled => _storageService.isBiometricEnabled;
+  bool get isBiometricEnabled => storageService.isBiometricEnabled;
 
   /// Authenticates using the native platform biometric prompt (BiometricPrompt / LAContext).
   /// Strictly communicates via the OS pass/fail signal. Raw biometric data never touches the app.
@@ -91,7 +91,9 @@ class BiometricService {
     try {
       final capability = await checkCapability();
       if (capability != BiometricCapability.available) {
-        debugPrint('[BiometricService] Authentication skipped, capability: $capability');
+        debugPrint(
+          '[BiometricService] Authentication skipped, capability: $capability',
+        );
         return false;
       }
 
@@ -105,7 +107,9 @@ class BiometricService {
       debugPrint('[BiometricService] OS biometric result: $didAuthenticate');
       return didAuthenticate;
     } on PlatformException catch (e) {
-      debugPrint('[BiometricService] PlatformException: ${e.code} - ${e.message}');
+      debugPrint(
+        '[BiometricService] PlatformException: ${e.code} - ${e.message}',
+      );
       return false;
     } catch (e) {
       debugPrint('[BiometricService] Unexpected error: $e');
@@ -130,8 +134,8 @@ class BiometricService {
     );
 
     if (success) {
-      await _storageService.saveBiometricToken(sessionToken);
-      await _storageService.setBiometricEnabled(true);
+      await storageService.saveBiometricToken(sessionToken);
+      await storageService.setBiometricEnabled(true);
       return true;
     }
     return false;
@@ -140,20 +144,18 @@ class BiometricService {
   /// Toggles biometric quick-access OFF:
   /// Immediately deletes/invalidates the stored cryptographic token in secure storage (Keychain/Keystore).
   Future<void> disableBiometrics() async {
-    await _storageService.clearBiometricToken();
-    await _storageService.setBiometricEnabled(false);
+    await storageService.clearBiometricToken();
+    await storageService.setBiometricEnabled(false);
   }
 
   /// On subsequent app launch: verifies biometrics and retrieves the secured session token.
-  Future<String?> authenticateAndRetrieveToken({
-    required String reason,
-  }) async {
+  Future<String?> authenticateAndRetrieveToken({required String reason}) async {
     if (!isBiometricEnabled) return null;
 
-    final token = await _storageService.getBiometricToken();
+    final token = await storageService.getBiometricToken();
     if (token == null || token.trim().isEmpty) {
       // Fallback: check if main access token is in secure storage
-      final fallbackToken = await _storageService.getAccessToken();
+      final fallbackToken = await storageService.getAccessToken();
       if (fallbackToken == null || fallbackToken.trim().isEmpty) {
         await disableBiometrics();
         return null;
@@ -162,7 +164,7 @@ class BiometricService {
 
     final success = await authenticate(localizedReason: reason);
     if (success) {
-      final validToken = token ?? await _storageService.getAccessToken();
+      final validToken = token ?? await storageService.getAccessToken();
       return validToken;
     }
     return null;

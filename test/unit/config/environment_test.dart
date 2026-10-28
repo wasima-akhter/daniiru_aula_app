@@ -26,7 +26,7 @@ void main() {
       const config = AppConfig(
         environment: Environment.development,
         flavor: Flavor.development,
-        baseUrl: 'https://alua.localbox.online/api/v1',
+        baseUrl: 'https://api.aula360academia.com/api/v1',
       );
       expect(config.serverBaseUrl, equals('https://alua.localbox.online'));
     });
