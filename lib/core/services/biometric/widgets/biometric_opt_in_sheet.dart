@@ -16,19 +16,14 @@ class BiometricOptInSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final langCode = ref.watch(languageProvider).valueOrNull?.language.code ?? 'en';
-    final isSpanish = langCode.toLowerCase().startsWith('es');
+    final tr = ref.watchTr;
     final biometricState = ref.watch(biometricControllerProvider);
     final biometricController = ref.read(biometricControllerProvider.notifier);
 
-    final title = isSpanish
-        ? '¿Habilitar acceso biométrico?'
-        : 'Enable Biometric Access?';
-    final description = isSpanish
-        ? 'Inicia sesión de forma rápida y segura la próxima vez usando tu ${biometricState.sensorLabel}.'
-        : 'Log in quickly and securely next time using your ${biometricState.sensorLabel}.';
-    final enableText = isSpanish ? 'Habilitar Biometría' : 'Enable Biometrics';
-    final skipText = isSpanish ? 'Ahora no' : 'Not Now';
+    final title = tr(AppStrings.settingsBiometricOptInTitle);
+    final description = tr(AppStrings.settingsBiometricOptInDesc);
+    final enableText = tr(AppStrings.settingsBiometricOptInEnable);
+    final skipText = tr(AppStrings.settingsBiometricOptInLater);
 
     return Container(
       padding: EdgeInsets.fromLTRB(24.w, 20.h, 24.w, 32.h),
@@ -86,9 +81,7 @@ class BiometricOptInSheet extends ConsumerWidget {
               text: enableText,
               isLoading: biometricState.isLoading,
               onTap: () async {
-                final reason = isSpanish
-                    ? 'Confirme su identidad para activar el acceso biométrico'
-                    : 'Confirm your identity to enable biometric access';
+                final reason = tr(AppStrings.settingsBiometricAuthReason);
                 final success = await biometricController.toggleBiometric(
                   true,
                   verificationReason: reason,

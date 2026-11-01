@@ -50,15 +50,11 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen>
       final controller = ref.read(teacherSettingsControllerProvider.notifier);
       final result = await controller.togglePush(true);
       if (result == TogglePushResult.enabled && mounted) {
-        final isSpanish =
-            ref.read(languageProvider).valueOrNull?.language ==
-            AppLanguage.spanish;
+        final tr = ref.readTr;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              isSpanish
-                  ? 'Notificaciones push activadas correctamente'
-                  : 'Push notifications enabled successfully',
+              tr(AppStrings.settingsPushEnabled),
               style: TextStyle(color: Colors.white, fontSize: 14.sp),
             ),
             behavior: SnackBarBehavior.floating,
@@ -419,20 +415,14 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen>
     TeacherSettingsController controller,
     BiometricState biometricState,
   ) {
-    final isSpanish =
-        ref.read(languageProvider).valueOrNull?.language == AppLanguage.spanish;
     final biometricIcon =
         biometricState.sensorLabel.toLowerCase().contains('face')
         ? Icons.face_rounded
         : Icons.fingerprint;
     final biometricSubtitle = !biometricState.isSupported
-        ? (isSpanish
-              ? 'No disponible en este dispositivo'
-              : 'Not supported on this device')
+        ? tr(AppStrings.settingsBiometricNotAvailable)
         : (biometricState.isEnabled
-              ? (isSpanish
-                    ? 'Acceso rápido habilitado'
-                    : 'Quick access enabled')
+              ? tr(AppStrings.settingsBiometricQuickAccess)
               : tr(AppStrings.settingsSecurityBiometricSub));
 
     return _card(
@@ -449,16 +439,12 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen>
               if (!biometricState.isSupported) {
                 _showMessage(
                   context,
-                  isSpanish
-                      ? 'La biometría no es compatible con este dispositivo'
-                      : 'Biometrics is not supported on this device',
+                  tr(AppStrings.settingsBiometricNotSupported),
                 );
                 return;
               }
 
-              final reason = isSpanish
-                  ? 'Verifique su identidad para configurar el acceso biométrico'
-                  : 'Verify your identity to configure biometric access';
+              final reason = tr(AppStrings.settingsBiometricAuthReason);
               final success = await ref
                   .read(biometricControllerProvider.notifier)
                   .toggleBiometric(val, verificationReason: reason);
@@ -474,9 +460,12 @@ class _TeacherSettingsScreenState extends ConsumerState<TeacherSettingsScreen>
                 );
               } else {
                 final err = ref.read(biometricControllerProvider).error;
-                if (err != null && err.isNotEmpty) {
-                  _showMessage(context, err);
-                }
+                _showMessage(
+                  context,
+                  (err != null && err.isNotEmpty)
+                      ? err
+                      : tr(AppStrings.settingsBiometricFailed),
+                );
               }
             },
           ),

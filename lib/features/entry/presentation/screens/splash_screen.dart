@@ -52,11 +52,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         final biometricService = ref.read(biometricServiceProvider);
         final isSupported = await biometricService.isDeviceSupported();
         if (isSupported) {
-          final isSpanish = ref.read(languageProvider).valueOrNull?.language ==
-              AppLanguage.spanish;
-          final reason = isSpanish
-              ? 'Verifique su identidad para ingresar a Aula 360'
-              : 'Verify your identity to access Aula 360';
+          final tr = ref.readTr;
+          final reason = tr(AppStrings.settingsBiometricAuthReason);
 
           final didAuthenticate = await biometricService.authenticate(
             localizedReason: reason,

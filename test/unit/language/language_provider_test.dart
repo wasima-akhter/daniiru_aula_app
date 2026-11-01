@@ -41,6 +41,18 @@ void main() {
       // Verify that English fallback returns English, NOT Spanish
       expect(englishState.tr(AppStrings.settingsTitle), equals('Settings'));
       expect(englishState.tr(AppStrings.today), equals('Today'));
+      expect(
+        englishState.tr(AppStrings.settingsBiometricEnabled),
+        equals('Biometric access enabled'),
+      );
+      expect(
+        englishState.tr(AppStrings.settingsBiometricNotSupported),
+        equals('Biometrics is not supported on this device'),
+      );
+      expect(
+        englishState.tr(AppStrings.settingsBiometricExpired),
+        equals('Biometric session expired. Please log in with password.'),
+      );
 
       // Verify that Spanish fallback returns Spanish
       expect(
@@ -48,6 +60,18 @@ void main() {
         equals('Configuración'),
       );
       expect(spanishState.tr(AppStrings.today), equals('Hoy'));
+      expect(
+        spanishState.tr(AppStrings.settingsBiometricEnabled),
+        equals('Acceso biométrico habilitado'),
+      );
+      expect(
+        spanishState.tr(AppStrings.settingsBiometricNotSupported),
+        equals('La biometría no es compatible con este dispositivo'),
+      );
+      expect(
+        spanishState.tr(AppStrings.settingsBiometricExpired),
+        equals('Sesión biométrica expirada. Inicie sesión con su contraseña.'),
+      );
     });
 
     test(

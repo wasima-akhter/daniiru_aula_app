@@ -21,21 +21,38 @@ class BiometricService {
   Future<BiometricCapability> checkCapability() async {
     try {
       final isSupported = await _localAuth.isDeviceSupported();
-      if (!isSupported) return BiometricCapability.notSupported;
-
       final canCheck = await _localAuth.canCheckBiometrics;
-      if (!canCheck) return BiometricCapability.notSupported;
+      if (!isSupported && !canCheck) return BiometricCapability.notSupported;
 
       final enrolled = await _localAuth.getAvailableBiometrics();
-      if (enrolled.isEmpty) {
+      if (Platform.isIOS) {
+        // On iOS, getAvailableBiometrics() may be empty until user grants Face ID
+        // permission through the first authenticate() challenge, but canCheckBiometrics
+        // or isDeviceSupported indicates hardware readiness.
+        if (canCheck || isSupported) return BiometricCapability.available;
+      }
+
+      if (enrolled.isEmpty && !canCheck) {
         return BiometricCapability.notEnrolled;
       }
 
       return BiometricCapability.available;
-    } on PlatformException catch (e) {
-      debugPrint('[BiometricService] checkCapability error: $e');
+    } on LocalAuthException catch (e) {
+      debugPrint(
+        '[BiometricService] checkCapability LocalAuthException: ${e.code} - ${e.description}',
+      );
+      if (e.code == LocalAuthExceptionCode.noBiometricHardware) {
+        return BiometricCapability.notSupported;
+      }
+      if (e.code == LocalAuthExceptionCode.noBiometricsEnrolled) {
+        return BiometricCapability.notEnrolled;
+      }
       return BiometricCapability.notSupported;
-    } catch (_) {
+    } on PlatformException catch (e) {
+      debugPrint('[BiometricService] checkCapability PlatformException: $e');
+      return BiometricCapability.notSupported;
+    } catch (e) {
+      debugPrint('[BiometricService] checkCapability unexpected error: $e');
       return BiometricCapability.unknown;
     }
   }
@@ -43,8 +60,9 @@ class BiometricService {
   /// Returns whether device supports biometric hardware.
   Future<bool> isDeviceSupported() async {
     try {
-      return await _localAuth.isDeviceSupported() &&
-          await _localAuth.canCheckBiometrics;
+      final isSupported = await _localAuth.isDeviceSupported();
+      final canCheck = await _localAuth.canCheckBiometrics;
+      return isSupported || canCheck;
     } catch (_) {
       return false;
     }
@@ -75,6 +93,9 @@ class BiometricService {
             ? 'Touch ID'
             : (isSpanish ? 'Huella Digital' : 'Fingerprint');
       }
+      if (Platform.isIOS) {
+        return 'Face ID';
+      }
     } catch (_) {}
     return isSpanish ? 'Acceso Biométrico' : 'Biometric Access';
   }
@@ -89,10 +110,10 @@ class BiometricService {
     bool biometricOnly = false,
   }) async {
     try {
-      final capability = await checkCapability();
-      if (capability != BiometricCapability.available) {
+      final supported = await isDeviceSupported();
+      if (!supported) {
         debugPrint(
-          '[BiometricService] Authentication skipped, capability: $capability',
+          '[BiometricService] Authentication skipped, device not supported',
         );
         return false;
       }
@@ -106,6 +127,11 @@ class BiometricService {
 
       debugPrint('[BiometricService] OS biometric result: $didAuthenticate');
       return didAuthenticate;
+    } on LocalAuthException catch (e) {
+      debugPrint(
+        '[BiometricService] LocalAuthException: ${e.code} - ${e.description}',
+      );
+      return false;
     } on PlatformException catch (e) {
       debugPrint(
         '[BiometricService] PlatformException: ${e.code} - ${e.message}',
@@ -123,8 +149,8 @@ class BiometricService {
     required String sessionToken,
     required String verificationReason,
   }) async {
-    final capability = await checkCapability();
-    if (capability != BiometricCapability.available) {
+    final supported = await isDeviceSupported();
+    if (!supported) {
       return false;
     }
 

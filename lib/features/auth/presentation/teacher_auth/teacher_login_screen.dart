@@ -1,5 +1,6 @@
 import 'package:aula360/features/share/export/screen_export.dart';
 import 'package:flutter/foundation.dart';
+import 'package:jwt_decode/jwt_decode.dart';
 
 import '../../../../core/services/biometric/biometric_provider.dart';
 import '../../../../core/services/biometric/widgets/biometric_opt_in_sheet.dart';
@@ -138,12 +139,9 @@ class _TeacherLoginScreenState extends ConsumerState<TeacherLoginScreen> {
   }
 
   Future<void> _loginWithBiometrics() async {
+    final tr = ref.readTr;
     final biometricService = ref.read(biometricServiceProvider);
-    final isSpanish =
-        ref.read(languageProvider).valueOrNull?.language == AppLanguage.spanish;
-    final reason = isSpanish
-        ? 'Verifique su identidad para ingresar a Aula 360'
-        : 'Verify your identity to access Aula 360';
+    final reason = tr(AppStrings.settingsBiometricAuthReason);
 
     final authenticated = await biometricService.authenticate(
       localizedReason: reason,
@@ -155,8 +153,14 @@ class _TeacherLoginScreenState extends ConsumerState<TeacherLoginScreen> {
         await storage.getBiometricToken() ?? await storage.getAccessToken();
 
     if (token != null && token.isNotEmpty) {
-      final isValid = await storage.hasValidAccessToken();
+      bool isValid = false;
+      try {
+        isValid = !Jwt.isExpired(token);
+      } catch (_) {
+        isValid = false;
+      }
       if (isValid) {
+        await storage.saveAccessToken(token);
         final authNotifier = ref.read(authControllerProvider.notifier);
         final isAuthenticated = await authNotifier.checkSession();
         if (mounted && isAuthenticated) {
@@ -169,9 +173,7 @@ class _TeacherLoginScreenState extends ConsumerState<TeacherLoginScreen> {
 
     if (mounted) {
       ApiSnackbar.show(
-        isSpanish
-            ? 'Sesión biométrica expirada. Inicie sesión con su contraseña.'
-            : 'Biometric session expired. Please log in with password.',
+        tr(AppStrings.settingsBiometricExpired),
         type: SnackbarType.warning,
       );
     }

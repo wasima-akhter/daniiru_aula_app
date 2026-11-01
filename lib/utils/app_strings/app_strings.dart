@@ -223,6 +223,31 @@ class AppStrings {
   static const String settingsSessionsBadge = 'settings_sessions_badge';
   static const String settingsBiometricEnabled = 'settings_biometric_enabled';
   static const String settingsBiometricDisabled = 'settings_biometric_disabled';
+  static const String settingsBiometricNotSupported =
+      'settings_biometric_not_supported';
+  static const String settingsBiometricNotEnrolled =
+      'settings_biometric_not_enrolled';
+  static const String settingsBiometricNoSession =
+      'settings_biometric_no_session';
+  static const String settingsBiometricAuthFailed =
+      'settings_biometric_auth_failed';
+  static const String settingsBiometricFailed = 'settings_biometric_failed';
+  static const String settingsBiometricExpired = 'settings_biometric_expired';
+  static const String settingsBiometricNotAvailable =
+      'settings_biometric_not_available';
+  static const String settingsBiometricQuickAccess =
+      'settings_biometric_quick_access';
+  static const String settingsBiometricAuthReason =
+      'settings_biometric_auth_reason';
+  static const String settingsBiometricOptInTitle =
+      'settings_biometric_opt_in_title';
+  static const String settingsBiometricOptInDesc =
+      'settings_biometric_opt_in_desc';
+  static const String settingsBiometricOptInEnable =
+      'settings_biometric_opt_in_enable';
+  static const String settingsBiometricOptInLater =
+      'settings_biometric_opt_in_later';
+  static const String settingsPushEnabled = 'settings_push_enabled';
   static const String settingsClassRemindersEnabled =
       'settings_class_reminders_enabled';
   static const String settingsClassRemindersDisabled =

@@ -6,8 +6,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
- 
 
+import '../../../../firebase_options.dart';
 import '../../../../utils/extension/base_extension.dart';
 import '../../router/route_path.dart';
 import '../../router/routes.dart';
@@ -21,7 +21,9 @@ import 'widgets/in_app_notification_overlay.dart';
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
     if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp();
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
     }
     debugPrint(
       '══════════════════════════════════════════════════════════════',
@@ -83,7 +85,9 @@ class PushNotificationService {
 
     try {
       if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp();
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
       }
 
       // 1. Register top-level background handler
@@ -294,10 +298,15 @@ class PushNotificationService {
       if (defaultTargetPlatform == TargetPlatform.iOS) {
         String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
         int attempts = 0;
-        while (apnsToken == null && attempts < 6) {
+        while (apnsToken == null && attempts < 12) {
           await Future.delayed(const Duration(milliseconds: 500));
           attempts++;
           apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+        }
+        if (apnsToken == null) {
+          debugPrint(
+            'PushNotificationService: APNs token not yet ready after $attempts attempts. Device token acquisition may be delayed.',
+          );
         }
       }
 
