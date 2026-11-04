@@ -1,14 +1,24 @@
+import '../../../../core/storage/storage_provider.dart';
+import '../../../../features/auth/presentation/controllers/auth_controller.dart';
+import '../../../../features/nav/user_role/user_role_provider.dart';
+import '../../../../features/parent_all/presentation/controllers/parent_settings_controller.dart';
 import '../../../../features/share/export/screen_export.dart';
+import '../../../../features/teacher_all/settings/presentation/controllers/teacher_settings_controller.dart';
+import '../../../../utils/enum/app_enum.dart';
 import '../push_notification_service.dart';
 
 /// A modern, contextual "Soft In-App Primer" bottom sheet.
 ///
 /// Prepares the user before prompting the native OS notification dialog.
-/// If the user agrees, it triggers the one-time OS system prompt.
+/// If the user agrees, it enables push notifications across the app:
+/// requests OS permission, registers FCM token with the backend session,
+/// saves notification preferences, and updates Settings state.
 /// If the user dismisses ("Maybe Later"), the native OS dialog is PRESERVED
 /// for future contextual opportunities.
-class NotificationPrimerSheet extends ConsumerWidget {
-  const NotificationPrimerSheet({super.key});
+class NotificationPrimerSheet extends ConsumerStatefulWidget {
+  final BuildContext? parentContext;
+
+  const NotificationPrimerSheet({super.key, this.parentContext});
 
   /// Displays the soft primer bottom sheet.
   /// Returns `true` if the user consented to enable notifications, `false` otherwise.
@@ -17,7 +27,7 @@ class NotificationPrimerSheet extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => const NotificationPrimerSheet(),
+      builder: (ctx) => NotificationPrimerSheet(parentContext: context),
     );
     return result ?? false;
   }
@@ -35,16 +45,176 @@ class NotificationPrimerSheet extends ConsumerWidget {
     final accepted = await show(context);
     if (!context.mounted) return accepted;
 
-    if (accepted) {
-      return await pushService.promptPermissionsFromPrimer();
-    } else {
+    if (!accepted) {
       await pushService.dismissSoftPrimer();
       return false;
+    }
+    return true;
+  }
+
+  /// Enables push notifications with the complete flow matching the Settings toggle:
+  /// - Requests system permissions
+  /// - Updates backend notification preferences (push: true)
+  /// - Retrieves and persists the FCM token
+  /// - Syncs the FCM token with the active user session on the backend
+  /// - Updates the active role's settings controller state
+  /// - Displays feedback (success snackbar or permission denied dialog)
+  static Future<bool> enablePushNotifications(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final authUser = ref.read(authControllerProvider).user;
+    final role =
+        ref.read(userRoleProvider) ??
+        authUser?.role ??
+        ref.read(authControllerProvider).role ??
+        UserRole.parent;
+
+    final TogglePushResult result;
+    if (role == UserRole.teacher) {
+      result = await ref
+          .read(teacherSettingsControllerProvider.notifier)
+          .togglePush(true);
+    } else {
+      result = await ref
+          .read(parentSettingsControllerProvider.notifier)
+          .togglePush(true);
+    }
+
+    await ref
+        .read(storageServiceProvider)
+        .setNotificationPrimerDismissed(dismissed: true);
+
+    if (!context.mounted) {
+      return result == TogglePushResult.enabled;
+    }
+
+    final tr = ref.readTr;
+
+    if (result == TogglePushResult.enabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            tr(AppStrings.settingsPushEnabled),
+            style: TextStyle(color: Colors.white, fontSize: 14.sp),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return true;
+    } else if (result == TogglePushResult.permissionDenied) {
+      showPermissionDeniedDialog(context, ref);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(tr(AppStrings.permissionDeniedNotice)),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return false;
+    }
+
+    return false;
+  }
+
+  /// Displays an alert directing the user to device settings if permissions were denied.
+  static void showPermissionDeniedDialog(BuildContext context, WidgetRef ref) {
+    final tr = ref.readTr;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18.r),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(6.r),
+              decoration: BoxDecoration(
+                color: AppColors.primaryColor.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.notifications_off_outlined,
+                color: AppColors.primaryColor,
+                size: 22.sp,
+              ),
+            ),
+            SizedBox(width: 10.w),
+            Expanded(
+              child: Text(
+                tr(AppStrings.notificationSettingsDeniedTitle),
+                style: TextStyle(
+                  fontSize: 16.5.sp,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.darkTextColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          tr(AppStrings.notificationSettingsDeniedBody),
+          style: TextStyle(
+            fontSize: 13.5.sp,
+            color: AppColors.subtitleTextColor,
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(
+              tr(AppStrings.cancel),
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+            ),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await ref
+                  .read(pushNotificationServiceProvider)
+                  .openDeviceSettings();
+            },
+            child: Text(tr(AppStrings.openSettings)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  ConsumerState<NotificationPrimerSheet> createState() =>
+      _NotificationPrimerSheetState();
+}
+
+class _NotificationPrimerSheetState
+    extends ConsumerState<NotificationPrimerSheet> {
+  bool _isEnabling = false;
+
+  Future<void> _handleEnable() async {
+    if (_isEnabling) return;
+    setState(() => _isEnabling = true);
+
+    final parentCtx = widget.parentContext ?? Navigator.of(context).context;
+    Navigator.of(context).pop(true);
+
+    if (parentCtx.mounted) {
+      await NotificationPrimerSheet.enablePushNotifications(parentCtx, ref);
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
       decoration: BoxDecoration(
@@ -157,7 +327,8 @@ class NotificationPrimerSheet extends ConsumerWidget {
 
             // Enable Notifications Primary CTA
             CustomButton(
-              onTap: () => Navigator.of(context).pop(true),
+              isLoading: _isEnabling,
+              onTap: _isEnabling ? null : _handleEnable,
               backgroundColor: AppColors.primaryColor,
               foregroundColor: Colors.white,
               text: ref.watchTr(AppStrings.notificationPrimerEnableBtn),
@@ -169,7 +340,9 @@ class NotificationPrimerSheet extends ConsumerWidget {
             SizedBox(
               width: double.infinity,
               child: TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
+                onPressed: _isEnabling
+                    ? null
+                    : () => Navigator.of(context).pop(false),
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.subtitleTextColor,
                   shape: RoundedRectangleBorder(

@@ -79,43 +79,53 @@ class TeacherProfileScreen extends ConsumerWidget {
               },
             )
           : null,
-      body: state.isLoading
+      body: state.isLoading && profile.email.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : SafeArea(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(14.w, 16.h, 14.w, 30.h),
-                child: Column(
-                  children: [
-                    _profileCard(ref, profile),
-                    SizedBox(height: 20.h),
-                    _sectionLabel(
-                      ref.watchTr(AppStrings.academyNavigationTitle),
-                    ),
-                    SizedBox(height: 8.h),
-                    _navigationCard(context, ref),
-                    SizedBox(height: 18.h),
-                    const LogoutBtn(),
-                    SizedBox(height: 22.h),
-                    Text(
-                      ref.watchTr(AppStrings.teacherPortalBadge),
-                      textAlign: TextAlign.center,
-                      style: TxtStyle.titleLarge(
-                        color: AppColors.subtitleTextColor,
-                        fontSize: 15.sp,
+              child: RefreshIndicator(
+                color: AppColors.primaryDark,
+                onRefresh: () async {
+                  await ref
+                      .read(teacherProfileControllerProvider.notifier)
+                      .loadProfile(force: true);
+                },
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  padding: EdgeInsets.fromLTRB(14.w, 16.h, 14.w, 30.h),
+                  child: Column(
+                    children: [
+                      _profileCard(ref, profile),
+                      SizedBox(height: 20.h),
+                      _sectionLabel(
+                        ref.watchTr(AppStrings.academyNavigationTitle),
                       ),
-                    ),
-                    // if (hasId) ...[
-                    //   SizedBox(height: 4.h),
-                    //   Text(
-                    //     idText,
-                    //     style: TxtStyle.titleLarge(
-                    //       color: AppColors.hintTextColor,
-                    //       fontSize: 14.5.sp,
-                    //     ),
-                    //   ),
-                    // ],
-                  ],
+                      SizedBox(height: 8.h),
+                      _navigationCard(context, ref),
+                      SizedBox(height: 18.h),
+                      const LogoutBtn(),
+                      SizedBox(height: 22.h),
+                      Text(
+                        ref.watchTr(AppStrings.teacherPortalBadge),
+                        textAlign: TextAlign.center,
+                        style: TxtStyle.titleLarge(
+                          color: AppColors.subtitleTextColor,
+                          fontSize: 15.sp,
+                        ),
+                      ),
+                      // if (hasId) ...[
+                      //   SizedBox(height: 4.h),
+                      //   Text(
+                      //     idText,
+                      //     style: TxtStyle.titleLarge(
+                      //       color: AppColors.hintTextColor,
+                      //       fontSize: 14.5.sp,
+                      //     ),
+                      //   ),
+                      // ],
+                    ],
+                  ),
                 ),
               ),
             ),

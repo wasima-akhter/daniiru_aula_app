@@ -1,13 +1,12 @@
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:app_settings/app_settings.dart';
 
 import '../../../../utils/app_strings/app_strings.dart';
 import '../../../../utils/color/app_colors.dart';
 import '../../../../utils/extension/language_extension.dart';
 import '../push_notification_service.dart';
+import 'notification_primer_sheet.dart';
 
 /// Contextual in-app banner for surfaces like the Notifications Tab or Dashboard.
 ///
@@ -45,66 +44,16 @@ class _NotificationPermissionBannerState
   }
 
   Future<void> _handleEnable() async {
-    final pushService = ref.read(pushNotificationServiceProvider);
-    final status = await pushService.getAuthorizationStatus();
-
-    if (status == AuthorizationStatus.denied) {
-      // OS prompt was already denied previously; open device settings
-      if (!mounted) return;
-      _showOpenSettingsDialog();
-      return;
-    }
-
-    // Trigger one-time OS system dialog!
-    final granted = await pushService.promptPermissionsFromPrimer();
+    final granted = await NotificationPrimerSheet.enablePushNotifications(
+      context,
+      ref,
+    );
     if (mounted) {
       setState(() {
         _hasPermission = granted;
       });
       widget.onPermissionChanged?.call();
     }
-  }
-
-  void _showOpenSettingsDialog() {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          ref.watchTr(AppStrings.notificationBannerTitle),
-          style: TextStyle(
-            fontSize: 17.sp,
-            fontWeight: FontWeight.w700,
-            color: AppColors.darkTextColor,
-          ),
-        ),
-        content: Text(
-          'Notifications are currently disabled in your device settings. Please allow notifications in system settings to receive updates.',
-          style: TextStyle(
-            fontSize: 13.5.sp,
-            color: AppColors.subtitleTextColor,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(ref.watchTr(AppStrings.cancel)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryColor,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () async {
-              Navigator.of(ctx).pop();
-              await AppSettings.openAppSettings(
-                type: AppSettingsType.notification,
-              );
-            },
-            child: const Text('Settings'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override

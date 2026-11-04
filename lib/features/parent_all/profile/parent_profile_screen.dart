@@ -24,37 +24,52 @@ class ParentProfileScreen extends ConsumerWidget {
         showBackButton: false,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: EdgeInsets.fromLTRB(14.w, 16.h, 14.w, 30.h),
-          child: Column(
-            children: [
-              _profileHeader(context, ref, profile),
-              SizedBox(height: 20.h),
-              _sectionLabel(ref.watchTr(AppStrings.academyAndFamily)),
-              SizedBox(height: 8.h),
-              _menuCard(context, ref),
-              SizedBox(height: 18.h),
-              const LogoutBtn(),
-              SizedBox(height: 25.h),
-              Text(
-                'Aula 360 Padres v2.4.1 • Academia Aula 360',
-                textAlign: TextAlign.center,
-                style: TxtStyle.titleLarge(
-                  color: AppColors.subtitleTextColor,
-                  fontSize: 14.sp,
-                  height: 1.4,
+        child: RefreshIndicator(
+          color: AppColors.primaryDark,
+          onRefresh: () async {
+            await Future.wait([
+              ref
+                  .read(parentProfileControllerProvider.notifier)
+                  .fetchProfile(force: true),
+              ref
+                  .read(parentChildrenControllerProvider.notifier)
+                  .loadChildren(),
+            ]);
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            padding: EdgeInsets.fromLTRB(14.w, 16.h, 14.w, 30.h),
+            child: Column(
+              children: [
+                _profileHeader(context, ref, profile),
+                SizedBox(height: 20.h),
+                _sectionLabel(ref.watchTr(AppStrings.academyAndFamily)),
+                SizedBox(height: 8.h),
+                _menuCard(context, ref),
+                SizedBox(height: 18.h),
+                const LogoutBtn(),
+                SizedBox(height: 25.h),
+                Text(
+                  'Aula 360 Padres v2.4.1 • Academia Aula 360',
+                  textAlign: TextAlign.center,
+                  style: TxtStyle.titleLarge(
+                    color: AppColors.subtitleTextColor,
+                    fontSize: 14.sp,
+                    height: 1.4,
+                  ),
                 ),
-              ),
-              SizedBox(height: 3.h),
-              Text(
-                ref.watchTr(AppStrings.academicYearLabel),
-                style: TxtStyle.titleLarge(
-                  color: AppColors.hintTextColor,
-                  fontSize: 13.5.sp,
+                SizedBox(height: 3.h),
+                Text(
+                  ref.watchTr(AppStrings.academicYearLabel),
+                  style: TxtStyle.titleLarge(
+                    color: AppColors.hintTextColor,
+                    fontSize: 13.5.sp,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

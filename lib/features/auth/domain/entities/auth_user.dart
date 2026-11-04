@@ -44,6 +44,9 @@ class AuthUser {
   bool get isSuspended => status == UserStatus.suspended;
   bool get isActive => status == UserStatus.active;
 
+  bool get isTeacher => role.isTeacher;
+  bool get isParent => role.isParent;
+
   AuthUser copyWith({
     String? id,
     String? fullName,

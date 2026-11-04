@@ -25,31 +25,13 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         options: DefaultFirebaseOptions.currentPlatform,
       );
     }
-    debugPrint(
-      '══════════════════════════════════════════════════════════════',
-    );
-    debugPrint('📥 FCM NOTIFICATION RECEIVED [STATE: BACKGROUND / ISOLATE]');
-    debugPrint(
-      '══════════════════════════════════════════════════════════════',
-    );
-    debugPrint('MESSAGE ID   : ${message.messageId}');
-    debugPrint(
-      'TITLE        : ${message.notification?.title ?? message.data['title'] ?? '(No title)'}',
-    );
-    debugPrint(
-      'BODY         : ${message.notification?.body ?? message.data['body'] ?? '(No body)'}',
-    );
-    debugPrint('DATA PAYLOAD : ${message.data}');
-    debugPrint(
-      'SENT TIME    : ${message.sentTime?.toIso8601String() ?? 'N/A'}',
-    );
-    debugPrint('LIFECYCLE    : Top-level background handler executed');
-    debugPrint('TIMESTAMP    : ${DateTime.now().toIso8601String()}');
-    debugPrint(
-      '══════════════════════════════════════════════════════════════',
+    print(
+      '📥 [PushNotificationService] FCM NOTIFICATION RECEIVED [BACKGROUND/ISOLATE]: '
+      '${message.notification?.title ?? message.data['title'] ?? '(No title)'} - '
+      '${message.notification?.body ?? message.data['body'] ?? '(No body)'}',
     );
   } catch (e) {
-    debugPrint('PushNotificationService: Background handler error: $e');
+    print('❌ [PushNotificationService] Background handler error: $e');
   }
 }
 
@@ -106,21 +88,7 @@ class PushNotificationService {
       // ignore: deprecated_member_use
       _tokenRefreshSubscription = FirebaseMessaging.instance.onTokenRefresh
           .listen((newToken) async {
-            debugPrint(
-              '══════════════════════════════════════════════════════════════',
-            );
-            debugPrint('🔄 FCM DEVICE TOKEN REFRESHED / ROTATED');
-            debugPrint(
-              '══════════════════════════════════════════════════════════════',
-            );
-            debugPrint('NEW TOKEN : $newToken');
-            debugPrint(
-              'ACTION    : Cached in local storage and triggering sync callback',
-            );
-            debugPrint('TIMESTAMP : ${DateTime.now().toIso8601String()}');
-            debugPrint(
-              '══════════════════════════════════════════════════════════════',
-            );
+            print('🔄 [PushNotificationService] FCM DEVICE TOKEN REFRESHED / READY: $newToken');
             await storageService.saveFcmToken(newToken);
             onTokenRefreshed?.call(newToken);
           });
@@ -130,25 +98,10 @@ class PushNotificationService {
       _foregroundSubscription = FirebaseMessaging.onMessage.listen((
         RemoteMessage message,
       ) {
-        debugPrint(
-          '══════════════════════════════════════════════════════════════',
-        );
-        debugPrint('📥 FCM NOTIFICATION RECEIVED [STATE: FOREGROUND]');
-        debugPrint(
-          '══════════════════════════════════════════════════════════════',
-        );
-        debugPrint('MESSAGE ID   : ${message.messageId}');
-        debugPrint(
-          'TITLE        : ${message.notification?.title ?? message.data['title'] ?? '(No title)'}',
-        );
-        debugPrint(
-          'BODY         : ${message.notification?.body ?? message.data['body'] ?? '(No body)'}',
-        );
-        debugPrint('DATA PAYLOAD : ${message.data}');
-        debugPrint('ACTION       : Presenting InAppNotificationOverlay banner');
-        debugPrint('TIMESTAMP    : ${DateTime.now().toIso8601String()}');
-        debugPrint(
-          '══════════════════════════════════════════════════════════════',
+        print(
+          '📥 [PushNotificationService] FCM NOTIFICATION RECEIVED [FOREGROUND]: '
+          '${message.notification?.title ?? message.data['title'] ?? '(No title)'} - '
+          '${message.notification?.body ?? message.data['body'] ?? '(No body)'}',
         );
         _foregroundMessageController.add(message);
         showInAppNotification(message);
@@ -298,43 +251,32 @@ class PushNotificationService {
       if (defaultTargetPlatform == TargetPlatform.iOS) {
         String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
         int attempts = 0;
-        while (apnsToken == null && attempts < 12) {
+        while (apnsToken == null && attempts < 20) {
           await Future.delayed(const Duration(milliseconds: 500));
           attempts++;
           apnsToken = await FirebaseMessaging.instance.getAPNSToken();
         }
         if (apnsToken == null) {
-          debugPrint(
-            'PushNotificationService: APNs token not yet ready after $attempts attempts. Device token acquisition may be delayed.',
+          print(
+            '⚠️ [PushNotificationService] iOS APNs token not available yet after $attempts attempts (10s). Awaiting APNs registration via onTokenRefresh.',
           );
+          return await storageService.getFcmToken();
         }
+        print('✅ [PushNotificationService] iOS APNs token available: $apnsToken');
       }
 
       // Retrieve device FCM Push Token regardless of notification permission
       // ignore: deprecated_member_use
       final token = await FirebaseMessaging.instance.getToken();
       if (token != null && token.isNotEmpty) {
-        debugPrint(
-          '══════════════════════════════════════════════════════════════',
-        );
-        debugPrint('🔑 FCM DEVICE TOKEN ACQUIRED');
-        debugPrint(
-          '══════════════════════════════════════════════════════════════',
-        );
-        debugPrint('TOKEN     : $token');
-        debugPrint('SAVED     : Local storage updated');
-        debugPrint('CALLBACK  : onTokenRefreshed triggered for session sync');
-        debugPrint('TIMESTAMP : ${DateTime.now().toIso8601String()}');
-        debugPrint(
-          '══════════════════════════════════════════════════════════════',
-        );
+        print('🔑 [PushNotificationService] FCM DEVICE TOKEN ACQUIRED: $token');
         await storageService.saveFcmToken(token);
         onTokenRefreshed?.call(token);
         return token;
       }
       return null;
     } catch (e) {
-      debugPrint('PushNotificationService: Could not retrieve FCM token: $e');
+      print('❌ [PushNotificationService] Could not retrieve FCM token: $e');
       return storageService.getFcmToken();
     }
   }
