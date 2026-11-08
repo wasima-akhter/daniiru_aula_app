@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/errors/app_error_resolver.dart';
 import '../../../../core/network/api_exception.dart';
+import 'package:aula360/core/service/language/language_provider.dart';
 import '../../domain/entities/legal_content.dart';
 import '../../domain/repositories/legal_repository.dart';
 import '../providers/legal_providers.dart';
@@ -63,18 +64,33 @@ class LegalContentController
 
   @override
   Map<LegalContentType, LegalContentState> build() {
+    // Reactive SWR: Refetch active legal content when app language changes
+    ref.listen<AsyncValue<LanguageState>>(languageProvider, (previous, next) {
+      final prevCode = previous?.asData?.value.languageCode;
+      final nextCode = next.asData?.value.languageCode;
+      if (prevCode != null && nextCode != null && prevCode != nextCode) {
+        for (final type in state.keys) {
+          Future.microtask(() => fetchContent(type, isLanguageChange: true));
+        }
+      }
+    });
     return const {};
   }
 
-  Future<void> fetchContent(LegalContentType type) async {
+  Future<void> fetchContent(
+    LegalContentType type, {
+    bool isLanguageChange = false,
+  }) async {
     final current = state[type] ?? const LegalContentState();
-    state = {
-      ...state,
-      type: current.copyWith(
-        status: LegalContentStatus.loading,
-        errorMessage: null,
-      ),
-    };
+    if (!isLanguageChange) {
+      state = {
+        ...state,
+        type: current.copyWith(
+          status: LegalContentStatus.loading,
+          errorMessage: null,
+        ),
+      };
+    }
 
     try {
       final result = await _repository.getLegalContent(type);
@@ -96,6 +112,10 @@ class LegalContentController
         };
       }
     } catch (e) {
+      if (isLanguageChange) {
+        // Keep stale content on language change error
+        return;
+      }
       if (e is ApiException) {
         if (e.statusCode == 404) {
           state = {

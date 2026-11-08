@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aula360/core/service/language/language_provider.dart';
 import '../../data/repositories/parent_repository_impl.dart';
 import '../../domain/models/parent_models.dart';
 import '../../domain/repositories/parent_repository.dart';
@@ -90,6 +91,15 @@ class ParentHomeworkController extends Notifier<ParentHomeworkState> {
             ))
         .toList();
 
+    // Reactive SWR: Invalidate & refetch in background when app language changes
+    ref.listen<AsyncValue<LanguageState>>(languageProvider, (previous, next) {
+      final prevCode = previous?.asData?.value.languageCode;
+      final nextCode = next.asData?.value.languageCode;
+      if (prevCode != null && nextCode != null && prevCode != nextCode) {
+        Future.microtask(() => loadHomework(null, true));
+      }
+    });
+
     Future.microtask(() => loadHomework());
     return ParentHomeworkState(isLoading: true, students: students);
   }
@@ -102,15 +112,17 @@ class ParentHomeworkController extends Notifier<ParentHomeworkState> {
     return ref.read(parentChildrenControllerProvider).selectedChild?.id;
   }
 
-  Future<void> loadHomework([String? childId]) async {
+  Future<void> loadHomework([String? childId, bool isLanguageChange = false]) async {
     try {
-      state = state.copyWith(
-        isLoading: true,
-        error: null,
-        currentPage: 1,
-        hasMore: true,
-        clearLoadMoreError: true,
-      );
+      if (!isLanguageChange) {
+        state = state.copyWith(
+          isLoading: true,
+          error: null,
+          currentPage: 1,
+          hasMore: true,
+          clearLoadMoreError: true,
+        );
+      }
       final id = childId ?? _getActiveChildId();
       final res = id != null
           ? await _repository.getChildHomework(id, page: 1, limit: _pageSize)
@@ -123,7 +135,9 @@ class ParentHomeworkController extends Notifier<ParentHomeworkState> {
         hasMore: hasNext,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      if (!isLanguageChange) {
+        state = state.copyWith(isLoading: false, error: e.toString());
+      }
     }
   }
 

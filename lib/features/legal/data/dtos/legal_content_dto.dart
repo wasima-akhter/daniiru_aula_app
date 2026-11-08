@@ -4,18 +4,31 @@ class LegalContentDto {
   final String legalContentType;
   final String content;
   final String? updatedAt;
+  final String sourceLocale;
+  final String displayedLocale;
+  final bool isTranslated;
+  final String translationStatus;
 
   const LegalContentDto({
     required this.legalContentType,
     required this.content,
     this.updatedAt,
+    this.sourceLocale = 'en',
+    this.displayedLocale = 'en',
+    this.isTranslated = false,
+    this.translationStatus = 'READY',
   });
 
   factory LegalContentDto.fromJson(Map<String, dynamic> json) {
     return LegalContentDto(
-      legalContentType: json['legalContentType'] as String? ?? 'TERMS_AND_CONDITION',
+      legalContentType:
+          json['legalContentType'] as String? ?? 'TERMS_AND_CONDITION',
       content: json['content'] as String? ?? '',
       updatedAt: json['updatedAt'] as String?,
+      sourceLocale: json['sourceLocale'] as String? ?? 'en',
+      displayedLocale: json['displayedLocale'] as String? ?? 'en',
+      isTranslated: json['isTranslated'] as bool? ?? false,
+      translationStatus: json['translationStatus'] as String? ?? 'READY',
     );
   }
 
@@ -24,6 +37,10 @@ class LegalContentDto {
       'legalContentType': legalContentType,
       'content': content,
       if (updatedAt != null) 'updatedAt': updatedAt,
+      'sourceLocale': sourceLocale,
+      'displayedLocale': displayedLocale,
+      'isTranslated': isTranslated,
+      'translationStatus': translationStatus,
     };
   }
 
@@ -37,6 +54,10 @@ class LegalContentDto {
       type: LegalContentType.fromString(legalContentType),
       content: content,
       updatedAt: parsedDate,
+      sourceLocale: sourceLocale,
+      displayedLocale: displayedLocale,
+      isTranslated: isTranslated,
+      translationStatus: translationStatus,
     );
   }
 }

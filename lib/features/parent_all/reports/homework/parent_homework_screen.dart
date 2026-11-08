@@ -422,14 +422,27 @@ class _HomeworkScreenState extends ConsumerState<HomeworkScreen> {
 
             SizedBox(height: 6.h),
 
-            Text(
-              item.title,
-              style: TxtStyle.titleLarge(
-                color: AppColors.text,
-                fontSize: 17.sp,
-                height: 1.3,
-                fontWeight: FontWeight.w800,
-              ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    item.title,
+                    style: TxtStyle.titleLarge(
+                      color: AppColors.text,
+                      fontSize: 17.sp,
+                      height: 1.3,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                TranslationStatusBadge(
+                  translationStatus: item.translationStatus,
+                  isTranslated: item.isTranslated,
+                  sourceLocale: item.sourceLocale,
+                  displayedLocale: item.displayedLocale,
+                ),
+              ],
             ),
 
             SizedBox(height: 7.h),

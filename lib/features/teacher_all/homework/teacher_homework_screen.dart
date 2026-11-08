@@ -343,13 +343,26 @@ class _TeacherHomeworkScreenState extends ConsumerState<TeacherHomeworkScreen> {
             ],
           ),
           SizedBox(height: 10.h),
-          Text(
-            item.title,
-            style: TxtStyle.titleLarge(
-              color: AppColors.text,
-              fontSize: 17.sp,
-              fontWeight: FontWeight.w700,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  item.title,
+                  style: TxtStyle.titleLarge(
+                    color: AppColors.text,
+                    fontSize: 17.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              TranslationStatusBadge(
+                translationStatus: item.translationStatus,
+                isTranslated: item.isTranslated,
+                sourceLocale: item.sourceLocale,
+                displayedLocale: item.displayedLocale,
+              ),
+            ],
           ),
           if (item.description != null && item.description!.isNotEmpty) ...[
             SizedBox(height: 4.h),

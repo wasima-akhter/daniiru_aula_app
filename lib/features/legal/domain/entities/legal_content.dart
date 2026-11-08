@@ -93,11 +93,19 @@ class LegalContent {
   final String content;
   final DateTime? updatedAt;
   final bool isFallback;
+  final String sourceLocale;
+  final String displayedLocale;
+  final bool isTranslated;
+  final String translationStatus;
 
   const LegalContent({
     required this.type,
     required this.content,
     this.updatedAt,
     this.isFallback = false,
+    this.sourceLocale = 'en',
+    this.displayedLocale = 'en',
+    this.isTranslated = false,
+    this.translationStatus = 'READY',
   });
 }

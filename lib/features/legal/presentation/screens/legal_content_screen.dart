@@ -738,35 +738,45 @@ class _LegalContentScreenState extends ConsumerState<LegalContentScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (formattedDate != null) ...[
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                decoration: BoxDecoration(
-                  color: AppColors.softSlateBgColor,
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.schedule_rounded,
-                      size: 15.sp,
-                      color: AppColors.subtitleTextColor,
+            Row(
+              children: [
+                if (formattedDate != null)
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                    decoration: BoxDecoration(
+                      color: AppColors.softSlateBgColor,
+                      borderRadius: BorderRadius.circular(8.r),
                     ),
-                    SizedBox(width: 6.w),
-                    Text(
-                      '${tr(AppStrings.legalLastUpdated)} $formattedDate',
-                      style: TxtStyle.bodySmall(
-                        color: AppColors.subtitleTextColor,
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.schedule_rounded,
+                          size: 15.sp,
+                          color: AppColors.subtitleTextColor,
+                        ),
+                        SizedBox(width: 6.w),
+                        Text(
+                          '${tr(AppStrings.legalLastUpdated)} $formattedDate',
+                          style: TxtStyle.bodySmall(
+                            color: AppColors.subtitleTextColor,
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
+                const Spacer(),
+                TranslationStatusBadge(
+                  translationStatus: legalContent.translationStatus,
+                  isTranslated: legalContent.isTranslated,
+                  sourceLocale: legalContent.sourceLocale,
+                  displayedLocale: legalContent.displayedLocale,
                 ),
-              ),
-              SizedBox(height: 16.h),
-            ],
+              ],
+            ),
+            SizedBox(height: 16.h),
             Builder(
               builder: (context) {
                 // Sanitize &nbsp; → regular space and clean up common HTML entities

@@ -211,13 +211,26 @@ class _TeacherAnnouncementsScreenState
             ],
           ),
           SizedBox(height: 12.h),
-          Text(
-            announcement.title,
-            style: TxtStyle.titleMedium(
-              color: AppColors.text,
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w700,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  announcement.title,
+                  style: TxtStyle.titleMedium(
+                    color: AppColors.text,
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              TranslationStatusBadge(
+                translationStatus: announcement.translationStatus,
+                isTranslated: announcement.isTranslated,
+                sourceLocale: announcement.sourceLocale,
+                displayedLocale: announcement.displayedLocale,
+              ),
+            ],
           ),
           SizedBox(height: 8.h),
           Text(

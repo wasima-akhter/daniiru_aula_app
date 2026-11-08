@@ -56,14 +56,27 @@ class HomeworkDetailsScreen extends ConsumerWidget {
             ),
           ),
           SizedBox(height: 7.h),
-          Text(
-            homework.title,
-            style: TxtStyle.titleLarge(
-              color: AppColors.text,
-              fontSize: 21.sp,
-              height: 1.25,
-              fontWeight: FontWeight.w800,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  homework.title,
+                  style: TxtStyle.titleLarge(
+                    color: AppColors.text,
+                    fontSize: 21.sp,
+                    height: 1.25,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              TranslationStatusBadge(
+                translationStatus: homework.translationStatus,
+                isTranslated: homework.isTranslated,
+                sourceLocale: homework.sourceLocale,
+                displayedLocale: homework.displayedLocale,
+              ),
+            ],
           ),
           SizedBox(height: 14.h),
           Row(

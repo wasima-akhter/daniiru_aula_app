@@ -12,6 +12,8 @@
   "language_picker_title": "Seleccionar Idioma",
   "language_english_us": "Inglés (US)",
   "language_spanish_label": "Español",
+  "translation_status_translating": "Traduciendo...",
+  "translation_status_translated": "Traducido",
   "onboarding_skip": "Omitir",
   "onboarding_next": "Siguiente",
   "onboarding_continue": "Continuar",

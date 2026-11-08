@@ -30,6 +30,7 @@ abstract final class ApiConstants {
   // ==============================
   // Profile Endpoints
   // ==============================
+  static const String profile = '/profile';
   static const String parentProfile = '/profile/parent';
   static const String teacherProfile = '/profile/teacher';
 

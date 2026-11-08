@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_config.dart';
 import '../session/session_manager.dart';
 import '../storage/storage_provider.dart';
+import '../service/language/language_provider.dart';
 import 'api_client.dart';
 import 'dio_client.dart';
 import 'interceptors/auth_interceptor.dart';
 import 'interceptors/in_flight_request_interceptor.dart';
+import 'interceptors/locale_interceptor.dart';
 import 'interceptors/logging_interceptor.dart';
 import 'interceptors/server_error_interceptor.dart';
 
@@ -39,11 +41,19 @@ final apiLogInterceptorProvider = Provider<ApiLogInterceptor>((ref) {
   return ApiLogInterceptor();
 });
 
+/// Locale interceptor for dynamic multilingual support.
+final localeInterceptorProvider = Provider<LocaleInterceptor>((ref) {
+  return LocaleInterceptor(
+    getCurrentLocale: () => LanguageNotifier.activeLanguageCode,
+  );
+});
+
 /// Configured Dio client.
 final dioClientProvider = Provider<DioClient>((ref) {
   return DioClient(
     config: ref.watch(appConfigProvider),
     interceptors: [
+      ref.watch(localeInterceptorProvider),
       ref.watch(inFlightRequestInterceptorProvider),
       ref.watch(authInterceptorProvider),
       ref.watch(serverErrorInterceptorProvider),

@@ -9,6 +9,10 @@ class ChildHomeworkDto {
   final String subjectName;
   final String dueDate;
   final String status;
+  final String sourceLocale;
+  final String displayedLocale;
+  final bool isTranslated;
+  final String translationStatus;
 
   const ChildHomeworkDto({
     required this.id,
@@ -17,6 +21,10 @@ class ChildHomeworkDto {
     required this.subjectName,
     required this.dueDate,
     required this.status,
+    this.sourceLocale = 'en',
+    this.displayedLocale = 'en',
+    this.isTranslated = false,
+    this.translationStatus = 'READY',
   });
 
   factory ChildHomeworkDto.fromJson(Map<String, dynamic> json) {
@@ -27,6 +35,10 @@ class ChildHomeworkDto {
       subjectName: json['subjectName'] as String? ?? '',
       dueDate: json['dueDate'] as String? ?? '',
       status: json['status'] as String? ?? 'PENDING',
+      sourceLocale: json['sourceLocale'] as String? ?? 'en',
+      displayedLocale: json['displayedLocale'] as String? ?? 'en',
+      isTranslated: json['isTranslated'] as bool? ?? false,
+      translationStatus: json['translationStatus'] as String? ?? 'READY',
     );
   }
 
@@ -47,6 +59,10 @@ class ChildHomeworkDto {
       status: isCompleted ? HomeworkStatus.completed : HomeworkStatus.pending,
       deadline: deadline,
       time: time,
+      sourceLocale: sourceLocale,
+      displayedLocale: displayedLocale,
+      isTranslated: isTranslated,
+      translationStatus: translationStatus,
     );
   }
 }

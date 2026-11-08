@@ -6,6 +6,10 @@ class AnnouncementDto {
   final String? createdById;
   final String? publishedAt;
   final String? createdAt;
+  final String sourceLocale;
+  final String displayedLocale;
+  final bool isTranslated;
+  final String translationStatus;
 
   const AnnouncementDto({
     required this.id,
@@ -15,6 +19,10 @@ class AnnouncementDto {
     this.createdById,
     this.publishedAt,
     this.createdAt,
+    this.sourceLocale = 'en',
+    this.displayedLocale = 'en',
+    this.isTranslated = false,
+    this.translationStatus = 'READY',
   });
 
   factory AnnouncementDto.fromJson(Map<String, dynamic> json) {
@@ -29,6 +37,10 @@ class AnnouncementDto {
       createdById: json['createdById'] as String?,
       publishedAt: json['publishedAt'] as String?,
       createdAt: json['createdAt'] as String?,
+      sourceLocale: json['sourceLocale'] as String? ?? 'en',
+      displayedLocale: json['displayedLocale'] as String? ?? 'en',
+      isTranslated: json['isTranslated'] as bool? ?? false,
+      translationStatus: json['translationStatus'] as String? ?? 'READY',
     );
   }
 
@@ -41,6 +53,10 @@ class AnnouncementDto {
       if (createdById != null) 'createdById': createdById,
       if (publishedAt != null) 'publishedAt': publishedAt,
       if (createdAt != null) 'createdAt': createdAt,
+      'sourceLocale': sourceLocale,
+      'displayedLocale': displayedLocale,
+      'isTranslated': isTranslated,
+      'translationStatus': translationStatus,
     };
   }
 

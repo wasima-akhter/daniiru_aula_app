@@ -181,6 +181,10 @@ class HomeworkModel {
   final HomeworkStatus status;
   final String deadline;
   final String time;
+  final String sourceLocale;
+  final String displayedLocale;
+  final bool isTranslated;
+  final String translationStatus;
 
   const HomeworkModel({
     this.id,
@@ -192,6 +196,10 @@ class HomeworkModel {
     required this.status,
     required this.deadline,
     required this.time,
+    this.sourceLocale = 'en',
+    this.displayedLocale = 'en',
+    this.isTranslated = false,
+    this.translationStatus = 'READY',
   });
 
   HomeworkModel copyWith({
@@ -204,6 +212,10 @@ class HomeworkModel {
     HomeworkStatus? status,
     String? deadline,
     String? time,
+    String? sourceLocale,
+    String? displayedLocale,
+    bool? isTranslated,
+    String? translationStatus,
   }) {
     return HomeworkModel(
       id: id ?? this.id,
@@ -215,6 +227,10 @@ class HomeworkModel {
       status: status ?? this.status,
       deadline: deadline ?? this.deadline,
       time: time ?? this.time,
+      sourceLocale: sourceLocale ?? this.sourceLocale,
+      displayedLocale: displayedLocale ?? this.displayedLocale,
+      isTranslated: isTranslated ?? this.isTranslated,
+      translationStatus: translationStatus ?? this.translationStatus,
     );
   }
 }

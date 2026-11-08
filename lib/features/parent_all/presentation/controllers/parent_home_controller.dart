@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aula360/core/service/language/language_provider.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../data/repositories/parent_repository_impl.dart';
 import '../../domain/models/parent_models.dart';
@@ -57,12 +58,24 @@ class ParentHomeController extends Notifier<ParentHomeState> {
       }
     });
 
+    // Reactive SWR: Refetch dashboard when app language changes
+    ref.listen<AsyncValue<LanguageState>>(languageProvider, (previous, next) {
+      final prevCode = previous?.asData?.value.languageCode;
+      final nextCode = next.asData?.value.languageCode;
+      if (prevCode != null && nextCode != null && prevCode != nextCode) {
+        Future.microtask(() => loadDashboardData(isLanguageChange: true));
+      }
+    });
+
     Future.microtask(() => loadDashboardData());
     return const ParentHomeState(isLoading: true);
   }
 
-  Future<void> loadDashboardData() async {
+  Future<void> loadDashboardData({bool isLanguageChange = false}) async {
     try {
+      if (!isLanguageChange) {
+        state = state.copyWith(isLoading: true);
+      }
       final children = await _repository.getChildren();
       final currentSelectedId = state.selectedChild?.id;
 
@@ -86,7 +99,9 @@ class ParentHomeController extends Notifier<ParentHomeState> {
         isLoading: false,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      if (!isLanguageChange) {
+        state = state.copyWith(isLoading: false, error: e.toString());
+      }
     }
   }
 

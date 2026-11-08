@@ -53,6 +53,10 @@ class TeacherHomeworkDto {
   final int submissionsCount;
   final String createdAt;
   final String updatedAt;
+  final String sourceLocale;
+  final String displayedLocale;
+  final bool isTranslated;
+  final String translationStatus;
 
   const TeacherHomeworkDto({
     required this.id,
@@ -68,6 +72,10 @@ class TeacherHomeworkDto {
     required this.submissionsCount,
     required this.createdAt,
     required this.updatedAt,
+    this.sourceLocale = 'en',
+    this.displayedLocale = 'en',
+    this.isTranslated = false,
+    this.translationStatus = 'READY',
   });
 
   factory TeacherHomeworkDto.fromJson(Map<String, dynamic> json) {
@@ -85,6 +93,10 @@ class TeacherHomeworkDto {
       submissionsCount: (json['submissionsCount'] as num?)?.toInt() ?? 0,
       createdAt: json['createdAt'] as String? ?? '',
       updatedAt: json['updatedAt'] as String? ?? '',
+      sourceLocale: json['sourceLocale'] as String? ?? 'en',
+      displayedLocale: json['displayedLocale'] as String? ?? 'en',
+      isTranslated: json['isTranslated'] as bool? ?? false,
+      translationStatus: json['translationStatus'] as String? ?? 'READY',
     );
   }
 
@@ -103,6 +115,10 @@ class TeacherHomeworkDto {
       'submissionsCount': submissionsCount,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
+      'sourceLocale': sourceLocale,
+      'displayedLocale': displayedLocale,
+      'isTranslated': isTranslated,
+      'translationStatus': translationStatus,
     };
   }
 }

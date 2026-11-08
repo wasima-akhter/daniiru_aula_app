@@ -24,6 +24,8 @@ class AppStrings {
   static const String languagePickerTitle = 'language_picker_title';
   static const String languageEnglishUs = 'language_english_us';
   static const String languageSpanishLabel = 'language_spanish_label';
+  static const String translationStatusTranslating = 'translation_status_translating';
+  static const String translationStatusTranslated = 'translation_status_translated';
 
   // ── Onboarding ────────────────────────────────────────────────────────────
   static const String onboardingSkip = 'onboarding_skip';

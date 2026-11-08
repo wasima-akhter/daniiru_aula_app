@@ -56,6 +56,16 @@ class SettingsRemoteDataSourceImpl implements SettingsRemoteDataSource {
   @override
   Future<UserSettingsDto> updateLanguage(UpdateLanguageRequestDto dto) async {
     try {
+      // Sync with profile endpoint per multilingual integration contract
+      try {
+        await _client.dio.patch(
+          ApiConstants.profile,
+          data: {'language': dto.language.toUpperCase()},
+        );
+      } catch (_) {
+        // Ignored if handled exclusively by /settings/language on backend
+      }
+
       final response = await _client.dio.post(
         ApiConstants.updateLanguage,
         data: dto.toJson(),

@@ -17,6 +17,7 @@ export 'package:aula360/features/share/widgets/button/app_primary_button.dart';
 export 'package:aula360/features/share/widgets/custom_image/app_image_picker.dart';
 export 'package:aula360/features/share/widgets/network_image/custom_network_image.dart';
 export 'package:aula360/features/share/widgets/paginator/paginator.dart';
+export 'package:aula360/features/share/widgets/translation/translation_status_badge.dart';
 export 'package:aula360/utils/app_strings/app_strings.dart';
 export 'package:aula360/utils/color/app_colors.dart';
 export 'package:aula360/utils/extension/base_extension.dart';

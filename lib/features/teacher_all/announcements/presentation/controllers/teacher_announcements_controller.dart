@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:aula360/core/service/language/language_provider.dart';
 import '../../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../../parent_all/data/dtos/announcement_dto.dart';
 import '../../../data/repositories/teacher_repository_impl.dart';
@@ -68,19 +69,35 @@ class TeacherAnnouncementsController extends Notifier<TeacherAnnouncementsState>
         }
       }
     });
+
+    // Reactive SWR: Invalidate & refetch in background when app language changes
+    ref.listen<AsyncValue<LanguageState>>(languageProvider, (previous, next) {
+      final prevCode = previous?.asData?.value.languageCode;
+      final nextCode = next.asData?.value.languageCode;
+      if (prevCode != null && nextCode != null && prevCode != nextCode) {
+        Future.microtask(() => loadAnnouncements(isLanguageChange: true));
+      }
+    });
+
     Future.microtask(() => loadAnnouncements());
     return const TeacherAnnouncementsState(isLoading: true);
   }
 
-  Future<void> loadAnnouncements({int page = 1, int limit = _pageSize}) async {
+  Future<void> loadAnnouncements({
+    int page = 1,
+    int limit = _pageSize,
+    bool isLanguageChange = false,
+  }) async {
     try {
-      state = state.copyWith(
-        isLoading: true,
-        error: null,
-        currentPage: 1,
-        hasMore: true,
-        clearLoadMoreError: true,
-      );
+      if (!isLanguageChange) {
+        state = state.copyWith(
+          isLoading: true,
+          error: null,
+          currentPage: 1,
+          hasMore: true,
+          clearLoadMoreError: true,
+        );
+      }
       final res = await _repository.getAnnouncements(
         page: page,
         limit: limit,
@@ -93,7 +110,9 @@ class TeacherAnnouncementsController extends Notifier<TeacherAnnouncementsState>
         hasMore: res.hasMore,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      if (!isLanguageChange) {
+        state = state.copyWith(isLoading: false, error: e.toString());
+      }
     }
   }
 
