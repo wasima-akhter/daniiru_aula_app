@@ -27,7 +27,8 @@ class _TeacherInformationScreenState
   }
 
   void _loadData() {
-    final activeChild = widget.child ??
+    final activeChild =
+        widget.child ??
         ref.read(parentChildrenControllerProvider).selectedChild ??
         (ref.read(parentChildrenControllerProvider).children.isNotEmpty
             ? ref.read(parentChildrenControllerProvider).children.first
@@ -50,15 +51,17 @@ class _TeacherInformationScreenState
 
   @override
   Widget build(BuildContext context) {
-    final activeChild = widget.child ??
+    final activeChild =
+        widget.child ??
         ref.watch(parentChildrenControllerProvider).selectedChild ??
         (ref.watch(parentChildrenControllerProvider).children.isNotEmpty
             ? ref.watch(parentChildrenControllerProvider).children.first
             : null);
 
     final teachersState = ref.watch(parentTeachersControllerProvider);
-    final teachersController =
-        ref.read(parentTeachersControllerProvider.notifier);
+    final teachersController = ref.read(
+      parentTeachersControllerProvider.notifier,
+    );
     final selectedTeacher = teachersState.selectedTeacher;
 
     return Scaffold(
@@ -186,12 +189,15 @@ class _TeacherInformationScreenState
           if (child.grade.trim().isNotEmpty ||
               child.room.trim().isNotEmpty) ...[
             SizedBox(height: 6.h),
-            Row(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  [child.grade, child.room]
-                      .where((s) => s.trim().isNotEmpty)
-                      .join(' • '),
+                  [
+                    child.grade,
+                    child.room,
+                  ].where((s) => s.trim().isNotEmpty).join(' • '),
+                  textAlign: TextAlign.start,
                   style: TxtStyle.titleLarge(
                     color: const Color(0xFF667085),
                     fontSize: 13.5.sp,
@@ -455,8 +461,11 @@ class _TeacherInformationScreenState
         ),
         child: Row(
           children: [
-            Icon(Icons.mail_outline,
-                color: const Color(0xFF667085), size: 18.sp),
+            Icon(
+              Icons.mail_outline,
+              color: const Color(0xFF667085),
+              size: 18.sp,
+            ),
             SizedBox(width: 9.w),
             Expanded(
               child: Text(
@@ -474,7 +483,6 @@ class _TeacherInformationScreenState
       ),
     );
   }
-
 
   Widget _emptyView(WidgetRef ref) {
     return Container(
@@ -508,7 +516,8 @@ class _TeacherInformationScreenState
   }
 
   Widget _errorView(WidgetRef ref, String error, VoidCallback onRetry) {
-    final langCode = ref.watch(languageProvider).valueOrNull?.languageCode ??
+    final langCode =
+        ref.watch(languageProvider).valueOrNull?.languageCode ??
         LanguageNotifier.activeLanguageCode;
     final resolved = AppErrorResolver.resolve(error, languageCode: langCode);
 
@@ -531,10 +540,7 @@ class _TeacherInformationScreenState
           Text(
             resolved.displayMessage,
             textAlign: TextAlign.center,
-            style: TxtStyle.bodyMedium(
-              color: AppColors.text,
-              fontSize: 14.sp,
-            ),
+            style: TxtStyle.bodyMedium(color: AppColors.text, fontSize: 14.sp),
           ),
           SizedBox(height: 14.h),
           ElevatedButton(
