@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/localization_meta.dart';
 import '../../domain/models/parent_models.dart';
 
 class ChildScheduleSessionDto {
@@ -14,6 +15,7 @@ class ChildScheduleSessionDto {
   final String cohortName;
   final String teacherName;
   final String classroomRoomNumber;
+  final LocalizationMeta? localization;
 
   const ChildScheduleSessionDto({
     required this.id,
@@ -28,6 +30,7 @@ class ChildScheduleSessionDto {
     required this.cohortName,
     required this.teacherName,
     required this.classroomRoomNumber,
+    this.localization,
   });
 
   factory ChildScheduleSessionDto.fromJson(Map<String, dynamic> json) {
@@ -45,10 +48,11 @@ class ChildScheduleSessionDto {
       status: (json['status'] as String? ?? 'SCHEDULED').toUpperCase(),
       entryTime: json['entryTime'] as String?,
       exitTime: json['exitTime'] as String?,
-      subjectName: json['subjectName'] as String? ?? 'Clase',
+      subjectName: json['subjectName'] as String? ?? '',
       cohortName: json['cohortName'] as String? ?? '',
-      teacherName: json['teacherName'] as String? ?? 'Profesor',
+      teacherName: json['teacherName'] as String? ?? '',
       classroomRoomNumber: json['classroomRoomNumber'] as String? ?? '',
+      localization: LocalizationMeta.tryParse(json),
     );
   }
 
@@ -90,10 +94,11 @@ class ChildScheduleSessionDto {
       teacher: teacherName,
       time: startTime,
       duration: endTime,
-      room: classroomRoomNumber.isNotEmpty ? 'Aula $classroomRoomNumber' : 'Aula general',
-      building: cohortName.isNotEmpty ? cohortName : 'Edificio Principal',
+      room: classroomRoomNumber.isNotEmpty ? classroomRoomNumber : '',
+      building: cohortName,
       category: subjectName,
       color: categoryColor,
+      localization: localization,
     );
   }
 }

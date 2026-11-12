@@ -243,6 +243,11 @@ class AuthController extends Notifier<AuthState> {
       }
 
       // Case 4: Fully authenticated
+      if (session.user.language != null && session.user.language!.isNotEmpty) {
+        final lang = AppLanguage.fromCode(session.user.language!);
+        await ref.read(languageProvider.notifier).changeLanguage(lang);
+      }
+
       state = state.copyWith(
         status: AuthStatus.authenticated,
         user: session.user,

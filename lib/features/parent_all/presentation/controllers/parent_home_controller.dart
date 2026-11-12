@@ -77,6 +77,7 @@ class ParentHomeController extends Notifier<ParentHomeState> {
         state = state.copyWith(isLoading: true);
       }
       final children = await _repository.getChildren();
+      if (!ref.mounted) return;
       final currentSelectedId = state.selectedChild?.id;
 
       ChildModel? activeChild;
@@ -92,6 +93,7 @@ class ParentHomeController extends Notifier<ParentHomeState> {
       }
 
       final classes = await _repository.getTodayClasses(childId: activeChild?.id);
+      if (!ref.mounted) return;
       state = state.copyWith(
         children: children,
         todayClasses: classes,
@@ -99,6 +101,7 @@ class ParentHomeController extends Notifier<ParentHomeState> {
         isLoading: false,
       );
     } catch (e) {
+      if (!ref.mounted) return;
       if (!isLanguageChange) {
         state = state.copyWith(isLoading: false, error: e.toString());
       }
@@ -109,8 +112,10 @@ class ParentHomeController extends Notifier<ParentHomeState> {
     state = state.copyWith(selectedChild: child, isLoading: true, error: null);
     try {
       final classes = await _repository.getTodayClasses(childId: child.id);
+      if (!ref.mounted) return;
       state = state.copyWith(todayClasses: classes, isLoading: false);
     } catch (e) {
+      if (!ref.mounted) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }

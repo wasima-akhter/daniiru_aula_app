@@ -119,5 +119,24 @@ void main() {
       expect(errorAdapter.callCount, equals(1));
       expect(interceptor.inFlightCount, equals(0));
     });
+
+    test('does not coalesce concurrent requests with different x-locale headers', () async {
+      final futures = [
+        dio.get(
+          '/api/v1/parent/announcements',
+          options: Options(headers: {'x-locale': 'en'}),
+        ),
+        dio.get(
+          '/api/v1/parent/announcements',
+          options: Options(headers: {'x-locale': 'es'}),
+        ),
+      ];
+
+      final results = await Future.wait(futures);
+
+      expect(adapter.callCount, equals(2));
+      expect(results[0].statusCode, equals(200));
+      expect(results[1].statusCode, equals(200));
+    });
   });
 }

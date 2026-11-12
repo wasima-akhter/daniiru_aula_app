@@ -77,10 +77,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         title: ref.watchTr(AppStrings.navReports),
         showBack: false,
       ),
-      body: RefreshIndicator(
-        color: AppColors.primary,
-        onRefresh: () => controller.loadReports(),
-        child: CustomScrollView(
+      body: PendingPollEffect(
+        hasPending: anyLocalizationPending(
+          state.reports.map((r) => r.localization),
+        ),
+        onPoll: () => controller.loadReports(),
+        child: RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: () => controller.loadReports(),
+          child: CustomScrollView(
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(
             parent: BouncingScrollPhysics(),
@@ -209,6 +214,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
             SliverToBoxAdapter(child: SizedBox(height: 20.h)),
           ],
+        ),
         ),
       ),
     );
@@ -588,19 +594,26 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
             Row(
               children: [
-                UserAvatar(initials: report.initials, size: 27),
-                SizedBox(width: 7.w),
-                Expanded(
-                  child: Text(
-                    report.teacher,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TxtStyle.titleLarge(
-                      color: AppColors.secondaryText,
-                      fontSize: 14.5.sp,
-                      fontWeight: FontWeight.w600,
+                if (report.teacher.trim().isNotEmpty) ...[
+                  UserAvatar(initials: report.initials, size: 27),
+                  SizedBox(width: 7.w),
+                  Expanded(
+                    child: Text(
+                      report.teacher,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TxtStyle.titleLarge(
+                        color: AppColors.secondaryText,
+                        fontSize: 14.5.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
+                ] else
+                  const Spacer(),
+                TranslationStatusBadge.fromMeta(
+                  report.localization,
+                  padding: EdgeInsets.only(right: 6.w),
                 ),
                 Text(
                   ref.watchTr(AppStrings.viewReport),

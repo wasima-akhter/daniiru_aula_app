@@ -43,11 +43,16 @@ class TeacherClassesScreen extends ConsumerWidget {
           // SizedBox(width: 8.w),
         ],
       ),
-      body: RefreshIndicator(
-        color: AppColors.primaryDark,
-        onRefresh: () async {
-          await controller.loadClasses();
-        },
+      body: PendingPollEffect(
+        hasPending: anyLocalizationPending(
+          visibleClasses.map((c) => c.localization),
+        ),
+        onPoll: () => controller.loadClasses(),
+        child: RefreshIndicator(
+          color: AppColors.primaryDark,
+          onRefresh: () async {
+            await controller.loadClasses();
+          },
         child: state.isLoading
             ? const Center(child: CircularProgressIndicator())
             : state.error != null
@@ -179,6 +184,7 @@ class TeacherClassesScreen extends ConsumerWidget {
                     ),
                 ],
               ),
+        ),
       ),
     );
   }
@@ -337,6 +343,10 @@ class TeacherClassesScreen extends ConsumerWidget {
               children: [
                 _statusTag(ref, academyClass.status),
                 const Spacer(),
+                TranslationStatusBadge.fromMeta(
+                  academyClass.localization,
+                  padding: EdgeInsets.only(right: 6.w),
+                ),
                 Text(
                   academyClass.time,
                   style: TxtStyle.bodyMedium(

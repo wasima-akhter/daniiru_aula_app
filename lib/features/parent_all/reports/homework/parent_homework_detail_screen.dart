@@ -1,5 +1,6 @@
 import '../../../share/export/screen_export.dart';
 import '../../helper/parent_home_helper.dart';
+import '../../presentation/controllers/parent_homework_controller.dart';
 
 class HomeworkDetailsScreen extends ConsumerWidget {
   final HomeworkModel homework;
@@ -8,33 +9,46 @@ class HomeworkDetailsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final homeworkState = ref.watch(parentHomeworkControllerProvider);
+    final liveHomework =
+        homeworkState.homework.where((h) => h.id == homework.id).firstOrNull ??
+            homework;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7FC),
       appBar: AulaAppBar(
         title: ref.watchTr(AppStrings.homeworkDetailsTitle),
         showBack: true,
       ),
-      body: SafeArea(
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(16.w, 18.h, 16.w, 30.h),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  _assignmentHeader(ref, homework),
-                  SizedBox(height: 15.h),
-                  _teacherCard(ref, homework),
-                  SizedBox(height: 15.h),
-                  _instructions(ref, homework),
-                  //  SizedBox(height: 15.h),
-                  //   _attachmentSection(ref),
-                  SizedBox(height: 15.h),
-                  _submissionInfo(ref, homework),
-                ]),
+      body: PendingPollEffect(
+        hasPending: liveHomework.localization.isPending,
+        onPoll: () => ref
+            .read(parentHomeworkControllerProvider.notifier)
+            .loadHomework(null, true),
+        child: SafeArea(
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(16.w, 18.h, 16.w, 30.h),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    _assignmentHeader(ref, liveHomework),
+                    if (liveHomework.teacher.trim().isNotEmpty) ...[
+                      SizedBox(height: 15.h),
+                      _teacherCard(ref, liveHomework),
+                    ],
+                    SizedBox(height: 15.h),
+                    _instructions(ref, liveHomework),
+                    //  SizedBox(height: 15.h),
+                    //   _attachmentSection(ref),
+                    SizedBox(height: 15.h),
+                    _submissionInfo(ref, liveHomework),
+                  ]),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -1,5 +1,7 @@
 import 'package:intl/intl.dart';
 
+import '../../../../core/localization/localization_meta.dart';
+import '../../../../core/service/language/language_provider.dart';
 import '../../domain/models/parent_models.dart';
 
 class ParentInvoiceDto {
@@ -11,6 +13,7 @@ class ParentInvoiceDto {
   final String dueDate;
   final String status;
   final String? paidAt;
+  final LocalizationMeta? localization;
 
   const ParentInvoiceDto({
     required this.id,
@@ -21,32 +24,45 @@ class ParentInvoiceDto {
     required this.dueDate,
     required this.status,
     this.paidAt,
+    this.localization,
   });
 
   factory ParentInvoiceDto.fromJson(Map<String, dynamic> json) {
     return ParentInvoiceDto(
       id: json['id'] as String? ?? '',
-      feeTitle: json['feeTitle'] as String? ?? json['title'] as String? ?? 'Matrícula escolar',
+      feeTitle: json['feeTitle'] as String? ?? json['title'] as String? ?? '',
       studentName: json['studentName'] as String? ?? '',
       amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
       currency: json['currency'] as String? ?? 'EUR',
       dueDate: json['dueDate'] as String? ?? '',
       status: json['status'] as String? ?? 'PENDING',
       paidAt: json['paidAt'] as String?,
+      localization: LocalizationMeta.tryParse(json),
     );
+  }
+
+  static String _formatDate(DateTime dt, String pattern) {
+    final locale = LanguageNotifier.activeLanguageCode;
+    try {
+      return DateFormat(pattern, locale).format(dt);
+    } catch (_) {
+      return DateFormat(pattern).format(dt);
+    }
   }
 
   InvoiceModel toModel() {
     DateTime? dueDt = DateTime.tryParse(dueDate);
     DateTime? paidDt = paidAt != null ? DateTime.tryParse(paidAt!) : null;
 
-    final monthYear = dueDt != null ? DateFormat('MMMM yyyy').format(dueDt) : '';
-    final formattedDue = dueDt != null ? DateFormat('d MMM yyyy').format(dueDt) : dueDate;
+    final monthYear = dueDt != null ? _formatDate(dueDt, 'MMMM yyyy') : '';
+    final formattedDue =
+        dueDt != null ? _formatDate(dueDt, 'd MMM yyyy') : dueDate;
     final isPaid = status.toUpperCase() == 'PAID';
-    final formattedPaid = paidDt != null ? DateFormat('d MMM yyyy').format(paidDt) : null;
-    final displayTitle = feeTitle.isNotEmpty ? feeTitle : 'Cuota escolar';
+    final formattedPaid =
+        paidDt != null ? _formatDate(paidDt, 'd MMM yyyy') : null;
+    final displayTitle = feeTitle;
     final displayConcept = studentName.isNotEmpty
-        ? '$displayTitle ($studentName)'
+        ? (displayTitle.isNotEmpty ? '$displayTitle ($studentName)' : studentName)
         : displayTitle;
     final recNum = isPaid
         ? 'REC-${id.length >= 6 ? id.substring(0, 6).toUpperCase() : id.toUpperCase()}'
@@ -65,6 +81,7 @@ class ParentInvoiceDto {
       studentName: studentName,
       feeTitle: displayTitle,
       currency: currency,
+      localization: localization,
     );
   }
 }

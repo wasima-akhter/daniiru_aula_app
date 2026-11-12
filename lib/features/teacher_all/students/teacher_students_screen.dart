@@ -53,8 +53,13 @@ class _TeacherStudentsScreenState extends ConsumerState<TeacherStudentsScreen> {
         title: ref.watchTr(AppStrings.myStudentsTitle),
         showBack: false,
       ),
-      body: Column(
-        children: [
+      body: PendingPollEffect(
+        hasPending: anyLocalizationPending(
+          state.students.map((s) => s.localization),
+        ),
+        onPoll: () => controller.refresh(),
+        child: Column(
+          children: [
           _searchSection(ref, state, controller),
           // _filterSection(ref, state, controller),
           Expanded(
@@ -87,6 +92,7 @@ class _TeacherStudentsScreenState extends ConsumerState<TeacherStudentsScreen> {
                   ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -340,6 +346,10 @@ class _TeacherStudentsScreenState extends ConsumerState<TeacherStudentsScreen> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
+                      ),
+                      TranslationStatusBadge.fromMeta(
+                        student.localization,
+                        padding: EdgeInsets.only(left: 6.w),
                       ),
                       // SizedBox(width: 6.w),
                       // Text(

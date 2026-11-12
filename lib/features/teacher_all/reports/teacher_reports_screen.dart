@@ -139,11 +139,16 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
                 SizedBox(width: 8.w),
               ],
       ),
-      body: (state.isLoading && state.reports.isEmpty)
-          ? const Center(child: CircularProgressIndicator())
-          : (state.error != null && state.reports.isEmpty)
-              ? _errorState(ref, state.error!, controller)
-              : Column(
+      body: PendingPollEffect(
+        hasPending: anyLocalizationPending(
+          state.reports.map((r) => r.localization),
+        ),
+        onPoll: () => controller.refresh(),
+        child: (state.isLoading && state.reports.isEmpty)
+            ? const Center(child: CircularProgressIndicator())
+            : (state.error != null && state.reports.isEmpty)
+                ? _errorState(ref, state.error!, controller)
+                : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (!_isSearchOpen) ...[
@@ -213,6 +218,7 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
                     ),
                   ],
                 ),
+      ),
     );
   }
 
@@ -611,12 +617,19 @@ class _TeacherReportsScreenState extends ConsumerState<TeacherReportsScreen> {
               ),
             ),
             SizedBox(height: 8.h),
-            Text(
-              '${report.date}  •  ${report.time}',
-              style: TxtStyle.bodyMedium(
-                color: AppColors.subtitleTextColor,
-                fontSize: 13.5.sp,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${report.date}  •  ${report.time}',
+                    style: TxtStyle.bodyMedium(
+                      color: AppColors.subtitleTextColor,
+                      fontSize: 13.5.sp,
+                    ),
+                  ),
+                ),
+                TranslationStatusBadge.fromMeta(report.localization),
+              ],
             ),
           ],
         ),

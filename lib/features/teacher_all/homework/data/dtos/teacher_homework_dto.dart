@@ -1,3 +1,5 @@
+import 'package:aula360/core/localization/localization_meta.dart';
+
 class CreateHomeworkRequestDto {
   final String cohortId;
   final String subjectId;
@@ -79,6 +81,7 @@ class TeacherHomeworkDto {
   });
 
   factory TeacherHomeworkDto.fromJson(Map<String, dynamic> json) {
+    final meta = LocalizationMeta.parseOrDefault(json);
     return TeacherHomeworkDto(
       id: json['id'] as String? ?? '',
       cohortId: json['cohortId'] as String? ?? '',
@@ -93,12 +96,19 @@ class TeacherHomeworkDto {
       submissionsCount: (json['submissionsCount'] as num?)?.toInt() ?? 0,
       createdAt: json['createdAt'] as String? ?? '',
       updatedAt: json['updatedAt'] as String? ?? '',
-      sourceLocale: json['sourceLocale'] as String? ?? 'en',
-      displayedLocale: json['displayedLocale'] as String? ?? 'en',
-      isTranslated: json['isTranslated'] as bool? ?? false,
-      translationStatus: json['translationStatus'] as String? ?? 'READY',
+      sourceLocale: meta.sourceLocale,
+      displayedLocale: meta.displayedLocale,
+      isTranslated: meta.isTranslated,
+      translationStatus: meta.translationStatus,
     );
   }
+
+  LocalizationMeta get localization => LocalizationMeta(
+        sourceLocale: sourceLocale,
+        displayedLocale: displayedLocale,
+        isTranslated: isTranslated,
+        translationStatus: translationStatus,
+      );
 
   Map<String, dynamic> toJson() {
     return {

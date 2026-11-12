@@ -55,6 +55,17 @@ class ParentRepositoryImpl implements ParentRepository {
   final List<ChatMessageModel> _messages = [];
   final Map<String, int> _attendancePercentages = {};
 
+  /// Clears in-memory cached payloads (e.g. on language switch) so subsequent
+  /// reads fetch fresh localized data from the backend instead of returning
+  /// cached previous-locale fallback data.
+  void clearCache() {
+    _children = [];
+    _invoices = [];
+    _notifications = [];
+    _messages.clear();
+    _attendancePercentages.clear();
+  }
+
   @override
   Future<List<ChildModel>> getChildren() async {
     if (parentRemoteDataSource != null) {

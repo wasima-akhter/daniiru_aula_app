@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:aula360/core/service/language/language_provider.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/dtos/add_child_dto.dart';
@@ -59,13 +60,23 @@ class ParentChildrenController extends Notifier<ParentChildrenState> {
       }
     });
 
+    ref.listen<AsyncValue<LanguageState>>(languageProvider, (previous, next) {
+      final prevCode = previous?.asData?.value.languageCode;
+      final nextCode = next.asData?.value.languageCode;
+      if (prevCode != null && nextCode != null && prevCode != nextCode) {
+        Future.microtask(() => loadChildren());
+      }
+    });
+
     Future.microtask(() => loadChildren());
     return const ParentChildrenState(isLoading: true);
   }
 
   Future<void> loadChildren() async {
+    if (!ref.mounted) return;
     try {
       final children = await _repository.getChildren();
+      if (!ref.mounted) return;
       final currentId = state.selectedChild?.id;
       ChildModel? activeChild;
       if (children.isNotEmpty) {
@@ -84,6 +95,7 @@ class ParentChildrenController extends Notifier<ParentChildrenState> {
         isLoading: false,
       );
     } catch (e) {
+      if (!ref.mounted) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }

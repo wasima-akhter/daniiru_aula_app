@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/localization_meta.dart';
 import '../../helper/parent_enums.dart';
 
 export '../../helper/parent_enums.dart';
@@ -18,6 +19,7 @@ class ChildModel {
   final int present;
   final int absent;
   final int late;
+  final LocalizationMeta? localization;
 
   const ChildModel({
     required this.id,
@@ -30,6 +32,7 @@ class ChildModel {
     required this.present,
     required this.absent,
     required this.late,
+    this.localization,
   });
 
   ChildModel copyWith({
@@ -43,6 +46,7 @@ class ChildModel {
     int? present,
     int? absent,
     int? late,
+    LocalizationMeta? localization,
   }) {
     return ChildModel(
       id: id ?? this.id,
@@ -55,6 +59,7 @@ class ChildModel {
       present: present ?? this.present,
       absent: absent ?? this.absent,
       late: late ?? this.late,
+      localization: localization ?? this.localization,
     );
   }
 
@@ -81,6 +86,7 @@ class ClassModel {
   final String building;
   final String category;
   final Color color;
+  final LocalizationMeta? localization;
 
   const ClassModel({
     this.id,
@@ -92,6 +98,7 @@ class ClassModel {
     required this.building,
     required this.category,
     required this.color,
+    this.localization,
   });
 
   ClassModel copyWith({
@@ -104,6 +111,7 @@ class ClassModel {
     String? building,
     String? category,
     Color? color,
+    LocalizationMeta? localization,
   }) {
     return ClassModel(
       id: id ?? this.id,
@@ -115,6 +123,7 @@ class ClassModel {
       building: building ?? this.building,
       category: category ?? this.category,
       color: color ?? this.color,
+      localization: localization ?? this.localization,
     );
   }
 }
@@ -150,6 +159,7 @@ class ReportModel {
   final String status;
   final String note;
   final String initials;
+  final LocalizationMeta? localization;
 
   const ReportModel({
     this.id,
@@ -162,6 +172,7 @@ class ReportModel {
     required this.status,
     required this.note,
     required this.initials,
+    this.localization,
   });
 }
 
@@ -185,6 +196,13 @@ class HomeworkModel {
   final String displayedLocale;
   final bool isTranslated;
   final String translationStatus;
+
+  LocalizationMeta get localization => LocalizationMeta(
+        sourceLocale: sourceLocale,
+        displayedLocale: displayedLocale,
+        isTranslated: isTranslated,
+        translationStatus: translationStatus,
+      );
 
   const HomeworkModel({
     this.id,
@@ -245,6 +263,7 @@ class AttendanceRecord {
   final AttendanceStatus status;
   final String checkInTime;
   final String? note;
+  final LocalizationMeta? localization;
 
   const AttendanceRecord({
     required this.date,
@@ -252,6 +271,7 @@ class AttendanceRecord {
     required this.status,
     required this.checkInTime,
     this.note,
+    this.localization,
   });
 }
 
@@ -272,6 +292,7 @@ class InvoiceModel {
   final String? studentName;
   final String? feeTitle;
   final String currency;
+  final LocalizationMeta? localization;
 
   const InvoiceModel({
     required this.id,
@@ -286,6 +307,7 @@ class InvoiceModel {
     this.studentName,
     this.feeTitle,
     this.currency = 'EUR',
+    this.localization,
   });
 
   InvoiceModel copyWith({
@@ -301,6 +323,7 @@ class InvoiceModel {
     String? studentName,
     String? feeTitle,
     String? currency,
+    LocalizationMeta? localization,
   }) {
     return InvoiceModel(
       id: id ?? this.id,
@@ -315,6 +338,7 @@ class InvoiceModel {
       studentName: studentName ?? this.studentName,
       feeTitle: feeTitle ?? this.feeTitle,
       currency: currency ?? this.currency,
+      localization: localization ?? this.localization,
     );
   }
 }
@@ -330,6 +354,7 @@ class ParentNotificationModel {
   final String timeAgo;
   final bool isRead;
   final String type;
+  final LocalizationMeta? localization;
 
   const ParentNotificationModel({
     required this.id,
@@ -338,6 +363,7 @@ class ParentNotificationModel {
     required this.timeAgo,
     this.isRead = false,
     required this.type,
+    this.localization,
   });
 
   ParentNotificationModel copyWith({
@@ -347,6 +373,7 @@ class ParentNotificationModel {
     String? timeAgo,
     bool? isRead,
     String? type,
+    LocalizationMeta? localization,
   }) {
     return ParentNotificationModel(
       id: id ?? this.id,
@@ -355,6 +382,7 @@ class ParentNotificationModel {
       timeAgo: timeAgo ?? this.timeAgo,
       isRead: isRead ?? this.isRead,
       type: type ?? this.type,
+      localization: localization ?? this.localization,
     );
   }
 }

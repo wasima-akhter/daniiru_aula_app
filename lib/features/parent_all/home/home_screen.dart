@@ -466,7 +466,15 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: RefreshIndicator(
+      body: PendingPollEffect(
+        hasPending: anyLocalizationPending([
+          ...todayClasses.map((c) => c.localization),
+          selectedChild?.localization,
+        ]),
+        onPoll: () => ref
+            .read(parentHomeControllerProvider.notifier)
+            .loadDashboardData(),
+        child: RefreshIndicator(
         onRefresh: () async {
           await ref
               .read(parentHomeControllerProvider.notifier)
@@ -826,6 +834,12 @@ class HomeScreen extends ConsumerWidget {
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
+                              if (todayClasses.first.localization != null) ...[
+                                SizedBox(height: 6.h),
+                                TranslationStatusBadge.fromMeta(
+                                  todayClasses.first.localization,
+                                ),
+                              ],
 
                               SizedBox(height: 5.h),
 
@@ -1253,6 +1267,7 @@ class HomeScreen extends ConsumerWidget {
             ],
           ),
         ),
+        ),
       ),
     );
   }
@@ -1290,13 +1305,27 @@ class HomeScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    classData.subject,
-                    style: TxtStyle.titleLarge(
-                      color: AppColors.text,
-                      fontSize: 16.5.sp,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          classData.subject,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TxtStyle.titleLarge(
+                            color: AppColors.text,
+                            fontSize: 16.5.sp,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      if (classData.localization != null) ...[
+                        SizedBox(width: 6.w),
+                        TranslationStatusBadge.fromMeta(
+                          classData.localization,
+                        ),
+                      ],
+                    ],
                   ),
                   SizedBox(height: 3.h),
                   Text(

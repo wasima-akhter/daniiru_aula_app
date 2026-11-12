@@ -1,3 +1,5 @@
+import '../../../../core/localization/localization_meta.dart';
+
 class AnnouncementDto {
   final String id;
   final String title;
@@ -25,7 +27,15 @@ class AnnouncementDto {
     this.translationStatus = 'READY',
   });
 
+  LocalizationMeta get localization => LocalizationMeta(
+        sourceLocale: sourceLocale,
+        displayedLocale: displayedLocale,
+        isTranslated: isTranslated,
+        translationStatus: translationStatus,
+      );
+
   factory AnnouncementDto.fromJson(Map<String, dynamic> json) {
+    final meta = LocalizationMeta.parseOrDefault(json);
     return AnnouncementDto(
       id: (json['id'] ?? '').toString(),
       title: json['title'] as String? ?? json['subject'] as String? ?? '',
@@ -37,10 +47,10 @@ class AnnouncementDto {
       createdById: json['createdById'] as String?,
       publishedAt: json['publishedAt'] as String?,
       createdAt: json['createdAt'] as String?,
-      sourceLocale: json['sourceLocale'] as String? ?? 'en',
-      displayedLocale: json['displayedLocale'] as String? ?? 'en',
-      isTranslated: json['isTranslated'] as bool? ?? false,
-      translationStatus: json['translationStatus'] as String? ?? 'READY',
+      sourceLocale: meta.sourceLocale,
+      displayedLocale: meta.displayedLocale,
+      isTranslated: meta.isTranslated,
+      translationStatus: meta.translationStatus,
     );
   }
 

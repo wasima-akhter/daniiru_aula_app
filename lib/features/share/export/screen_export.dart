@@ -1,4 +1,6 @@
 export 'package:aula360/core/errors/app_error_resolver.dart';
+export 'package:aula360/core/localization/localization_meta.dart';
+export 'package:aula360/core/localization/pending_refetch_controller.dart';
 export 'package:aula360/core/providers/button_loading_provider.dart';
 export 'package:aula360/core/helper/device_utils/device_utils.dart';
 export 'package:aula360/core/helper/layout/scaffold_safe_wrapper.dart';

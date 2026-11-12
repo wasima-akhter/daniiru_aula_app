@@ -84,7 +84,22 @@ class _ChildProfileScreenState extends ConsumerState<ChildProfileScreen> {
       backgroundColor: const Color(0xFFF8F7FC),
       appBar: simpleAppBar(context, ref.watchTr(AppStrings.childProfile)),
       body: SafeArea(
-        child: RefreshIndicator(
+        child: PendingPollEffect(
+          hasPending: anyLocalizationPending([
+            activeChild.localization,
+            progress?.localization,
+          ]),
+          onPoll: () async {
+            await Future.wait([
+              ref
+                  .read(parentChildrenControllerProvider.notifier)
+                  .loadChildren(),
+              ref
+                  .read(parentProgressControllerProvider.notifier)
+                  .loadProgress(activeChild.id),
+            ]);
+          },
+          child: RefreshIndicator(
           onRefresh: () async {
             await ref
                 .read(parentProgressControllerProvider.notifier)
@@ -115,6 +130,7 @@ class _ChildProfileScreenState extends ConsumerState<ChildProfileScreen> {
               ],
             ),
           ),
+        ),
         ),
       ),
     );

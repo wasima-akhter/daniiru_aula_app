@@ -636,49 +636,57 @@ class _TeacherReportDetailsScreenState
           SizedBox(width: 6.w),
         ],
       ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            if (resolvedId != null && resolvedId.isNotEmpty) {
-              ref.invalidate(teacherReportDetailProvider(resolvedId));
-            }
-          },
-          color: AppColors.primary,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
-            ),
-            padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 30.h),
-            children: [
-              if (isDetailLoading) ...[
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4.r),
-                  child: const LinearProgressIndicator(
-                    minHeight: 3,
-                    backgroundColor: Color(0xFFE5E7EB),
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppColors.primary,
+      body: PendingPollEffect(
+        hasPending: report.localization?.isPending == true,
+        onPoll: () {
+          if (resolvedId != null && resolvedId.isNotEmpty) {
+            ref.invalidate(teacherReportDetailProvider(resolvedId));
+          }
+        },
+        child: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: () async {
+              if (resolvedId != null && resolvedId.isNotEmpty) {
+                ref.invalidate(teacherReportDetailProvider(resolvedId));
+              }
+            },
+            color: AppColors.primary,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 30.h),
+              children: [
+                if (isDetailLoading) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4.r),
+                    child: const LinearProgressIndicator(
+                      minHeight: 3,
+                      backgroundColor: Color(0xFFE5E7EB),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.primary,
+                      ),
                     ),
                   ),
-                ),
-                SizedBox(height: 12.h),
-              ],
-              _recordHeader(ref, report),
-              SizedBox(height: 17.h),
-              _attendanceSection(ref, report),
-              SizedBox(height: 17.h),
-              _contentSection(ref, report),
-              SizedBox(height: 17.h),
-              _homeworkSection(ref, report),
-              SizedBox(height: 17.h),
-              _facultyObservation(ref, report),
-              if (report.reviewNote != null || report.reviewedAt != null) ...[
+                  SizedBox(height: 12.h),
+                ],
+                _recordHeader(ref, report),
                 SizedBox(height: 17.h),
-                _reviewSection(ref, report),
+                _attendanceSection(ref, report),
+                SizedBox(height: 17.h),
+                _contentSection(ref, report),
+                SizedBox(height: 17.h),
+                _homeworkSection(ref, report),
+                SizedBox(height: 17.h),
+                _facultyObservation(ref, report),
+                if (report.reviewNote != null || report.reviewedAt != null) ...[
+                  SizedBox(height: 17.h),
+                  _reviewSection(ref, report),
+                ],
+                SizedBox(height: 19.h),
+                _reportActionsArea(ref, report),
               ],
-              SizedBox(height: 19.h),
-              _reportActionsArea(ref, report),
-            ],
+            ),
           ),
         ),
       ),
@@ -724,6 +732,10 @@ class _TeacherReportDetailsScreenState
               ),
             ),
             SizedBox(width: 8.w),
+            TranslationStatusBadge.fromMeta(
+              report.localization,
+              padding: EdgeInsets.only(right: 6.w),
+            ),
             Container(
               padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
               decoration: BoxDecoration(

@@ -116,8 +116,13 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
           child: Container(height: 1, color: AppColors.backgroundsLinesColor),
         ),
       ),
-      body: SafeArea(
-        child: RefreshIndicator(
+      body: PendingPollEffect(
+        hasPending: anyLocalizationPending(
+          chatState.conversations.map((c) => c.localization),
+        ),
+        onPoll: () => chatController.loadConversations(),
+        child: SafeArea(
+          child: RefreshIndicator(
           color: AppColors.primary,
           onRefresh: () => chatController.loadConversations(),
           child: chatState.isLoading && chatState.conversations.isEmpty
@@ -143,6 +148,7 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
                     );
                   },
                 ),
+        ),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -267,6 +273,10 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
+                      ),
+                      TranslationStatusBadge.fromMeta(
+                        conv.localization,
+                        padding: EdgeInsets.only(right: 6.w),
                       ),
                       if (time.isNotEmpty) ...[
                         SizedBox(width: 6.w),

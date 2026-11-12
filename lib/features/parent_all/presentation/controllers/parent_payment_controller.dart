@@ -109,6 +109,13 @@ class ParentPaymentController extends Notifier<ParentPaymentState> {
         }
       }
     });
+    ref.listen<AsyncValue<LanguageState>>(languageProvider, (previous, next) {
+      final prevCode = previous?.asData?.value.languageCode;
+      final nextCode = next.asData?.value.languageCode;
+      if (prevCode != null && nextCode != null && prevCode != nextCode) {
+        Future.microtask(() => loadInvoices());
+      }
+    });
     Future.microtask(() => loadInvoices());
     return const ParentPaymentState(isLoading: true);
   }

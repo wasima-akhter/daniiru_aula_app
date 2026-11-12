@@ -84,49 +84,59 @@ class _TeacherInformationScreenState
           ),
         ),
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
+      body: PendingPollEffect(
+        hasPending: anyLocalizationPending(
+          teachersState.teachers.map((t) => t.localization),
+        ),
+        onPoll: () {
           if (activeChild != null) {
-            await teachersController.loadTeachers(activeChild.id);
+            teachersController.loadTeachers(activeChild.id);
           }
         },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(
-            parent: BouncingScrollPhysics(),
-          ),
-          padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 30.h),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (activeChild != null) ...[
-                _studentHeader(ref, activeChild),
-                SizedBox(height: 14.h),
-              ],
-              if (teachersState.isLoading) ...[
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 50.h),
-                  child: const Center(child: CircularProgressIndicator()),
-                ),
-              ] else if (teachersState.error != null) ...[
-                _errorView(ref, teachersState.error!, _loadData),
-              ] else if (teachersState.teachers.isEmpty) ...[
-                _emptyView(ref),
-              ] else ...[
-                if (teachersState.teachers.length > 1) ...[
-                  _teachersSelector(
-                    teachersState.teachers,
-                    selectedTeacher,
-                    teachersController.selectTeacher,
-                  ),
+        child: RefreshIndicator(
+          onRefresh: () async {
+            if (activeChild != null) {
+              await teachersController.loadTeachers(activeChild.id);
+            }
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 30.h),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (activeChild != null) ...[
+                  _studentHeader(ref, activeChild),
                   SizedBox(height: 14.h),
                 ],
-                if (selectedTeacher != null) ...[
-                  _teacherProfile(ref, selectedTeacher),
-                  SizedBox(height: 16.h),
-                  _communicationCard(ref, selectedTeacher),
+                if (teachersState.isLoading) ...[
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 50.h),
+                    child: const Center(child: CircularProgressIndicator()),
+                  ),
+                ] else if (teachersState.error != null) ...[
+                  _errorView(ref, teachersState.error!, _loadData),
+                ] else if (teachersState.teachers.isEmpty) ...[
+                  _emptyView(ref),
+                ] else ...[
+                  if (teachersState.teachers.length > 1) ...[
+                    _teachersSelector(
+                      teachersState.teachers,
+                      selectedTeacher,
+                      teachersController.selectTeacher,
+                    ),
+                    SizedBox(height: 14.h),
+                  ],
+                  if (selectedTeacher != null) ...[
+                    _teacherProfile(ref, selectedTeacher),
+                    SizedBox(height: 16.h),
+                    _communicationCard(ref, selectedTeacher),
+                  ],
                 ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -173,19 +183,24 @@ class _TeacherInformationScreenState
               ),
             ],
           ),
-          SizedBox(height: 6.h),
-          Row(
-            children: [
-              Text(
-                '${child.grade} • ${child.room}',
-                style: TxtStyle.titleLarge(
-                  color: const Color(0xFF667085),
-                  fontSize: 13.5.sp,
-                  fontWeight: FontWeight.w600,
+          if (child.grade.trim().isNotEmpty ||
+              child.room.trim().isNotEmpty) ...[
+            SizedBox(height: 6.h),
+            Row(
+              children: [
+                Text(
+                  [child.grade, child.room]
+                      .where((s) => s.trim().isNotEmpty)
+                      .join(' • '),
+                  style: TxtStyle.titleLarge(
+                    color: const Color(0xFF667085),
+                    fontSize: 13.5.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -255,13 +270,22 @@ class _TeacherInformationScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      teacher.fullName,
-                      style: TxtStyle.titleLarge(
-                        color: const Color(0xFF20283B),
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            teacher.fullName.isNotEmpty
+                                ? teacher.fullName
+                                : ref.watchTr(AppStrings.roleTeacherTitle),
+                            style: TxtStyle.titleLarge(
+                              color: const Color(0xFF20283B),
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        TranslationStatusBadge.fromMeta(teacher.localization),
+                      ],
                     ),
                     SizedBox(height: 3.h),
                     Text(

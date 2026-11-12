@@ -59,6 +59,7 @@ class NotificationTile extends StatelessWidget {
                           ),
                         ),
                       ),
+                      TranslationStatusBadge.fromMeta(item.localization),
                       if (unread)
                         Container(
                           margin: EdgeInsets.only(left: 6.w, top: 4.h),

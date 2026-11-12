@@ -1,3 +1,4 @@
+import '../../../../core/localization/localization_meta.dart';
 import '../../domain/models/parent_models.dart';
 
 class ChildDto {
@@ -6,6 +7,7 @@ class ChildDto {
   final String? gradeLevel;
   final String enrollmentNumber;
   final String? avatarUrl;
+  final LocalizationMeta? localization;
 
   const ChildDto({
     required this.id,
@@ -13,6 +15,7 @@ class ChildDto {
     this.gradeLevel,
     required this.enrollmentNumber,
     this.avatarUrl,
+    this.localization,
   });
 
   factory ChildDto.fromJson(Map<String, dynamic> json) {
@@ -22,6 +25,7 @@ class ChildDto {
       gradeLevel: json['gradeLevel'] as String?,
       enrollmentNumber: json['enrollmentNumber'] as String? ?? '',
       avatarUrl: json['avatarUrl'] as String?,
+      localization: LocalizationMeta.tryParse(json),
     );
   }
 
@@ -45,7 +49,7 @@ class ChildDto {
     return ChildModel(
       id: id,
       name: fullName,
-      grade: gradeLevel ?? 'Curso general',
+      grade: gradeLevel ?? '',
       room: enrollmentNumber,
       imageUrl: avatarUrl ?? '',
       parentTeacher: parentTeacher,
@@ -53,6 +57,7 @@ class ChildDto {
       present: present,
       absent: absent,
       late: late,
+      localization: localization,
     );
   }
 }

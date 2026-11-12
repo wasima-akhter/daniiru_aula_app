@@ -26,6 +26,9 @@ class AppStrings {
   static const String languageSpanishLabel = 'language_spanish_label';
   static const String translationStatusTranslating = 'translation_status_translating';
   static const String translationStatusTranslated = 'translation_status_translated';
+  static const String translationStatusFailed = 'translation_status_failed';
+  static const String translationStatusOriginal = 'translation_status_original';
+  static const String translationTimeoutFallback = 'translation_timeout_fallback';
 
   // ── Onboarding ────────────────────────────────────────────────────────────
   static const String onboardingSkip = 'onboarding_skip';

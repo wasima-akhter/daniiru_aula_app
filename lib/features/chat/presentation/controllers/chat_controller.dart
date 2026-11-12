@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/socket_service.dart';
+import '../../../../core/service/language/language_provider.dart';
 import '../../../../utils/app_strings/app_strings.dart';
 import '../../../parent_all/data/dtos/conversation_dto.dart';
 import '../../data/chat_repository.dart';
@@ -78,6 +79,20 @@ class ChatController extends Notifier<ChatState> {
 
   @override
   ChatState build() {
+    ref.listen<AsyncValue<LanguageState>>(languageProvider, (previous, next) {
+      final prevCode = previous?.asData?.value.languageCode;
+      final nextCode = next.asData?.value.languageCode;
+      if (prevCode != null && nextCode != null && prevCode != nextCode) {
+        Future.microtask(() async {
+          await loadConversations();
+          final selectedId = state.selectedConversation?.id;
+          if (selectedId != null && selectedId.isNotEmpty) {
+            await loadMessages(selectedId);
+          }
+        });
+      }
+    });
+
     _initSocket();
     Future.microtask(() => loadConversations());
 
@@ -133,13 +148,15 @@ class ChatController extends Notifier<ChatState> {
   }
 
   void _handleIncomingMessage(ChatMessageDto msg) {
-    // 1. If currently inside this conversation, append the message
+    // 1. If currently inside this conversation, append the message immediately
+    // and refetch the thread with current x-locale so any translated body updates.
     if (state.selectedConversation != null &&
         msg.conversationId == state.selectedConversation!.id) {
       if (!state.messages.any((m) => m.id == msg.id)) {
         state = state.copyWith(messages: [...state.messages, msg]);
       }
       _socketService.markAsRead(msg.conversationId);
+      Future.microtask(() => loadMessages(msg.conversationId));
     }
 
     // 2. Update conversation list snippet and move to top
@@ -179,9 +196,11 @@ class ChatController extends Notifier<ChatState> {
     try {
       state = state.copyWith(isLoading: true, error: null);
       final list = await _repository.getConversations();
+      if (!ref.mounted) return;
 
       state = state.copyWith(conversations: list, isLoading: false);
     } catch (e) {
+      if (!ref.mounted) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -236,6 +255,7 @@ class ChatController extends Notifier<ChatState> {
       final msgs = List<ChatMessageDto>.from(
         await _repository.getConversationMessages(conversationId),
       );
+      if (!ref.mounted) return;
       // Sort oldest to newest for chat timeline
       msgs.sort((a, b) {
         final aDate = DateTime.tryParse(a.sentAt ?? '') ?? DateTime(1970);
@@ -244,6 +264,7 @@ class ChatController extends Notifier<ChatState> {
       });
       state = state.copyWith(messages: msgs, error: null);
     } catch (e) {
+      if (!ref.mounted) return;
       debugPrint('[ChatController] loadMessages error: $e');
       final errStr = e.toString().toLowerCase();
       // If access is denied (403), this conversation is not valid for current user
@@ -266,6 +287,7 @@ class ChatController extends Notifier<ChatState> {
       final conv = await _repository.createConversation(
         targetUserId: targetUserId,
       );
+      if (!ref.mounted) return conv;
       final updated = [
         conv,
         ...state.conversations.where((c) => c.id != conv.id),
@@ -274,6 +296,7 @@ class ChatController extends Notifier<ChatState> {
       selectConversation(conv);
       return conv;
     } catch (e) {
+      if (!ref.mounted) return null;
       debugPrint('[ChatController] startAdminConversation error: $e');
       state = state.copyWith(
         isLoading: false,

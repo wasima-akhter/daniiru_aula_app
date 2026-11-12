@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 
+import '../../../../core/localization/localization_meta.dart';
 import '../../../../core/service/language/language_provider.dart';
 import '../../domain/models/parent_models.dart';
 
@@ -12,6 +13,7 @@ class ChildReportDto {
   final String? observations;
   final String attitudeRating;
   final String workEffortRating;
+  final LocalizationMeta? localization;
 
   const ChildReportDto({
     required this.id,
@@ -22,6 +24,7 @@ class ChildReportDto {
     this.observations,
     required this.attitudeRating,
     required this.workEffortRating,
+    this.localization,
   });
 
   factory ChildReportDto.fromJson(Map<String, dynamic> json) {
@@ -34,6 +37,7 @@ class ChildReportDto {
       observations: json['observations'] as String?,
       attitudeRating: json['attitudeRating'] as String? ?? 'SATISFACTORY',
       workEffortRating: json['workEffortRating'] as String? ?? 'ON_TRACK',
+      localization: LocalizationMeta.tryParse(json),
     );
   }
 
@@ -76,6 +80,7 @@ class ChildReportDto {
       status: statusText,
       note: note,
       initials: initials,
+      localization: localization,
     );
   }
 }
@@ -97,6 +102,7 @@ class ChildReportDetailDto {
   final String? studentAttendanceStatus;
   final String? submittedAt;
   final String? reviewedAt;
+  final LocalizationMeta? localization;
 
   const ChildReportDetailDto({
     required this.id,
@@ -115,6 +121,7 @@ class ChildReportDetailDto {
     this.studentAttendanceStatus,
     this.submittedAt,
     this.reviewedAt,
+    this.localization,
   });
 
   factory ChildReportDetailDto.fromJson(Map<String, dynamic> json) {
@@ -135,6 +142,7 @@ class ChildReportDetailDto {
       studentAttendanceStatus: json['studentAttendanceStatus'] as String?,
       submittedAt: json['submittedAt'] as String?,
       reviewedAt: json['reviewedAt'] as String?,
+      localization: LocalizationMeta.tryParse(json),
     );
   }
 
@@ -214,6 +222,7 @@ class ChildReportDetailDto {
       status: studentAttendanceStatus ?? statusText,
       note: note,
       initials: initials,
+      localization: localization,
     );
   }
 }

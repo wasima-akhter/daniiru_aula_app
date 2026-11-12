@@ -114,11 +114,16 @@ class _TeacherHomeworkScreenState extends ConsumerState<TeacherHomeworkScreen> {
           SizedBox(width: 8.w),
         ],
       ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          color: AppColors.primaryDark,
-          onRefresh: listController.refresh,
-          child: Builder(
+      body: PendingPollEffect(
+        hasPending: anyLocalizationPending(
+          homeworkList.map((h) => h.localization),
+        ),
+        onPoll: () => listController.loadInitial(isLanguageChange: true),
+        child: SafeArea(
+          child: RefreshIndicator(
+            color: AppColors.primaryDark,
+            onRefresh: listController.refresh,
+            child: Builder(
             builder: (context) {
               if (listState.isLoading && homeworkList.isEmpty) {
                 return const Center(child: CircularProgressIndicator());
@@ -203,6 +208,7 @@ class _TeacherHomeworkScreenState extends ConsumerState<TeacherHomeworkScreen> {
               );
             },
           ),
+        ),
         ),
       ),
       // floatingActionButton: FloatingActionButton.extended(

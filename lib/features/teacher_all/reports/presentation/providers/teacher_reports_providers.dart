@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:aula360/core/service/language/language_provider.dart';
 import 'package:aula360/features/teacher_all/data/repositories/teacher_repository_impl.dart';
 import 'package:aula360/features/teacher_all/helper/teacher_models.dart';
 import 'package:aula360/features/teacher_all/reports/data/repositories/teacher_reports_repository_impl.dart';
@@ -13,6 +14,7 @@ final teacherReportsRepositoryProvider =
 
 final teacherReportDetailProvider =
     FutureProvider.autoDispose.family<TeacherReport, String>((ref, id) async {
+  ref.watch(languageProvider.select((v) => v.asData?.value.languageCode));
   final repository = ref.watch(teacherReportsRepositoryProvider);
   return repository.getReportDetail(id);
 });

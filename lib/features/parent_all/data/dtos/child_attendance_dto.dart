@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 
+import '../../../../core/localization/localization_meta.dart';
 import '../../domain/models/parent_models.dart';
 
 class ChildAttendanceMetaDto {
@@ -28,6 +29,7 @@ class ChildAttendanceDto {
   final String subjectName;
   final String status;
   final String? note;
+  final LocalizationMeta? localization;
 
   const ChildAttendanceDto({
     required this.id,
@@ -35,6 +37,7 @@ class ChildAttendanceDto {
     required this.subjectName,
     required this.status,
     this.note,
+    this.localization,
   });
 
   factory ChildAttendanceDto.fromJson(Map<String, dynamic> json) {
@@ -44,6 +47,7 @@ class ChildAttendanceDto {
       subjectName: json['subjectName'] as String? ?? '',
       status: json['status'] as String? ?? 'PRESENT',
       note: json['note'] as String?,
+      localization: LocalizationMeta.tryParse(json),
     );
   }
 
@@ -71,6 +75,7 @@ class ChildAttendanceDto {
       status: attStatus,
       checkInTime: dt != null ? DateFormat('HH:mm').format(dt) : '08:30',
       note: note,
+      localization: localization,
     );
   }
 }

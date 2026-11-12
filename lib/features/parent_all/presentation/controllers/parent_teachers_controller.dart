@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:aula360/core/service/language/language_provider.dart';
 import '../../data/dtos/child_teacher_dto.dart';
 import '../../data/repositories/parent_repository_impl.dart';
 import '../../domain/repositories/parent_repository.dart';
@@ -39,14 +40,27 @@ final parentTeachersControllerProvider =
 
 class ParentTeachersController extends Notifier<ParentTeachersState> {
   ParentRepository get _repository => ref.read(parentRepositoryProvider);
+  String? _lastChildId;
 
   @override
   ParentTeachersState build() {
+    ref.listen<AsyncValue<LanguageState>>(languageProvider, (previous, next) {
+      final prevCode = previous?.asData?.value.languageCode;
+      final nextCode = next.asData?.value.languageCode;
+      if (prevCode != null &&
+          nextCode != null &&
+          prevCode != nextCode &&
+          _lastChildId != null &&
+          _lastChildId!.isNotEmpty) {
+        Future.microtask(() => loadTeachers(_lastChildId!));
+      }
+    });
     return const ParentTeachersState();
   }
 
   Future<void> loadTeachers(String childId) async {
     if (childId.isEmpty) return;
+    _lastChildId = childId;
     state = state.copyWith(isLoading: true, error: null);
     try {
       final list = await _repository.getChildTeachers(childId);

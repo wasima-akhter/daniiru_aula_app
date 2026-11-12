@@ -86,7 +86,7 @@ class ParentProfileController extends Notifier<ParentProfileState> {
   @override
   ParentProfileState build() {
     final currentLang =
-        ref.watch(languageProvider).valueOrNull?.language.label ?? 'English';
+        ref.read(languageProvider).valueOrNull?.language.label ?? 'English';
 
     ref.listen<AuthState>(authControllerProvider, (previous, next) {
       if (previous?.user?.id != next.user?.id) {
@@ -112,6 +112,14 @@ class ParentProfileController extends Notifier<ParentProfileState> {
         } else {
           state = const ParentProfileState();
         }
+      }
+    });
+
+    ref.listen<AsyncValue<LanguageState>>(languageProvider, (previous, next) {
+      final prevCode = previous?.asData?.value.languageCode;
+      final nextCode = next.asData?.value.languageCode;
+      if (prevCode != null && nextCode != null && prevCode != nextCode) {
+        Future.microtask(() => fetchProfile(force: true));
       }
     });
 

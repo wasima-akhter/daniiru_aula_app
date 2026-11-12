@@ -1,3 +1,5 @@
+import 'package:aula360/core/localization/localization_meta.dart';
+import 'package:aula360/core/localization/pending_refetch_controller.dart';
 import 'package:aula360/features/teacher_all/helper/teacher_enums.dart';
 import 'package:aula360/features/teacher_all/helper/teacher_models.dart';
 
@@ -7,6 +9,7 @@ class SessionDetailStudentDto {
   final String? avatarUrl;
   final String enrollmentNumber;
   final String? attendanceStatus;
+  final LocalizationMeta? localization;
 
   const SessionDetailStudentDto({
     required this.id,
@@ -14,6 +17,7 @@ class SessionDetailStudentDto {
     this.avatarUrl,
     required this.enrollmentNumber,
     this.attendanceStatus,
+    this.localization,
   });
 
   factory SessionDetailStudentDto.fromJson(Map<String, dynamic> json) {
@@ -23,6 +27,7 @@ class SessionDetailStudentDto {
       avatarUrl: json['avatarUrl'] as String?,
       enrollmentNumber: json['enrollmentNumber'] as String? ?? '',
       attendanceStatus: json['attendanceStatus'] as String?,
+      localization: LocalizationMeta.tryParse(json),
     );
   }
 
@@ -63,6 +68,7 @@ class ClassSessionDto {
   final List<SessionDetailStudentDto> students;
   final Map<String, dynamic>? report;
   final List<dynamic>? homework;
+  final LocalizationMeta? localization;
 
   const ClassSessionDto({
     required this.id,
@@ -85,6 +91,7 @@ class ClassSessionDto {
     this.students = const [],
     this.report,
     this.homework,
+    this.localization,
   });
 
   factory ClassSessionDto.fromJson(Map<String, dynamic> json) {
@@ -230,6 +237,7 @@ class ClassSessionDto {
           : null,
       homework:
           json['homework'] is List ? json['homework'] as List<dynamic> : null,
+      localization: LocalizationMeta.tryParse(json),
     );
   }
 
@@ -258,6 +266,27 @@ class ClassSessionDto {
     };
   }
 
+  LocalizationMeta? get reportLocalization =>
+      report != null ? LocalizationMeta.tryParse(report!) : null;
+
+  List<LocalizationMeta?> get homeworkLocalizations {
+    final list = homework;
+    if (list == null) return const [];
+    return [
+      for (final item in list)
+        if (item is Map<String, dynamic>) LocalizationMeta.tryParse(item),
+    ];
+  }
+
+  /// True when the root session OR any nested student/report/homework entry
+  /// has a `PENDING` or `PROCESSING` backend translation job.
+  bool get hasAnyPendingLocalization => anyLocalizationPending([
+        localization,
+        ...students.map((s) => s.localization),
+        reportLocalization,
+        ...homeworkLocalizations,
+      ]);
+
   String get formattedTime => (startTime.isNotEmpty && endTime.isNotEmpty)
       ? '$startTime - $endTime'
       : startTime;
@@ -280,6 +309,7 @@ class ClassSessionDto {
       rawStatus: status,
       cohortId: cohortId,
       subjectId: subjectId,
+      localization: localization,
     );
   }
 }

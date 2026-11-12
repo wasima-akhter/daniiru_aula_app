@@ -312,8 +312,18 @@ class _ChatInboxScreenState extends ConsumerState<ChatInboxScreen> {
           child: Container(height: 1, color: AppColors.backgroundsLinesColor),
         ),
       ),
-      body: SafeArea(
-        child: Column(
+      body: PendingPollEffect(
+        hasPending: anyLocalizationPending(
+          chatState.messages.map((m) => m.localization),
+        ),
+        onPoll: () {
+          final convId = conv?.id;
+          if (convId != null && convId.isNotEmpty) {
+            ref.read(chatControllerProvider.notifier).loadMessages(convId);
+          }
+        },
+        child: SafeArea(
+          child: Column(
           children: [
             if (!isSocketLive)
               Container(
@@ -418,6 +428,7 @@ class _ChatInboxScreenState extends ConsumerState<ChatInboxScreen> {
             ),
             _messageComposer(chatState, isSocketLive),
           ],
+        ),
         ),
       ),
     ),
@@ -572,12 +583,21 @@ class _ChatInboxScreenState extends ConsumerState<ChatInboxScreen> {
                 ),
               ),
               SizedBox(height: 4.h),
-              Text(
-                _formatTime(msg.sentAt),
-                style: TextStyle(
-                  color: AppColors.subtitleTextColor,
-                  fontSize: 11.sp,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _formatTime(msg.sentAt),
+                    style: TextStyle(
+                      color: AppColors.subtitleTextColor,
+                      fontSize: 11.sp,
+                    ),
+                  ),
+                  if (msg.localization != null) ...[
+                    SizedBox(width: 6.w),
+                    TranslationStatusBadge.fromMeta(msg.localization),
+                  ],
+                ],
               ),
             ],
           ),

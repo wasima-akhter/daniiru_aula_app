@@ -71,10 +71,16 @@ class _TeacherAnnouncementsScreenState
           SizedBox(width: 8.w),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: controller.refresh,
-        color: AppColors.primary,
-        child: _buildBody(context, ref, state, controller),
+      body: PendingPollEffect(
+        hasPending: anyLocalizationPending(
+          state.announcements.map((a) => a.localization),
+        ),
+        onPoll: () => controller.loadAnnouncements(isLanguageChange: true),
+        child: RefreshIndicator(
+          onRefresh: controller.refresh,
+          color: AppColors.primary,
+          child: _buildBody(context, ref, state, controller),
+        ),
       ),
     );
   }

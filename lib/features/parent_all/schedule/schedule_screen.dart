@@ -95,9 +95,15 @@ class ScheduleScreen extends ConsumerWidget {
         title: ref.watchTr(AppStrings.navSchedule),
         showBack: false,
       ),
-      body: RefreshIndicator(
-        onRefresh: scheduleController.refresh,
-        child: CustomScrollView(
+      body: PendingPollEffect(
+        hasPending: anyLocalizationPending([
+          ...upcomingClasses.map((c) => c.localization),
+          ...completedClasses.map((c) => c.localization),
+        ]),
+        onPoll: () => scheduleController.refresh(),
+        child: RefreshIndicator(
+          onRefresh: scheduleController.refresh,
+          child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(
             parent: BouncingScrollPhysics(),
           ),
@@ -438,6 +444,7 @@ class ScheduleScreen extends ConsumerWidget {
             ),
           ],
         ),
+        ),
       ),
     );
   }
@@ -606,78 +613,96 @@ class ScheduleScreen extends ConsumerWidget {
 
             SizedBox(height: 8.h),
 
-            Text(
-              classData.subject,
-              style: TxtStyle.titleLarge(
-                color: AppColors.text,
-                fontSize: 18.sp,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-
-            SizedBox(height: 13.h),
-
-            Divider(color: AppColors.backgroundsLinesColor, height: 1),
-
-            SizedBox(height: 11.h),
-
             Row(
               children: [
-                UserAvatar(
-                  initials: _teacherInitials(classData.teacher),
-                  size: 31,
-                ),
-                SizedBox(width: 8.w),
-                Flexible(
+                Expanded(
                   child: Text(
-                    classData.teacher,
+                    classData.subject,
                     style: TxtStyle.titleLarge(
                       color: AppColors.text,
-                      fontSize: 14.5.sp,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
+                TranslationStatusBadge.fromMeta(classData.localization),
+              ],
+            ),
 
-                Flexible(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.end,
+            if (classData.teacher.trim().isNotEmpty ||
+                classData.room.trim().isNotEmpty ||
+                classData.building.trim().isNotEmpty) ...[
+              SizedBox(height: 13.h),
+
+              Divider(color: AppColors.backgroundsLinesColor, height: 1),
+
+              SizedBox(height: 11.h),
+
+              Row(
+                children: [
+                  if (classData.teacher.trim().isNotEmpty) ...[
+                    UserAvatar(
+                      initials: _teacherInitials(classData.teacher),
+                      size: 31,
+                    ),
+                    SizedBox(width: 8.w),
+                    Flexible(
+                      child: Text(
+                        classData.teacher,
+                        style: TxtStyle.titleLarge(
+                          color: AppColors.text,
+                          fontSize: 14.5.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ] else
+                    const Spacer(),
+
+                  if (classData.room.trim().isNotEmpty ||
+                      classData.building.trim().isNotEmpty)
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Icon(
-                            Icons.location_on_outlined,
-                            size: 15.sp,
-                            color: AppColors.secondaryText,
-                          ),
-                          SizedBox(width: 3.w),
-                          Flexible(
-                            child: Text(
-                              classData.room,
+                          if (classData.room.trim().isNotEmpty)
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Icon(
+                                  Icons.location_on_outlined,
+                                  size: 15.sp,
+                                  color: AppColors.secondaryText,
+                                ),
+                                SizedBox(width: 3.w),
+                                Flexible(
+                                  child: Text(
+                                    classData.room,
+                                    textAlign: TextAlign.end,
+                                    style: TxtStyle.titleLarge(
+                                      color: AppColors.secondaryText,
+                                      fontSize: 13.5.sp,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          if (classData.building.trim().isNotEmpty)
+                            Text(
+                              classData.building,
                               textAlign: TextAlign.end,
                               style: TxtStyle.titleLarge(
                                 color: AppColors.secondaryText,
                                 fontSize: 13.5.sp,
                               ),
                             ),
-                          ),
                         ],
                       ),
-                      Text(
-                        classData.building,
-                        textAlign: TextAlign.end,
-                        style: TxtStyle.titleLarge(
-                          color: AppColors.secondaryText,
-                          fontSize: 13.5.sp,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+                    ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -739,13 +764,20 @@ class ScheduleScreen extends ConsumerWidget {
 
             SizedBox(height: 11.h),
 
-            Text(
-              classData.subject,
-              style: TxtStyle.titleLarge(
-                color: AppColors.text,
-                fontSize: 18.sp,
-                fontWeight: FontWeight.w800,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    classData.subject,
+                    style: TxtStyle.titleLarge(
+                      color: AppColors.text,
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                TranslationStatusBadge.fromMeta(classData.localization),
+              ],
             ),
 
             SizedBox(height: 12.h),

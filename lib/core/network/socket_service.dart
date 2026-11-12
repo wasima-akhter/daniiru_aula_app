@@ -6,6 +6,7 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 
 import '../../features/parent_all/data/dtos/conversation_dto.dart';
 import '../constants/api_constants.dart';
+import '../service/language/language_provider.dart';
 import '../storage/storage_provider.dart';
 import '../storage/storage_service.dart';
 
@@ -30,6 +31,7 @@ class SocketService {
   final _typingController = StreamController<Map<String, dynamic>>.broadcast();
 
   String? _currentToken;
+  String? _currentLocale;
 
   SocketService({required this.storageService});
 
@@ -55,20 +57,26 @@ class SocketService {
       return;
     }
 
-    if (_socket != null && _socket!.connected && _currentToken == token) {
-      debugPrint('[SocketService] Socket is already connected with current token to ${ApiConstants.chatSocketUrl}.');
+    final locale = LanguageNotifier.activeLanguageCode;
+
+    if (_socket != null &&
+        _socket!.connected &&
+        _currentToken == token &&
+        _currentLocale == locale) {
+      debugPrint('[SocketService] Socket is already connected with current token and locale to ${ApiConstants.chatSocketUrl}.');
       _isConnected = true;
       _connectionStatusController.add(true);
       return;
     }
 
     _currentToken = token;
-    _currentConversationId = null;
+    _currentLocale = locale;
+    final previousConversationId = _currentConversationId;
     _socket?.disconnect();
     _socket?.dispose();
     _socket = null;
 
-    debugPrint('[SocketService] Building Socket.IO options with websocket transport...');
+    debugPrint('[SocketService] Building Socket.IO options with websocket transport (locale: $locale)...');
 
     final options = io.OptionBuilder()
         .setTransports(['websocket'])
@@ -77,12 +85,16 @@ class SocketService {
         .setReconnectionAttempts(10)
         .setReconnectionDelay(2000)
         .setReconnectionDelayMax(5000)
-        .setAuth({'token': token})
+        .setAuth({'token': token, 'locale': locale})
         .setExtraHeaders({
           'Authorization': 'Bearer $token',
+          'x-locale': locale,
+          'Accept-Language': '$locale;q=1.0,en;q=0.5',
         })
-        .setQuery({'token': token})
+        .setQuery({'token': token, 'locale': locale})
         .build();
+
+    _currentConversationId = previousConversationId;
 
     _socket = io.io(ApiConstants.chatSocketUrl, options);
 
@@ -185,12 +197,19 @@ class SocketService {
   }
 
   Future<void> reconnect() async {
-    if (_socket != null) {
+    if (_socket != null && _currentLocale == LanguageNotifier.activeLanguageCode) {
       debugPrint('[SocketService] Manually triggering reconnect...');
       _socket!.connect();
     } else {
       await connect();
     }
+  }
+
+  /// Re-establishes the socket handshake when app locale changes so headers
+  /// and query parameters reflect the newly selected `x-locale`.
+  Future<void> reconnectForLocaleChange() async {
+    if (_socket == null && _currentToken == null) return;
+    await connect(customToken: _currentToken);
   }
 
   void _onIncomingMessage(dynamic data) {

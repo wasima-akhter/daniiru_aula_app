@@ -88,7 +88,7 @@ void main() {
 
       final classModel = dto.toClassModel();
       expect(classModel.subject, 'Advanced Mathematics');
-      expect(classModel.room, 'Aula 101-A');
+      expect(classModel.room, '101-A');
       expect(classModel.teacher, 'Dr. John Doe');
       expect(classModel.time, '09:00');
       expect(classModel.duration, '10:30');
@@ -146,8 +146,8 @@ void main() {
       expect(empty.initials, 'P');
 
       final fallback = ChildTeacherDto.fromJson({});
-      expect(fallback.fullName, 'Profesor');
-      expect(fallback.initials, 'PR');
+      expect(fallback.fullName, '');
+      expect(fallback.initials, 'P');
     });
   });
 
@@ -380,7 +380,7 @@ void main() {
       final classes = await repository.getTodayClasses(childId: 'child-abc');
       expect(classes.isNotEmpty, isTrue);
       expect(classes.first.subject, 'History');
-      expect(classes.first.room, 'Aula 204');
+      expect(classes.first.room, '204');
     });
 
     test('AddChildDto serializes toJson according to OpenAPI spec', () {

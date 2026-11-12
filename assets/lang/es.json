@@ -14,6 +14,7 @@
   "language_spanish_label": "Español",
   "translation_status_translating": "Traduciendo...",
   "translation_status_translated": "Traducido",
+  "translation_status_failed": "Traducción no disponible",
   "onboarding_skip": "Omitir",
   "onboarding_next": "Siguiente",
   "onboarding_continue": "Continuar",

@@ -1,3 +1,4 @@
+import '../../../../core/localization/localization_meta.dart';
 import '../../domain/entities/legal_content.dart';
 
 class LegalContentDto {
@@ -20,15 +21,16 @@ class LegalContentDto {
   });
 
   factory LegalContentDto.fromJson(Map<String, dynamic> json) {
+    final meta = LocalizationMeta.parseOrDefault(json);
     return LegalContentDto(
       legalContentType:
           json['legalContentType'] as String? ?? 'TERMS_AND_CONDITION',
       content: json['content'] as String? ?? '',
       updatedAt: json['updatedAt'] as String?,
-      sourceLocale: json['sourceLocale'] as String? ?? 'en',
-      displayedLocale: json['displayedLocale'] as String? ?? 'en',
-      isTranslated: json['isTranslated'] as bool? ?? false,
-      translationStatus: json['translationStatus'] as String? ?? 'READY',
+      sourceLocale: meta.sourceLocale,
+      displayedLocale: meta.displayedLocale,
+      isTranslated: meta.isTranslated,
+      translationStatus: meta.translationStatus,
     );
   }
 

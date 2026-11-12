@@ -45,10 +45,15 @@ class _LegalContentScreenState extends ConsumerState<LegalContentScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AulaAppBar(title: screenTitle, showBack: true),
-      body: SafeArea(
-        child: state.showFallback
-            ? _buildFallbackContent(context, langCode, tr, controller)
-            : _buildContentByStatus(context, state, langCode, tr, controller),
+      body: PendingPollEffect(
+        hasPending:
+            !state.showFallback && (state.content?.localization.isPending ?? false),
+        onPoll: () => controller.fetchContent(widget.type, isLanguageChange: true),
+        child: SafeArea(
+          child: state.showFallback
+              ? _buildFallbackContent(context, langCode, tr, controller)
+              : _buildContentByStatus(context, state, langCode, tr, controller),
+        ),
       ),
     );
   }

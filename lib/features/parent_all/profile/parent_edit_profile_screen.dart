@@ -1,9 +1,11 @@
 import 'dart:io';
 
+import '../../../core/localization/locale_cache_invalidator.dart';
 import '../../../core/storage/storage_provider.dart';
 import '../../../core/utils/formatters/app_input_formatters.dart';
 import '../../../core/utils/validators.dart';
 import '../../auth/presentation/controllers/auth_controller.dart';
+import '../../settings/presentation/providers/settings_providers.dart';
 import '../../share/export/screen_export.dart';
 import '../../share/widgets/text_field/custom_text_field.dart';
 import '../helper/parent_widgets.dart';
@@ -566,15 +568,24 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           if (!mounted) return;
 
           if (success) {
-            if (language == 'English') {
-              ref
+            final selectedAppLang = language == 'Español'
+                ? AppLanguage.spanish
+                : AppLanguage.english;
+            final currentAppLang = ref.read(languageProvider).valueOrNull?.language;
+            if (currentAppLang != selectedAppLang) {
+              await ref
                   .read(languageProvider.notifier)
-                  .changeLanguage(AppLanguage.english);
-            } else if (language == 'Español') {
-              ref
-                  .read(languageProvider.notifier)
-                  .changeLanguage(AppLanguage.spanish);
+                  .changeLanguage(selectedAppLang);
+              try {
+                final backendLang =
+                    selectedAppLang == AppLanguage.spanish ? 'ES' : 'EN';
+                await ref
+                    .read(updateLanguageUseCaseProvider)
+                    .call(backendLang);
+              } catch (_) {}
+              await onAppLanguageChanged(ref);
             }
+            if (!mounted) return;
 
             ApiSnackbar.show(
               ref.tr(AppStrings.profileUpdatedSuccess),

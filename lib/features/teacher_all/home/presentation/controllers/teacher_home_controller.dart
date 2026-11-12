@@ -1,3 +1,4 @@
+import 'package:aula360/core/service/language/language_provider.dart';
 import 'package:aula360/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:aula360/features/teacher_all/classes/domain/repositories/teacher_classes_repository.dart';
 import 'package:aula360/features/teacher_all/classes/presentation/providers/teacher_classes_providers.dart';
@@ -115,16 +116,26 @@ class TeacherHomeController extends Notifier<TeacherHomeState> {
       }
     });
 
+    ref.listen<AsyncValue<LanguageState>>(languageProvider, (previous, next) {
+      final prevCode = previous?.asData?.value.languageCode;
+      final nextCode = next.asData?.value.languageCode;
+      if (prevCode != null && nextCode != null && prevCode != nextCode) {
+        Future.microtask(() => loadHomeData());
+      }
+    });
+
     Future.microtask(() => loadHomeData());
     return const TeacherHomeState(isLoading: true);
   }
 
   Future<void> loadHomeData() async {
+    if (!ref.mounted) return;
     state = state.copyWith(isLoading: true, error: null);
     try {
       final sessions = await _classesRepository.getSessions(
         date: DateTime.now(),
       );
+      if (!ref.mounted) return;
       if (sessions.isNotEmpty) {
         final sortedSessions = List.of(sessions)
           ..sort((a, b) {
@@ -158,6 +169,7 @@ class TeacherHomeController extends Notifier<TeacherHomeState> {
         );
       }
     } catch (e) {
+      if (!ref.mounted) return;
       state = state.copyWith(
         schedule: const [],
         isLoading: false,

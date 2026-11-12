@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 
+import '../../../../core/localization/localization_meta.dart';
 import '../../domain/models/parent_models.dart';
 
 class ChildHomeworkDto {
@@ -7,6 +8,8 @@ class ChildHomeworkDto {
   final String title;
   final String? description;
   final String subjectName;
+  final String? teacherName;
+  final String? period;
   final String dueDate;
   final String status;
   final String sourceLocale;
@@ -19,6 +22,8 @@ class ChildHomeworkDto {
     required this.title,
     this.description,
     required this.subjectName,
+    this.teacherName,
+    this.period,
     required this.dueDate,
     required this.status,
     this.sourceLocale = 'en',
@@ -28,17 +33,20 @@ class ChildHomeworkDto {
   });
 
   factory ChildHomeworkDto.fromJson(Map<String, dynamic> json) {
+    final meta = LocalizationMeta.parseOrDefault(json);
     return ChildHomeworkDto(
       id: json['id'] as String? ?? '',
       title: json['title'] as String? ?? '',
       description: json['description'] as String?,
       subjectName: json['subjectName'] as String? ?? '',
+      teacherName: json['teacherName'] as String?,
+      period: json['period'] as String?,
       dueDate: json['dueDate'] as String? ?? '',
       status: json['status'] as String? ?? 'PENDING',
-      sourceLocale: json['sourceLocale'] as String? ?? 'en',
-      displayedLocale: json['displayedLocale'] as String? ?? 'en',
-      isTranslated: json['isTranslated'] as bool? ?? false,
-      translationStatus: json['translationStatus'] as String? ?? 'READY',
+      sourceLocale: meta.sourceLocale,
+      displayedLocale: meta.displayedLocale,
+      isTranslated: meta.isTranslated,
+      translationStatus: meta.translationStatus,
     );
   }
 
@@ -52,8 +60,8 @@ class ChildHomeworkDto {
     return HomeworkModel(
       id: id,
       subject: subjectName,
-      teacher: 'Profesor titular',
-      period: 'Trimestre 1',
+      teacher: teacherName ?? '',
+      period: period ?? '',
       title: title,
       description: description ?? '',
       status: isCompleted ? HomeworkStatus.completed : HomeworkStatus.pending,

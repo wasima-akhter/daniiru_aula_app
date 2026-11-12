@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:aula360/core/service/language/language_provider.dart';
 import 'package:aula360/features/teacher_all/students/data/dtos/teacher_students_dtos.dart';
 import 'package:aula360/features/teacher_all/students/domain/repositories/teacher_students_repository.dart';
 import 'package:aula360/features/teacher_all/students/presentation/providers/teacher_students_providers.dart';
@@ -44,14 +45,27 @@ final teacherStudentDetailControllerProvider = NotifierProvider<
 class TeacherStudentDetailController
     extends Notifier<TeacherStudentDetailState> {
   TeacherStudentsRepository get _repository => ref.read(teacherStudentsRepositoryProvider);
+  String? _lastStudentId;
 
   @override
   TeacherStudentDetailState build() {
+    ref.listen<AsyncValue<LanguageState>>(languageProvider, (previous, next) {
+      final prevCode = previous?.asData?.value.languageCode;
+      final nextCode = next.asData?.value.languageCode;
+      if (prevCode != null &&
+          nextCode != null &&
+          prevCode != nextCode &&
+          _lastStudentId != null &&
+          _lastStudentId!.isNotEmpty) {
+        Future.microtask(() => loadStudentDetail(_lastStudentId!));
+      }
+    });
     return const TeacherStudentDetailState();
   }
 
   Future<void> loadStudentDetail(String studentId) async {
     if (studentId.isEmpty) return;
+    _lastStudentId = studentId;
     state = state.copyWith(isLoading: true, error: null);
     try {
       final detail = await _repository.getStudentDetail(studentId);

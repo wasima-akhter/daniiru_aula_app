@@ -120,6 +120,10 @@ class DynamicParentRepository implements ParentRepository {
   }
 
   @override
+  Future<List<ClassModel>> getTodayClasses({String? childId}) async =>
+      const [];
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
@@ -195,6 +199,11 @@ void main() {
 
         final authNotifier =
             container.read(authControllerProvider.notifier) as TestAuthController;
+
+        // Keep controllers mounted across login/logout/switch, matching active UI watches
+        container.listen(parentProfileControllerProvider, (_, _) {});
+        container.listen(parentChildrenControllerProvider, (_, _) {});
+        container.listen(parentHomeControllerProvider, (_, _) {});
 
         // 1. User A (John Doe) logs in
         const userA = AuthUser(
@@ -277,6 +286,10 @@ void main() {
 
         final authNotifier =
             container.read(authControllerProvider.notifier) as TestAuthController;
+
+        // Keep controllers mounted across login/logout/switch, matching active UI watches
+        container.listen(teacherProfileControllerProvider, (_, _) {});
+        container.listen(teacherHomeControllerProvider, (_, _) {});
 
         // 1. Teacher A (Sarah Jenkins) logs in
         const teacherA = AuthUser(

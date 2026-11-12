@@ -85,7 +85,18 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
       backgroundColor: const Color(0xFFF8F7FC),
       appBar: simpleAppBar(context, ref.watchTr(AppStrings.attendance)),
       body: SafeArea(
-        child: RefreshIndicator(
+        child: PendingPollEffect(
+          hasPending: anyLocalizationPending(
+            attendanceState.records.map((r) => r.localization),
+          ),
+          onPoll: () {
+            if (activeChild != null && activeChild.id.isNotEmpty) {
+              ref
+                  .read(parentAttendanceControllerProvider.notifier)
+                  .loadAttendance(activeChild.id);
+            }
+          },
+          child: RefreshIndicator(
           onRefresh: () async {
             if (activeChild != null) {
               await ref
@@ -160,6 +171,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                   ),
           ),
         ),
+      ),
       ),
     );
   }
@@ -741,6 +753,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                   date: '${state.records[i].date} • ${state.records[i].checkInTime}',
                   status: state.records[i].status,
                   detail: state.records[i].note,
+                  localization: state.records[i].localization,
                 ),
               ],
             ],
@@ -763,6 +776,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     required String date,
     required AttendanceStatus status,
     String? detail,
+    LocalizationMeta? localization,
   }) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 11.h),
@@ -773,14 +787,28 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  subject,
-                  style: TxtStyle.titleLarge(
-                    letterSpacing: 0.1,
-                    color: AppColors.text,
-                    fontSize: 16.5.sp,
-                    fontWeight: FontWeight.w700,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        subject,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TxtStyle.titleLarge(
+                          letterSpacing: 0.1,
+                          color: AppColors.text,
+                          fontSize: 16.5.sp,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    if (localization != null) ...[
+                      SizedBox(width: 6.w),
+                      TranslationStatusBadge.fromMeta(
+                        localization,
+                      ),
+                    ],
+                  ],
                 ),
                 SizedBox(height: 3.h),
                 Text(

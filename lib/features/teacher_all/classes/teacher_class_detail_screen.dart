@@ -84,6 +84,8 @@ class _TeacherClassDetailScreenState
         showBack: true,
       ),
       body: sessionDetailAsync.when(
+        skipLoadingOnReload: true,
+        skipLoadingOnRefresh: true,
         loading: () => const Center(
           child: CircularProgressIndicator(color: AppColors.primaryDark),
         ),
@@ -136,13 +138,16 @@ class _TeacherClassDetailScreenState
             ),
           ),
         ),
-        data: (session) => RefreshIndicator(
-          color: AppColors.primaryDark,
-          onRefresh: () async {
-            ref.invalidate(teacherSessionDetailProvider(effectiveId));
-            await ref.read(teacherSessionDetailProvider(effectiveId).future);
-          },
-          child: CustomScrollView(
+        data: (session) => PendingPollEffect(
+          hasPending: session.hasAnyPendingLocalization,
+          onPoll: () => ref.invalidate(teacherSessionDetailProvider(effectiveId)),
+          child: RefreshIndicator(
+            color: AppColors.primaryDark,
+            onRefresh: () async {
+              ref.invalidate(teacherSessionDetailProvider(effectiveId));
+              await ref.read(teacherSessionDetailProvider(effectiveId).future);
+            },
+            child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),
             ),
@@ -232,6 +237,7 @@ class _TeacherClassDetailScreenState
               ),
             ],
           ),
+        ),
         ),
       ),
     );
@@ -524,14 +530,21 @@ class _TeacherClassDetailScreenState
     final groupName = session.cohortName.isNotEmpty
         ? session.cohortName
         : session.subjectName;
-    return Text(
-      '${groupName.toUpperCase()} • ${ref.watchTr(AppStrings.bachillerato1).toUpperCase()}',
-      style: TxtStyle.bodyMedium(
-        color: AppColors.subtitleTextColor,
-        fontSize: 15.sp,
-        fontWeight: FontWeight.w700,
-        letterSpacing: .4,
-      ),
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            '${groupName.toUpperCase()} • ${ref.watchTr(AppStrings.bachillerato1).toUpperCase()}',
+            style: TxtStyle.bodyMedium(
+              color: AppColors.subtitleTextColor,
+              fontSize: 15.sp,
+              fontWeight: FontWeight.w700,
+              letterSpacing: .4,
+            ),
+          ),
+        ),
+        TranslationStatusBadge.fromMeta(session.localization),
+      ],
     );
   }
 
@@ -736,14 +749,33 @@ class _TeacherClassDetailScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          student.fullName,
-                          style: TxtStyle.titleMedium(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                student.fullName,
+                                style: TxtStyle.titleMedium(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (student.localization != null &&
+                                (student.localization!.isPending ||
+                                    student.localization!.isFailed ||
+                                    student.localization!.showTranslatedBadge)) ...[
+                              SizedBox(width: 6.w),
+                              TranslationStatusBadge.fromMeta(
+                                student.localization,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 6.w,
+                                  vertical: 2.h,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         if (student.enrollmentNumber.isNotEmpty)
                           Text(
@@ -820,13 +852,22 @@ class _TeacherClassDetailScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            ref.watchTr(AppStrings.latestClassReportTitle),
-            style: TxtStyle.labelLarge(
-              color: AppColors.subtitleTextColor,
-              fontSize: 14.5.sp,
-              fontWeight: FontWeight.w500,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  ref.watchTr(AppStrings.latestClassReportTitle),
+                  style: TxtStyle.labelLarge(
+                    color: AppColors.subtitleTextColor,
+                    fontSize: 14.5.sp,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              TranslationStatusBadge.fromMeta(
+                LocalizationMeta.tryParse(report),
+              ),
+            ],
           ),
           if (observations != null && observations.isNotEmpty) ...[
             SizedBox(height: 5.h),
@@ -869,6 +910,9 @@ class _TeacherClassDetailScreenState
     if (homeworkList.isEmpty) return const SizedBox.shrink();
     final first = homeworkList.first;
     if (first is! Map) return const SizedBox.shrink();
+    final hwMeta = first is Map<String, dynamic>
+        ? LocalizationMeta.tryParse(first)
+        : null;
     final title = first['title'] as String? ?? '';
     final description = first['description'] as String?;
     final dueDateRaw = first['dueDate'] as String?;
@@ -924,6 +968,13 @@ class _TeacherClassDetailScreenState
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+              if (hwMeta != null &&
+                  (hwMeta.isPending ||
+                      hwMeta.isFailed ||
+                      hwMeta.showTranslatedBadge)) ...[
+                SizedBox(width: 6.w),
+                TranslationStatusBadge.fromMeta(hwMeta),
+              ],
             ],
           ),
           if (title.isNotEmpty) ...[

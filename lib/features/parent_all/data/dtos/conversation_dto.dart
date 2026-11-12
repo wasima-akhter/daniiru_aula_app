@@ -1,3 +1,5 @@
+import '../../../../core/localization/localization_meta.dart';
+
 class ConversationSenderDto {
   final String id;
   final String fullName;
@@ -66,6 +68,7 @@ class ChatMessageDto {
   final String? attachmentUrl;
   final String? sentAt;
   final ConversationSenderDto? sender;
+  final LocalizationMeta? localization;
 
   const ChatMessageDto({
     required this.id,
@@ -75,6 +78,7 @@ class ChatMessageDto {
     this.attachmentUrl,
     this.sentAt,
     this.sender,
+    this.localization,
   });
 
   factory ChatMessageDto.fromJson(Map<String, dynamic> json) {
@@ -90,6 +94,7 @@ class ChatMessageDto {
               json['sender'] as Map<String, dynamic>,
             )
           : null,
+      localization: LocalizationMeta.tryParse(json),
     );
   }
 
@@ -117,6 +122,7 @@ class ConversationDto {
   final String? lastMessage;
   final String? updatedAt;
   final int unreadCount;
+  final LocalizationMeta? localization;
 
   const ConversationDto({
     required this.id,
@@ -129,10 +135,11 @@ class ConversationDto {
     this.lastMessage,
     this.updatedAt,
     this.unreadCount = 0,
+    this.localization,
   });
 
   String get displayName =>
-      participant?.fullName ?? participantName ?? 'Administración Aula 360';
+      participant?.fullName ?? participantName ?? 'Aula 360';
   String? get displayAvatar => participant?.avatarUrl;
   String? get role => participant?.role;
 
@@ -160,6 +167,7 @@ class ConversationDto {
       lastMessage: lastMessageStr,
       updatedAt: json['updatedAt'] as String? ?? json['lastMessageAt'] as String?,
       unreadCount: (json['unreadCount'] as num?)?.toInt() ?? 0,
+      localization: LocalizationMeta.tryParse(json),
     );
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:aula360/core/network/network_providers.dart';
+import 'package:aula360/core/service/language/language_provider.dart';
 import 'package:aula360/features/teacher_all/homework/data/datasources/teacher_homework_remote_data_source.dart';
 import 'package:aula360/features/teacher_all/homework/data/dtos/teacher_homework_dto.dart';
 import 'package:aula360/features/teacher_all/homework/data/repositories/teacher_homework_repository_impl.dart';
@@ -19,7 +20,8 @@ final teacherHomeworkRepositoryProvider =
 });
 
 final teacherHomeworkListProvider =
-    FutureProvider.family<List<TeacherHomeworkDto>, String?>((ref, cohortId) async {
+    FutureProvider.autoDispose.family<List<TeacherHomeworkDto>, String?>((ref, cohortId) async {
+  ref.watch(languageProvider.select((v) => v.asData?.value.languageCode));
   final repository = ref.watch(teacherHomeworkRepositoryProvider);
   final res = await repository.getHomework(cohortId: cohortId);
   return res.data;

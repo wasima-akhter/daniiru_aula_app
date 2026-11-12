@@ -64,11 +64,16 @@ class _HomeworkScreenState extends ConsumerState<HomeworkScreen> {
         title: ref.watchTr(AppStrings.homeworkTitle),
         showBack: true,
       ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          color: AppColors.primary,
-          onRefresh: () => controller.loadHomework(),
-          child: CustomScrollView(
+      body: PendingPollEffect(
+        hasPending: anyLocalizationPending(
+          state.homework.map((h) => h.localization),
+        ),
+        onPoll: () => controller.loadHomework(null, true),
+        child: SafeArea(
+          child: RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () => controller.loadHomework(),
+            child: CustomScrollView(
             controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),
@@ -210,6 +215,7 @@ class _HomeworkScreenState extends ConsumerState<HomeworkScreen> {
               ],
             ],
           ),
+        ),
         ),
       ),
     );

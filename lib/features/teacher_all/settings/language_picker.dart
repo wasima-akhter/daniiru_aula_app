@@ -1,3 +1,4 @@
+import '../../../core/localization/locale_cache_invalidator.dart';
 import '../../share/export/screen_export.dart';
 import '../../settings/presentation/providers/settings_providers.dart';
 
@@ -69,6 +70,7 @@ class LanguagePicker extends ConsumerWidget {
                         .read(updateLanguageUseCaseProvider)
                         .call(backendLang);
                   } catch (_) {}
+                  await onAppLanguageChanged(ref);
                   if (context.mounted) Navigator.pop(context);
                 },
                 child: Padding(

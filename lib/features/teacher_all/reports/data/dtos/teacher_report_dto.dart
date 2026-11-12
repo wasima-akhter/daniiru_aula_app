@@ -1,3 +1,4 @@
+import 'package:aula360/core/localization/localization_meta.dart';
 import 'package:aula360/features/teacher_all/helper/teacher_enums.dart';
 import 'package:aula360/features/teacher_all/helper/teacher_models.dart';
 
@@ -86,6 +87,7 @@ class TeacherReportDto {
   final String submittedAt;
   final String? reviewedAt;
   final String? reviewNote;
+  final LocalizationMeta? localization;
 
   const TeacherReportDto({
     required this.id,
@@ -104,6 +106,7 @@ class TeacherReportDto {
     required this.submittedAt,
     this.reviewedAt,
     this.reviewNote,
+    this.localization,
   });
 
   factory TeacherReportDto.fromJson(Map<String, dynamic> json) {
@@ -124,6 +127,7 @@ class TeacherReportDto {
       submittedAt: json['submittedAt'] as String? ?? '',
       reviewedAt: json['reviewedAt'] as String?,
       reviewNote: json['reviewNote'] as String?,
+      localization: LocalizationMeta.tryParse(json),
     );
   }
 
@@ -184,6 +188,7 @@ class TeacherReportDto {
       submittedAt: submittedAt,
       reviewedAt: reviewedAt,
       reviewNote: reviewNote,
+      localization: localization,
     );
   }
 }
@@ -211,6 +216,7 @@ class TeacherReportDetailDto {
   final String? exitTime;
   final List<TeacherReportStudentAttendanceDto> attendances;
   final TeacherReportAttendanceSummaryDto? attendanceSummary;
+  final LocalizationMeta? localization;
 
   const TeacherReportDetailDto({
     required this.id,
@@ -235,6 +241,7 @@ class TeacherReportDetailDto {
     this.exitTime,
     this.attendances = const [],
     this.attendanceSummary,
+    this.localization,
   });
 
   factory TeacherReportDetailDto.fromJson(Map<String, dynamic> json) {
@@ -278,6 +285,7 @@ class TeacherReportDetailDto {
       exitTime: json['exitTime'] as String?,
       attendances: parsedAttendances,
       attendanceSummary: summary,
+      localization: LocalizationMeta.tryParse(json),
     );
   }
 
@@ -350,6 +358,7 @@ class TeacherReportDetailDto {
       exitTime: exitTime,
       attendances: attendances,
       attendanceSummary: attendanceSummary,
+      localization: localization,
     );
   }
 }

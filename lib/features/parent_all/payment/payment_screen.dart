@@ -172,23 +172,29 @@ class _TuitionPaymentScreenState extends ConsumerState<TuitionPaymentScreen> {
 
     final displayList = state.filteredInvoices;
 
-    return RefreshIndicator(
-      onRefresh: controller.refresh,
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(
-          parent: BouncingScrollPhysics(),
+    return PendingPollEffect(
+      hasPending: anyLocalizationPending(
+        state.invoices.map((i) => i.localization),
+      ),
+      onPoll: () => controller.refresh(),
+      child: RefreshIndicator(
+        onRefresh: controller.refresh,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          padding: EdgeInsets.fromLTRB(14.w, 14.h, 14.w, 30.h),
+          children: [
+            _summaryBanner(state),
+            _filterTabs(state, controller),
+            if (displayList.isEmpty)
+              _emptyView(state, controller)
+            else
+              ...displayList.map(
+                (invoice) => _invoiceCard(context, invoice, activeChild),
+              ),
+          ],
         ),
-        padding: EdgeInsets.fromLTRB(14.w, 14.h, 14.w, 30.h),
-        children: [
-          _summaryBanner(state),
-          _filterTabs(state, controller),
-          if (displayList.isEmpty)
-            _emptyView(state, controller)
-          else
-            ...displayList.map(
-              (invoice) => _invoiceCard(context, invoice, activeChild),
-            ),
-        ],
       ),
     );
   }
@@ -365,7 +371,9 @@ class _TuitionPaymentScreenState extends ConsumerState<TuitionPaymentScreen> {
               : invoice.studentName!.substring(0, 1).toUpperCase())
         : (activeChild?.initials ?? 'ST');
 
-    final title = invoice.feeTitle ?? invoice.concept;
+    final title = (invoice.feeTitle != null && invoice.feeTitle!.isNotEmpty)
+        ? invoice.feeTitle!
+        : invoice.concept;
     final invoiceNum =
         '#${invoice.id.length > 8 ? invoice.id.substring(0, 8).toUpperCase() : invoice.id}';
     final amountFormatted = '${invoice.amount.toStringAsFixed(2)} €';
@@ -417,13 +425,23 @@ class _TuitionPaymentScreenState extends ConsumerState<TuitionPaymentScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: TxtStyle.titleLarge(
-                        color: AppColors.text,
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: TxtStyle.titleLarge(
+                              color: AppColors.text,
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        TranslationStatusBadge.fromMeta(
+                          invoice.localization,
+                          padding: EdgeInsets.only(right: 6.w),
+                        ),
+                      ],
                     ),
                     SizedBox(height: 2.h),
                     Text(

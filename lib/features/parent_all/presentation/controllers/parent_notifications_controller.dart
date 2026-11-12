@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aula360/core/service/language/language_provider.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../data/repositories/parent_repository_impl.dart';
 import '../../domain/models/parent_models.dart';
@@ -73,6 +74,13 @@ class ParentNotificationsController extends Notifier<ParentNotificationsState> {
         } else {
           state = const ParentNotificationsState();
         }
+      }
+    });
+    ref.listen<AsyncValue<LanguageState>>(languageProvider, (previous, next) {
+      final prevCode = previous?.asData?.value.languageCode;
+      final nextCode = next.asData?.value.languageCode;
+      if (prevCode != null && nextCode != null && prevCode != nextCode) {
+        Future.microtask(() => loadNotifications(isRefresh: true));
       }
     });
     Future.microtask(() => loadNotifications());

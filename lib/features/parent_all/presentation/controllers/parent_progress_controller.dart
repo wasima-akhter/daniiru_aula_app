@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:aula360/core/service/language/language_provider.dart';
 import '../../data/dtos/child_progress_dto.dart';
 import '../../data/repositories/parent_repository_impl.dart';
 import '../../domain/repositories/parent_repository.dart';
@@ -38,6 +39,17 @@ class ParentProgressController extends Notifier<ParentProgressState> {
 
   @override
   ParentProgressState build() {
+    ref.listen<AsyncValue<LanguageState>>(languageProvider, (previous, next) {
+      final prevCode = previous?.asData?.value.languageCode;
+      final nextCode = next.asData?.value.languageCode;
+      if (prevCode != null && nextCode != null && prevCode != nextCode) {
+        final childIds = state.progressByChild.keys.toList();
+        state = state.copyWith(progressByChild: const {});
+        for (final id in childIds) {
+          Future.microtask(() => loadProgress(id));
+        }
+      }
+    });
     return const ParentProgressState();
   }
 

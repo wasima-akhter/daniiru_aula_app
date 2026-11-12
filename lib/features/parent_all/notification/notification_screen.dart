@@ -88,8 +88,13 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           SizedBox(width: 4.w),
         ],
       ),
-      body: SafeArea(
-        child: RefreshIndicator(
+      body: PendingPollEffect(
+        hasPending: anyLocalizationPending(
+          notifications.map((n) => n.localization),
+        ),
+        onPoll: () => controller.loadNotifications(isRefresh: true),
+        child: SafeArea(
+          child: RefreshIndicator(
           color: AppColors.primary,
           onRefresh: controller.refresh,
           child: CustomScrollView(
@@ -177,6 +182,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               ],
             ],
           ),
+        ),
         ),
       ),
     );

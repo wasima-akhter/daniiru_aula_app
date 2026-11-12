@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:aula360/core/service/language/language_provider.dart';
 import 'package:aula360/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:aula360/features/teacher_all/classes/domain/repositories/teacher_classes_repository.dart';
 import 'package:aula360/features/teacher_all/classes/presentation/providers/teacher_classes_providers.dart';
@@ -70,6 +71,14 @@ class TeacherClassesController extends Notifier<TeacherClassesState> {
         } else {
           state = const TeacherClassesState();
         }
+      }
+    });
+
+    ref.listen<AsyncValue<LanguageState>>(languageProvider, (previous, next) {
+      final prevCode = previous?.asData?.value.languageCode;
+      final nextCode = next.asData?.value.languageCode;
+      if (prevCode != null && nextCode != null && prevCode != nextCode) {
+        Future.microtask(() => loadClasses());
       }
     });
 

@@ -19,8 +19,14 @@ class MyChildrenScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7FC),
       appBar: simpleAppBar(context, ref.watchTr(AppStrings.myChildren)),
-      body: SafeArea(
-        child: RefreshIndicator(
+      body: PendingPollEffect(
+        hasPending: anyLocalizationPending(
+          children.map((c) => c.localization),
+        ),
+        onPoll: () =>
+            ref.read(parentChildrenControllerProvider.notifier).loadChildren(),
+        child: SafeArea(
+          child: RefreshIndicator(
           onRefresh: () async {
             await ref
                 .read(parentChildrenControllerProvider.notifier)
@@ -87,6 +93,7 @@ class MyChildrenScreen extends ConsumerWidget {
             ),
           ),
         ),
+        ),
       ),
     );
   }
@@ -115,48 +122,41 @@ class MyChildrenScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        child.name,
-                        style: TxtStyle.titleLarge(
-                          color: AppColors.text,
-                          fontSize: 18.sp,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      SizedBox(height: 3.h),
                       Row(
                         children: [
-                          Flexible(
+                          Expanded(
                             child: Text(
-                              '${child.grade} • ${child.room} • ',
-                              overflow: TextOverflow.ellipsis,
+                              child.name,
                               style: TxtStyle.titleLarge(
-                                color: AppColors.subtitleTextColor,
-                                fontSize: 13.5.sp,
+                                color: AppColors.text,
+                                fontSize: 18.sp,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                           ),
-                          // Container(
-                          //   padding: EdgeInsets.symmetric(
-                          //     horizontal: 6.w,
-                          //     vertical: 2.h,
-                          //   ),
-                          //   decoration: BoxDecoration(
-                          //     color: AppColors.softSlateBgColor,
-                          //     borderRadius: BorderRadius.circular(8.r),
-                          //     border: Border.all(color: AppColors.border),
-                          //   ),
-                          //   child: Text(
-                          //     child.id,
-                          //     style: TxtStyle.titleLarge(
-                          //       color: AppColors.subtitleTextColor,
-                          //       fontSize: 12.sp,
-                          //       fontWeight: FontWeight.w700,
-                          //     ),
-                          //   ),
-                          // ),
+                          TranslationStatusBadge.fromMeta(child.localization),
                         ],
                       ),
+                      if (child.grade.trim().isNotEmpty ||
+                          child.room.trim().isNotEmpty) ...[
+                        SizedBox(height: 3.h),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                [child.grade, child.room]
+                                    .where((s) => s.trim().isNotEmpty)
+                                    .join(' • '),
+                                overflow: TextOverflow.ellipsis,
+                                style: TxtStyle.titleLarge(
+                                  color: AppColors.subtitleTextColor,
+                                  fontSize: 13.5.sp,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),

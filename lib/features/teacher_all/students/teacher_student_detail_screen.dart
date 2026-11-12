@@ -123,8 +123,15 @@ class _TeacherStudentDetailsScreenState
           ],
         ],
       ),
-      body: SafeArea(
-        child: detailState.isLoading
+      body: PendingPollEffect(
+        hasPending: anyLocalizationPending([
+          student?.localization,
+          student?.latestReport?.localization,
+          ...?student?.notes.map((n) => n.localization),
+        ]),
+        onPoll: () => detailController.loadStudentDetail(effectiveId),
+        child: SafeArea(
+          child: detailState.isLoading
             ? const Center(child: CircularProgressIndicator())
             : detailState.error != null
                 ? _errorView(
@@ -190,6 +197,7 @@ class _TeacherStudentDetailsScreenState
                           ],
                         ),
                       ),
+        ),
       ),
     );
   }
@@ -267,13 +275,20 @@ class _TeacherStudentDetailsScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                student.fullName,
-                style: TxtStyle.titleLarge(
-                  color: AppColors.text,
-                  fontSize: 22.sp,
-                  fontWeight: FontWeight.w700,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      student.fullName,
+                      style: TxtStyle.titleLarge(
+                        color: AppColors.text,
+                        fontSize: 22.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  TranslationStatusBadge.fromMeta(student.localization),
+                ],
               ),
               SizedBox(height: 4.h),
               Text(
@@ -460,16 +475,27 @@ class _TeacherStudentDetailsScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (report.subjectName != null && report.subjectName!.isNotEmpty) ...[
-            Text(
-              report.subjectName!,
-              style: TxtStyle.titleLarge(
-                color: AppColors.primaryDark,
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w700,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    report.subjectName!,
+                    style: TxtStyle.titleLarge(
+                      color: AppColors.primaryDark,
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                TranslationStatusBadge.fromMeta(report.localization),
+              ],
             ),
             SizedBox(height: 4.h),
-          ],
+          ] else
+            Align(
+              alignment: Alignment.centerRight,
+              child: TranslationStatusBadge.fromMeta(report.localization),
+            ),
           Text(
             report.contentCovered,
             style: TxtStyle.bodyMedium(
@@ -653,14 +679,21 @@ class _TeacherStudentDetailsScreenState
                   fontStyle: FontStyle.italic,
                 ),
               ),
-              if (dateStr.isNotEmpty) ...[
+              if (dateStr.isNotEmpty || note.localization != null) ...[
                 SizedBox(height: 6.h),
-                Text(
-                  dateStr,
-                  style: TxtStyle.bodyMedium(
-                    color: AppColors.subtitleTextColor,
-                    fontSize: 12.sp,
-                  ),
+                Row(
+                  children: [
+                    if (dateStr.isNotEmpty)
+                      Text(
+                        dateStr,
+                        style: TxtStyle.bodyMedium(
+                          color: AppColors.subtitleTextColor,
+                          fontSize: 12.sp,
+                        ),
+                      ),
+                    const Spacer(),
+                    TranslationStatusBadge.fromMeta(note.localization),
+                  ],
                 ),
               ],
             ],

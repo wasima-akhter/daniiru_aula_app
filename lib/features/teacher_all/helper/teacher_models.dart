@@ -3,6 +3,7 @@
 /// ===============================================================
 library;
 
+import '../../../core/localization/localization_meta.dart';
 import '../reports/data/dtos/teacher_report_dto.dart';
 import 'teacher_enums.dart';
 
@@ -76,6 +77,7 @@ class AcademyClass {
   final String rawStatus;
   final String? cohortId;
   final String? subjectId;
+  final LocalizationMeta? localization;
 
   const AcademyClass({
     this.id = '',
@@ -90,6 +92,7 @@ class AcademyClass {
     this.rawStatus = 'SCHEDULED',
     this.cohortId,
     this.subjectId,
+    this.localization,
   });
 
   AcademyClass copyWith({
@@ -105,6 +108,7 @@ class AcademyClass {
     String? rawStatus,
     String? cohortId,
     String? subjectId,
+    LocalizationMeta? localization,
   }) {
     return AcademyClass(
       id: id ?? this.id,
@@ -119,6 +123,7 @@ class AcademyClass {
       rawStatus: rawStatus ?? this.rawStatus,
       cohortId: cohortId ?? this.cohortId,
       subjectId: subjectId ?? this.subjectId,
+      localization: localization ?? this.localization,
     );
   }
 }
@@ -295,6 +300,7 @@ class TeacherStudent {
   final String? avatarUrl;
   final String? gradeLevel;
   final String? enrollmentNumber;
+  final LocalizationMeta? localization;
 
   const TeacherStudent({
     required this.name,
@@ -308,6 +314,7 @@ class TeacherStudent {
     this.avatarUrl,
     this.gradeLevel,
     this.enrollmentNumber,
+    this.localization,
   });
 }
 
@@ -344,6 +351,7 @@ class TeacherReport {
   final String? exitTime;
   final List<TeacherReportStudentAttendanceDto> attendances;
   final TeacherReportAttendanceSummaryDto? attendanceSummary;
+  final LocalizationMeta? localization;
 
   const TeacherReport({
     this.id,
@@ -378,6 +386,7 @@ class TeacherReport {
     this.exitTime,
     this.attendances = const [],
     this.attendanceSummary,
+    this.localization,
   });
 
   TeacherReport copyWith({
@@ -413,6 +422,7 @@ class TeacherReport {
     String? exitTime,
     List<TeacherReportStudentAttendanceDto>? attendances,
     TeacherReportAttendanceSummaryDto? attendanceSummary,
+    LocalizationMeta? localization,
   }) {
     return TeacherReport(
       id: id ?? this.id,
@@ -447,6 +457,7 @@ class TeacherReport {
       exitTime: exitTime ?? this.exitTime,
       attendances: attendances ?? this.attendances,
       attendanceSummary: attendanceSummary ?? this.attendanceSummary,
+      localization: localization ?? this.localization,
     );
   }
 }

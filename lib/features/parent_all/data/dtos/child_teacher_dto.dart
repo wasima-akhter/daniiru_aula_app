@@ -1,3 +1,5 @@
+import '../../../../core/localization/localization_meta.dart';
+
 class ChildTeacherDto {
   final String id;
   final String fullName;
@@ -5,6 +7,7 @@ class ChildTeacherDto {
   final String designation;
   final String bio;
   final String? avatarUrl;
+  final LocalizationMeta? localization;
 
   const ChildTeacherDto({
     required this.id,
@@ -13,16 +16,18 @@ class ChildTeacherDto {
     required this.designation,
     required this.bio,
     this.avatarUrl,
+    this.localization,
   });
 
   factory ChildTeacherDto.fromJson(Map<String, dynamic> json) {
     return ChildTeacherDto(
       id: json['id'] as String? ?? '',
-      fullName: json['fullName'] as String? ?? 'Profesor',
+      fullName: json['fullName'] as String? ?? '',
       email: json['email'] as String? ?? '',
-      designation: json['designation'] as String? ?? 'Docente',
+      designation: json['designation'] as String? ?? '',
       bio: json['bio'] as String? ?? '',
       avatarUrl: json['avatarUrl'] as String?,
+      localization: LocalizationMeta.tryParse(json),
     );
   }
 

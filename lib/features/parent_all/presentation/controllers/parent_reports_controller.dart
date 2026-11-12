@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aula360/core/service/language/language_provider.dart';
 import '../../data/dtos/child_report_dto.dart';
 import '../../data/repositories/parent_repository_impl.dart';
 import '../../domain/models/parent_models.dart';
@@ -101,6 +102,14 @@ class ParentReportsController extends Notifier<ParentReportsState> {
               initials: c.initials,
             ))
         .toList();
+
+    ref.listen<AsyncValue<LanguageState>>(languageProvider, (previous, next) {
+      final prevCode = previous?.asData?.value.languageCode;
+      final nextCode = next.asData?.value.languageCode;
+      if (prevCode != null && nextCode != null && prevCode != nextCode) {
+        Future.microtask(() => loadReports());
+      }
+    });
 
     Future.microtask(() => loadReports());
     return ParentReportsState(isLoading: true, students: students);
@@ -211,6 +220,7 @@ class ChildReportDetailParams {
 final childReportDetailProvider = FutureProvider.autoDispose
     .family<ChildReportDetailDto, ChildReportDetailParams>(
   (ref, params) async {
+    ref.watch(languageProvider.select((v) => v.asData?.value.languageCode));
     return ref
         .watch(parentRepositoryProvider)
         .getChildReportDetail(params.childId, params.reportId);

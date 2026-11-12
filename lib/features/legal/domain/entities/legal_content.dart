@@ -1,3 +1,4 @@
+import '../../../../core/localization/localization_meta.dart';
 import '../../../../core/utils/validators.dart';
 
 enum LegalContentType {
@@ -108,4 +109,11 @@ class LegalContent {
     this.isTranslated = false,
     this.translationStatus = 'READY',
   });
+
+  LocalizationMeta get localization => LocalizationMeta(
+        sourceLocale: sourceLocale,
+        displayedLocale: displayedLocale,
+        isTranslated: isTranslated,
+        translationStatus: translationStatus,
+      );
 }

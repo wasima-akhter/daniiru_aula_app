@@ -127,6 +127,7 @@ class InFlightRequestInterceptor extends Interceptor {
   }
 
   String _generateRequestKey(RequestOptions options) {
-    return '${options.method.toUpperCase()}:${options.uri}';
+    final locale = options.headers['x-locale']?.toString() ?? '';
+    return '$locale:${options.method.toUpperCase()}:${options.uri}';
   }
 }

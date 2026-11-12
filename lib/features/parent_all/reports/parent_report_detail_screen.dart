@@ -99,6 +99,8 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
     );
 
     return detailAsync.when(
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
       data: (detail) =>
           _buildScaffold(context, detail, studentName, studentClass),
       loading: () {
@@ -206,8 +208,32 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
         title: ref.watchTr(AppStrings.reportDetailTitle),
         showBack: true,
       ),
-      body: SafeArea(
-        child: RefreshIndicator(
+      body: PendingPollEffect(
+        hasPending: detail.localization?.isPending == true,
+        onPoll: () {
+          final childrenState = ref.read(parentChildrenControllerProvider);
+          final effectiveChildId = widget.childId?.isNotEmpty == true
+              ? widget.childId!
+              : (childrenState.selectedChild?.id ??
+                  (childrenState.children.isNotEmpty
+                      ? childrenState.children.first.id
+                      : ''));
+          final effectiveReportId = widget.reportId.isNotEmpty
+              ? widget.reportId
+              : (widget.initialReport?.id ?? '');
+          if (effectiveChildId.isNotEmpty && effectiveReportId.isNotEmpty) {
+            ref.invalidate(
+              childReportDetailProvider(
+                ChildReportDetailParams(
+                  childId: effectiveChildId,
+                  reportId: effectiveReportId,
+                ),
+              ),
+            );
+          }
+        },
+        child: SafeArea(
+          child: RefreshIndicator(
           color: AppColors.primary,
           onRefresh: () async {
             final childrenState = ref.read(parentChildrenControllerProvider);
@@ -256,6 +282,7 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );
@@ -347,9 +374,19 @@ class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen> {
                   ],
                 ),
               ),
-              StatusPill(
-                text: pillData.$1,
-                color: pillData.$2,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  StatusPill(
+                    text: pillData.$1,
+                    color: pillData.$2,
+                  ),
+                  SizedBox(height: 6.h),
+                  TranslationStatusBadge.fromMeta(
+                    detail.localization,
+                    padding: EdgeInsets.zero,
+                  ),
+                ],
               ),
             ],
           ),

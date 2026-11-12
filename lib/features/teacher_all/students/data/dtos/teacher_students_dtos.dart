@@ -1,3 +1,4 @@
+import 'package:aula360/core/localization/localization_meta.dart';
 import 'package:aula360/features/teacher_all/helper/teacher_enums.dart';
 import 'package:aula360/features/teacher_all/helper/teacher_models.dart';
 
@@ -11,6 +12,7 @@ class TeacherStudentRosterDto {
   final String gradeLevel;
   final String? avatarUrl;
   final num attendancePercentage;
+  final LocalizationMeta? localization;
 
   const TeacherStudentRosterDto({
     required this.id,
@@ -19,6 +21,7 @@ class TeacherStudentRosterDto {
     required this.gradeLevel,
     this.avatarUrl,
     required this.attendancePercentage,
+    this.localization,
   });
 
   factory TeacherStudentRosterDto.fromJson(Map<String, dynamic> json) {
@@ -29,6 +32,7 @@ class TeacherStudentRosterDto {
       gradeLevel: json['gradeLevel'] as String? ?? '',
       avatarUrl: json['avatarUrl'] as String?,
       attendancePercentage: json['attendancePercentage'] as num? ?? 0,
+      localization: LocalizationMeta.tryParse(json),
     );
   }
 
@@ -62,6 +66,7 @@ class TeacherStudentRosterDto {
       avatarUrl: avatarUrl,
       gradeLevel: gradeLevel,
       enrollmentNumber: enrollmentNumber,
+      localization: localization,
     );
   }
 }
@@ -112,6 +117,7 @@ class TeacherStudentNoteDto {
   final String content;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final LocalizationMeta? localization;
 
   const TeacherStudentNoteDto({
     required this.id,
@@ -120,6 +126,7 @@ class TeacherStudentNoteDto {
     required this.content,
     this.createdAt,
     this.updatedAt,
+    this.localization,
   });
 
   factory TeacherStudentNoteDto.fromJson(Map<String, dynamic> json) {
@@ -139,6 +146,7 @@ class TeacherStudentNoteDto {
       content: json['content'] as String? ?? '',
       createdAt: parseDate(json['createdAt']),
       updatedAt: parseDate(json['updatedAt']),
+      localization: LocalizationMeta.tryParse(json),
     );
   }
 
@@ -165,6 +173,7 @@ class TeacherStudentLatestReportDto {
   final String? observations;
   final DateTime? submittedAt;
   final String? subjectName;
+  final LocalizationMeta? localization;
 
   const TeacherStudentLatestReportDto({
     required this.id,
@@ -176,6 +185,7 @@ class TeacherStudentLatestReportDto {
     this.observations,
     this.submittedAt,
     this.subjectName,
+    this.localization,
   });
 
   factory TeacherStudentLatestReportDto.fromJson(Map<String, dynamic> json) {
@@ -198,6 +208,7 @@ class TeacherStudentLatestReportDto {
       observations: json['observations'] as String?,
       submittedAt: parseDate(json['submittedAt']),
       subjectName: json['subjectName'] as String?,
+      localization: LocalizationMeta.tryParse(json),
     );
   }
 
@@ -229,6 +240,7 @@ class TeacherStudentDetailDto {
   final num attendancePercentage;
   final List<TeacherStudentNoteDto> notes;
   final TeacherStudentLatestReportDto? latestReport;
+  final LocalizationMeta? localization;
 
   const TeacherStudentDetailDto({
     required this.id,
@@ -242,6 +254,7 @@ class TeacherStudentDetailDto {
     required this.attendancePercentage,
     this.notes = const [],
     this.latestReport,
+    this.localization,
   });
 
   factory TeacherStudentDetailDto.fromJson(Map<String, dynamic> json) {
@@ -281,6 +294,7 @@ class TeacherStudentDetailDto {
       attendancePercentage: json['attendancePercentage'] as num? ?? 0,
       notes: parsedNotes,
       latestReport: parsedReport,
+      localization: LocalizationMeta.tryParse(json),
     );
   }
 

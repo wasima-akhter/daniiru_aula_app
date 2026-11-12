@@ -1,3 +1,4 @@
+import '../../../../core/localization/localization_meta.dart';
 import '../../domain/models/parent_models.dart';
 
 class NotificationDto {
@@ -8,6 +9,7 @@ class NotificationDto {
   final bool isRead;
   final String? createdAt;
   final String timeAgo;
+  final LocalizationMeta? localization;
 
   const NotificationDto({
     required this.id,
@@ -17,6 +19,7 @@ class NotificationDto {
     required this.isRead,
     this.createdAt,
     required this.timeAgo,
+    this.localization,
   });
 
   factory NotificationDto.fromJson(Map<String, dynamic> json) {
@@ -41,6 +44,7 @@ class NotificationDto {
       isRead: json['isRead'] as bool? ?? json['read'] as bool? ?? false,
       createdAt: rawDate,
       timeAgo: timeAgoStr,
+      localization: LocalizationMeta.tryParse(json),
     );
   }
 
@@ -69,6 +73,7 @@ class NotificationDto {
       timeAgo: timeAgo,
       isRead: isRead,
       type: type,
+      localization: localization,
     );
   }
 

@@ -145,13 +145,20 @@ class _ClassDetailsScreenState extends ConsumerState<ClassDetailsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          data.subject,
-                          style: TxtStyle.titleLarge(
-                            color: AppColors.primary,
-                            fontSize: 23.sp,
-                            fontWeight: FontWeight.w800,
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                data.subject,
+                                style: TxtStyle.titleLarge(
+                                  color: AppColors.primary,
+                                  fontSize: 23.sp,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                            TranslationStatusBadge.fromMeta(data.localization),
+                          ],
                         ),
                         SizedBox(height: 7.h),
                         Text(

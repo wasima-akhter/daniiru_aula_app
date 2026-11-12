@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aula360/core/service/language/language_provider.dart';
 import '../../data/repositories/parent_repository_impl.dart';
 import '../../domain/models/parent_models.dart';
 import '../../domain/repositories/parent_repository.dart';
@@ -85,6 +86,13 @@ class ParentAttendanceController extends Notifier<ParentAttendanceState> {
     final activeChildId = ref.watch(
       parentChildrenControllerProvider.select((s) => s.selectedChild?.id),
     );
+    ref.listen<AsyncValue<LanguageState>>(languageProvider, (previous, next) {
+      final prevCode = previous?.asData?.value.languageCode;
+      final nextCode = next.asData?.value.languageCode;
+      if (prevCode != null && nextCode != null && prevCode != nextCode) {
+        Future.microtask(() => loadAttendance());
+      }
+    });
     if (activeChildId != null && activeChildId.isNotEmpty) {
       Future.microtask(() => loadAttendance(activeChildId));
     }

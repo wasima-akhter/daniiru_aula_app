@@ -61,7 +61,7 @@ class TeacherProfileController extends Notifier<TeacherProfileState> {
   @override
   TeacherProfileState build() {
     final currentLang =
-        ref.watch(languageProvider).valueOrNull?.language.label ?? 'English';
+        ref.read(languageProvider).valueOrNull?.language.label ?? 'English';
 
     ref.listen<AuthState>(authControllerProvider, (previous, next) {
       if (previous?.user?.id != next.user?.id) {
@@ -96,6 +96,14 @@ class TeacherProfileController extends Notifier<TeacherProfileState> {
       }
     });
 
+    ref.listen<AsyncValue<LanguageState>>(languageProvider, (previous, next) {
+      final prevCode = previous?.asData?.value.languageCode;
+      final nextCode = next.asData?.value.languageCode;
+      if (prevCode != null && nextCode != null && prevCode != nextCode) {
+        Future.microtask(() => loadProfile(force: true));
+      }
+    });
+
     final authUser = ref.read(authControllerProvider).user;
 
     final initialProfile = TeacherProfileData(
@@ -126,6 +134,7 @@ class TeacherProfileController extends Notifier<TeacherProfileState> {
 
   /// Fetches the authenticated teacher profile from GET /api/v1/profile/teacher.
   Future<void> loadProfile({bool force = false}) async {
+    if (!ref.mounted) return;
     if (_isFetching && !force) return;
     _isFetching = true;
     _hasFetched = true;
