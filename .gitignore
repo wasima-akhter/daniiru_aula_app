@@ -45,8 +45,8 @@ app.*.map.json
 /android/app/release
 
 # Environment & Configuration
-.env
-.env.*
 *.env
 lib/core/config/app_config.dart
 lib/core/config/stripe_config.dart
+config.bat
+node_modules
